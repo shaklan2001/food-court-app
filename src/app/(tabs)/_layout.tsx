@@ -1,6 +1,6 @@
-import { Icon } from '@/src/components/ui/Icon';
 import Colors from '@/src/constants/Colors';
 import { useColorScheme } from '@/src/hooks/useColorScheme.web';
+import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import React from 'react';
@@ -42,8 +42,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <Icon
-              set="Ionicons"
+            <Ionicons
               name="home"
               size={size}
               color={color}
@@ -56,8 +55,7 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, size }) => (
-            <Icon
-              set="Ionicons"
+            <Ionicons
               name="compass"
               size={size}
               color={color}
