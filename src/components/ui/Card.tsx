@@ -1,7 +1,7 @@
 import { createRestyleComponent, createVariant, VariantProps } from '@shopify/restyle';
 import React from 'react';
 import { Theme } from '../../theme/theme';
-import Box from './Box';
+import Box from './View';
 
 const Card = createRestyleComponent<
     VariantProps<Theme, 'cardVariants'> & React.ComponentProps<typeof Box>,

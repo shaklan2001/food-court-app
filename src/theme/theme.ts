@@ -16,6 +16,8 @@ const palette = {
     redLight: '#FF6666',
     redDark: '#CC0000',
 
+    loginButton: '#A20538',
+
     gray50: '#F9FAFB',
     gray100: '#F3F4F6',
     gray200: '#E5E7EB',
@@ -36,7 +38,7 @@ const theme = createTheme({
         textPrimary: palette.black,
         textSecondary: palette.gray600,
         textOnPrimary: palette.white,
-        buttonPrimary: palette.redPrimary,
+        buttonPrimary: palette.loginButton,
         buttonSecondary: palette.gray200,
         border: palette.gray300,
         primary: palette.redPrimary,
@@ -46,6 +48,10 @@ const theme = createTheme({
         warning: '#FFA500',
         info: palette.purplePrimary,
         transparent: 'transparent',
+        loginBackground: palette.loginButton,
+        inputBackground: palette.white,
+        inputBorder: palette.gray300,
+        inputPlaceholder: palette.gray500,
     },
     spacing: {
         xs: 4,

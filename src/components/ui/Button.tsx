@@ -2,8 +2,8 @@ import { createRestyleComponent, createVariant, VariantProps } from '@shopify/re
 import React from 'react';
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { Theme } from '../../theme/theme';
-import Box from './Box';
 import Text from './Text';
+import Box from './View';
 
 const ButtonBox = createRestyleComponent<
     VariantProps<Theme, 'buttonVariants'> & React.ComponentProps<typeof Box>,
@@ -36,7 +36,7 @@ const Button: React.FC<ButtonProps> = ({
     };
 
     return (
-        <TouchableOpacity {...props}>
+        <TouchableOpacity {...props} activeOpacity={0.8}>
             <ButtonBox variant={variant}>
                 <Text variant={textVariant} color={getTextColor()}>
                     {title}

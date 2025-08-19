@@ -1,51 +1,83 @@
-# Welcome to your Expo app 👋
+# Food Court App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native mobile application for food court management.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Login Screen**: Modern login interface with mobile number and password authentication
+- **Custom Button Component**: Reusable button component with theme support
+- **Font Integration**: SF Pro Display and Inter font families
+- **Theme System**: Comprehensive theming with custom colors including #A20538
+- **Background Image**: Custom background image for the login screen
 
+## Screens
+
+### Login Screen
+- Mobile number input with country code selector
+- Password input with visibility toggle
+- Login button with custom styling
+- Social login options (Google, Apple)
+- Forgot password link
+- Sign up navigation
+
+## Components
+
+### Button Component
+Located at `src/components/ui/Button.tsx`
+- Supports multiple variants (primary, secondary, outline)
+- Uses theme colors for consistent styling
+- Customizable text variants
+
+## Theme
+
+The app uses a comprehensive theme system with:
+- Custom color palette including #A20538 for the login button
+- Typography variants
+- Spacing and border radius scales
+- Button and card variants
+
+## Fonts
+
+- **SF Pro Display**: Used for branding and headings
+- **Inter**: Used for body text and form elements
+
+## Getting Started
+
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. Start the development server:
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+3. Run on iOS or Android:
+   ```bash
+   npm run ios
+   # or
+   npm run android
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+src/
+├── app/                 # App screens and navigation
+│   ├── login.tsx       # Login screen
+│   └── _layout.tsx     # Root layout with font loading
+├── components/          # Reusable UI components
+│   └── ui/             # UI component library
+├── theme/               # Theme configuration
+├── hooks/               # Custom React hooks
+└── constants/           # App constants
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Dependencies
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-# food-court-app
+- React Native
+- Expo Router
+- Redux Toolkit
+- Shopify Restyle (theming)
+- Expo Font (font loading)
