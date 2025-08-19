@@ -1,8 +1,9 @@
 import { useTheme } from '@shopify/restyle';
+import { router } from 'expo-router';
 import React, { memo, useState } from 'react';
-import { Dimensions, ImageBackground, StatusBar, TextInput, TouchableOpacity } from 'react-native';
+import { Dimensions, ImageBackground, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Text, View } from '../components/ui';
+import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../components/ui';
 import { Theme } from '../theme/theme';
 
 const { width, height } = Dimensions.get('window');
@@ -13,7 +14,6 @@ const Login = memo(({ }: LoginProps) => {
     const theme = useTheme<Theme>();
     const [mobileNumber, setMobileNumber] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = () => {
         console.log('Login pressed:', { mobileNumber, password });
@@ -32,7 +32,7 @@ const Login = memo(({ }: LoginProps) => {
     };
 
     const handleSignUp = () => {
-        console.log('Sign up pressed');
+        router.push('/sign-up');
     };
 
     return (
@@ -44,7 +44,6 @@ const Login = memo(({ }: LoginProps) => {
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             <SafeAreaView style={{ flex: 1 }}>
                 <View
-                    flex={0.65}
                     justifyContent="center"
                     alignItems="center"
                     paddingTop="xl"
@@ -59,6 +58,7 @@ const Login = memo(({ }: LoginProps) => {
                             textAlign="center"
                             marginBottom="m"
                             fontFamily="SF-Pro-Display-Black"
+                            lineHeight={36}
                         >
                             SMART CSK
                         </Text>
@@ -76,208 +76,147 @@ const Login = memo(({ }: LoginProps) => {
                 </View>
 
                 <View
-                    backgroundColor="mainBackground"
-                    borderTopLeftRadius="xl"
-                    padding="l"
-                    paddingTop="xl"
-                    minHeight={height * 0.55}
+                    backgroundColor="mainBackgroundLight"
+                    style={{
+                        borderTopLeftRadius: 60,
+                    }}
+                    flex={1}
                 >
-                    <Text
-                        fontSize={30}
-                        fontWeight="600"
-                        color="textPrimary"
-                        textAlign="left"
-                        marginBottom="xl"
-                        fontFamily="Inter-Medium"
+                    <View
+                        padding="l"
+                        paddingTop="xl"
+                        style={{
+                            marginBottom: -20,
+                        }}
                     >
-                        Login
-                    </Text>
-
-                    <View marginBottom="l">
                         <Text
-                            fontSize={14}
-                            fontWeight="400"
-                            color="textSecondary"
-                            marginBottom="s"
-                            fontFamily="Inter-Regular"
+                            fontSize={20}
+                            fontWeight="600"
+                            color="textPrimary"
+                            textAlign="left"
+                            marginBottom="l"
+                            fontFamily="SF-Pro"
+                            lineHeight={28}
                         >
-                            Mobile number*
+                            Login
                         </Text>
-                        <View flexDirection="row" gap="s">
-                            <View
-                                flexDirection="row"
-                                alignItems="center"
-                                backgroundColor="inputBackground"
-                                borderWidth={1}
-                                borderColor="inputBorder"
-                                borderRadius="s"
-                                paddingHorizontal="s"
-                                paddingVertical="m"
-                                minWidth={80}
+                    </View>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{
+                            paddingHorizontal: 24,
+                            paddingBottom: 40,
+                            flexGrow: 1,
+                        }}
+                        style={{ flex: 1 }}
+                    >
+                        <View marginBottom="l">
+                            <Text
+                                fontSize={14}
+                                fontWeight="400"
+                                color="textSecondary"
+                                marginBottom="s"
+                                fontFamily="Inter-Regular"
                             >
+                                Mobile number <Text color="primary">*</Text>
+                            </Text>
+                            <View flexDirection="row" gap="s">
+                                <CountryCodeSelector />
+                                <View flex={1}>
+                                    <FormField
+                                        label=""
+                                        placeholder="Mobile number"
+                                        value={mobileNumber}
+                                        onChangeText={setMobileNumber}
+                                        keyboardType="phone-pad"
+                                        marginBottom="xs"
+                                    />
+                                </View>
+                            </View>
+                        </View>
+
+                        <View marginBottom="l">
+                            <Text
+                                fontSize={14}
+                                fontWeight="400"
+                                color="textSecondary"
+                                marginBottom="s"
+                                fontFamily="Inter-Regular"
+                            >
+                                Password <Text color="primary">*</Text>
+                            </Text>
+                            <PasswordInput
+                                value={password}
+                                onChangeText={setPassword}
+                                backgroundColor="inputBackground"
+                            />
+                        </View>
+
+                        <View marginTop="s" marginBottom="m">
+                            <Button
+                                title="LOGIN"
+                                variant="primary"
+                                onPress={handleLogin}
+                            />
+                        </View>
+
+                        <TouchableOpacity onPress={handleForgotPassword}>
+                            <View alignItems="center" marginBottom="l">
                                 <Text
                                     fontSize={16}
                                     fontWeight="400"
-                                    color="textPrimary"
-                                    marginRight="xs"
+                                    color="loginBackground"
                                     fontFamily="Inter-Regular"
                                 >
-                                    🇮🇳 +91
-                                </Text>
-                                <Text fontSize={12} color="textSecondary">
-                                    ▼
+                                    Forgot password?
                                 </Text>
                             </View>
-                            <View flex={1}>
-                                <TextInput
-                                    style={{
-                                        backgroundColor: theme.colors.inputBackground,
-                                        borderWidth: 1,
-                                        borderColor: theme.colors.inputBorder,
-                                        borderRadius: 8,
-                                        paddingHorizontal: 16,
-                                        paddingVertical: 14,
-                                        fontSize: 16,
-                                        fontFamily: 'Inter-Regular',
-                                    }}
-                                    placeholder="Mobile number"
-                                    placeholderTextColor={theme.colors.inputPlaceholder}
-                                    value={mobileNumber}
-                                    onChangeText={setMobileNumber}
-                                    keyboardType="phone-pad"
-                                />
-                            </View>
-                        </View>
-                    </View>
+                        </TouchableOpacity>
 
-                    <View marginBottom="l">
-                        <Text
-                            fontSize={14}
-                            fontWeight="400"
-                            color="textSecondary"
-                            marginBottom="s"
-                            fontFamily="Inter-Regular"
-                        >
-                            Password*
-                        </Text>
-                        <View position="relative">
-                            <TextInput
-                                style={{
-                                    backgroundColor: theme.colors.inputBackground,
-                                    borderWidth: 1,
-                                    borderColor: theme.colors.inputBorder,
-                                    borderRadius: 8,
-                                    paddingHorizontal: 16,
-                                    paddingVertical: 14,
-                                    fontSize: 16,
-                                    fontFamily: 'Inter-Regular',
-                                    paddingRight: 50,
-                                }}
-                                placeholder="123456789"
-                                placeholderTextColor={theme.colors.inputPlaceholder}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                            <TouchableOpacity
-                                style={{
-                                    position: 'absolute',
-                                    right: 16,
-                                    top: 14,
-                                }}
-                                onPress={() => setShowPassword(!showPassword)}
-                            >
-                                <Text style={{ fontSize: 20 }}>👁️</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View marginTop="s" marginBottom="m">
-                        <Button
-                            title="LOGIN"
-                            variant="primary"
-                            onPress={handleLogin}
-                        />
-                    </View>
-
-                    <TouchableOpacity onPress={handleForgotPassword}>
                         <View alignItems="center" marginBottom="l">
                             <Text
                                 fontSize={16}
                                 fontWeight="400"
-                                color="loginBackground"
+                                color="textSecondary"
+                                marginBottom="m"
                                 fontFamily="Inter-Regular"
                             >
-                                Forgot password?
+                                Login with
                             </Text>
+                            <View flexDirection="row" gap="m">
+                                <SocialLoginButton
+                                    onPress={handleGoogleLogin}
+                                    imageSource={require('../../assets/images/google-logo.png')}
+                                />
+                                <SocialLoginButton
+                                    onPress={handleAppleLogin}
+                                    imageSource={require('../../assets/images/apple-logo.png')}
+                                />
+                            </View>
                         </View>
-                    </TouchableOpacity>
 
-                    <View alignItems="center" marginBottom="l">
-                        <Text
-                            fontSize={16}
-                            fontWeight="400"
-                            color="textSecondary"
-                            marginBottom="m"
-                            fontFamily="Inter-Regular"
-                        >
-                            Login with
-                        </Text>
-                        <View flexDirection="row" gap="m">
-                            <TouchableOpacity onPress={handleGoogleLogin}>
-                                <View
-                                    width={48}
-                                    height={48}
-                                    backgroundColor="inputBackground"
-                                    borderWidth={1}
-                                    borderColor="border"
-                                    borderRadius="s"
-                                    justifyContent="center"
-                                    alignItems="center"
-                                >
-                                    <Text fontSize={20} fontWeight="bold" color="info">
-                                        G
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleAppleLogin}>
-                                <View
-                                    width={48}
-                                    height={48}
-                                    backgroundColor="inputBackground"
-                                    borderWidth={1}
-                                    borderColor="border"
-                                    borderRadius="s"
-                                    justifyContent="center"
-                                    alignItems="center"
-                                >
-                                    <Text fontSize={20}>🍎</Text>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View alignItems="center">
-                        <Text
-                            fontSize={16}
-                            fontWeight="400"
-                            color="textSecondary"
-                            textAlign="center"
-                            fontFamily="Inter-Regular"
-                        >
-                            Don't have an account?{' '}
+                        <View alignItems="center">
                             <Text
-                                fontSize={16}
-                                fontWeight="700"
-                                color="textPrimary"
-                                textDecorationLine="underline"
-                                fontFamily="Inter-Bold"
-                                onPress={handleSignUp}
+                                fontSize={14}
+                                fontWeight="400"
+                                color="textSecondary"
+                                textAlign="center"
+                                fontFamily="Inter-Regular"
                             >
-                                Sign Up
+                                Don't have an account?{' '}
+                                <Text
+                                    fontSize={14}
+                                    fontWeight="700"
+                                    color="textPrimary"
+                                    textDecorationLine="underline"
+                                    fontFamily="Inter-Bold"
+                                    onPress={handleSignUp}
+                                >
+                                    Sign Up
+                                </Text>
                             </Text>
-                        </Text>
-                    </View>
+                        </View>
+                    </ScrollView>
                 </View>
             </SafeAreaView>
         </ImageBackground>

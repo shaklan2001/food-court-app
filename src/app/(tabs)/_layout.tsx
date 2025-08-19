@@ -1,5 +1,6 @@
-import Colors from '@/src/constants/Colors';
+
 import { useColorScheme } from '@/src/hooks/useColorScheme.web';
+import theme from '@/src/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
@@ -27,7 +28,6 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarBackground: BlurTabBarBackground,
         tabBarStyle: Platform.select({
