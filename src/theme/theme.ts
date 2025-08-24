@@ -4,22 +4,26 @@ const palette = {
     purpleLight: '#8C6FF7',
     purplePrimary: '#5A31F4',
     purpleDark: '#3F22AB',
+    chearyRed: '#A20538',
 
     greenLight: '#56DCBA',
     greenPrimary: '#0ECD9D',
     greenDark: '#0A906E',
 
     black: '#0B0B0B',
-    white: '#F0F2F3',
+    white: '#FFFFFF',
+    whiteLight: '#F8F8F8',
 
     redPrimary: '#FF0000',
     redLight: '#FF6666',
     redDark: '#CC0000',
+    redLighter: '#FAF0EF',
+
+    loginButton: '#A20538',
 
     gray50: '#F9FAFB',
     gray100: '#F3F4F6',
     gray200: '#E5E7EB',
-    gray300: '#D1D5DB',
     gray400: '#9CA3AF',
     gray500: '#6B7280',
     gray600: '#4B5563',
@@ -30,22 +34,30 @@ const palette = {
 
 const theme = createTheme({
     colors: {
+        primary: palette.chearyRed,
         mainBackground: palette.white,
+        mainBackgroundLight: palette.whiteLight,
         cardPrimaryBackground: palette.redPrimary,
         cardSecondaryBackground: palette.gray100,
         textPrimary: palette.black,
         textSecondary: palette.gray600,
         textOnPrimary: palette.white,
-        buttonPrimary: palette.redPrimary,
+        buttonPrimary: palette.loginButton,
         buttonSecondary: palette.gray200,
-        border: palette.gray300,
-        primary: palette.redPrimary,
+        border: palette.redLighter,
         secondary: palette.gray500,
         success: palette.greenPrimary,
         danger: palette.redDark,
         warning: '#FFA500',
         info: palette.purplePrimary,
         transparent: 'transparent',
+        loginBackground: palette.loginButton,
+        inputBackground: palette.white,
+        inputBorder: palette.redLighter,
+        inputPlaceholder: palette.gray500,
+        backgroundColor: palette.white,
+
+        red: 'red',
     },
     spacing: {
         xs: 4,
@@ -61,8 +73,14 @@ const theme = createTheme({
         m: 8,
         l: 16,
         xl: 24,
+        xxl: 32,
     },
     textVariants: {
+        defaults: {
+            fontSize: 16,
+            lineHeight: 24,
+            color: 'textPrimary',
+        },
         header: {
             fontWeight: 'bold',
             fontSize: 34,
