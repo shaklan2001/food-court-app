@@ -1,10 +1,10 @@
-import React from 'react';
-import { Box, Button, Card, Text } from '../../components/ui';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import React from 'react';
+import { Button, Card, Text, View } from '../../components/ui';
 
 export default function HomeScreen() {
   return (
-    <Box
+    <View
       flex={1}
       backgroundColor="mainBackground"
       paddingVertical="xl"
@@ -18,7 +18,7 @@ export default function HomeScreen() {
         Welcome to your food court app with Shopify Restyle theming!
       </Text>
 
-      <Box gap="l">
+      <View gap="l">
         <Card variant="primary">
           <Text variant="subheader" color="textOnPrimary" marginBottom="s">
             Featured Today
@@ -28,7 +28,7 @@ export default function HomeScreen() {
           </Text>
         </Card>
 
-        <Box
+        <View
           flexDirection={{
             phone: 'column',
             tablet: 'row',
@@ -52,13 +52,13 @@ export default function HomeScreen() {
               Gourmet burgers with premium ingredients
             </Text>
           </Card>
-        </Box>
+        </View>
 
         <Card variant="elevated">
           <Text variant="subheader" marginBottom="s">
             Quick Actions
           </Text>
-          <Box gap="m">
+          <View gap="m">
             <Button
               title="Browse Restaurants"
               variant="primary"
@@ -71,16 +71,16 @@ export default function HomeScreen() {
               textVariant="body"
               onPress={() => console.log('View orders pressed')}
             />
-          </Box>
+          </View>
         </Card>
 
-        <Box backgroundColor="primary" padding="m" borderRadius="m" marginTop="l">
+        <View backgroundColor="primary" padding="m" borderRadius="m" marginTop="l">
           <Text variant="body" color="textOnPrimary" textAlign="center" fontWeight="600">
             Your primary color (#FF0000) is now integrated with Restyle! 🎨
           </Text>
-        </Box>
-      </Box>
-    </Box>
+        </View>
+      </View>
+    </View>
   );
 }
 
