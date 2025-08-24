@@ -1,22 +1,26 @@
-import { useTheme } from '@shopify/restyle';
 import { router } from 'expo-router';
 import React, { memo, useState } from 'react';
-import { Dimensions, ImageBackground, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
+import { Alert, Dimensions, Image, ImageBackground, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../components/ui';
-import { Theme } from '../theme/theme';
-
+import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 const { width, height } = Dimensions.get('window');
 
 interface LoginProps { }
 
 const Login = memo(({ }: LoginProps) => {
-    const theme = useTheme<Theme>();
     const [mobileNumber, setMobileNumber] = useState('');
     const [password, setPassword] = useState('');
 
     const handleLogin = () => {
         console.log('Login pressed:', { mobileNumber, password });
+
+        router.push('/otp-verify');
+
+        // if (mobileNumber.trim() && password.trim()) {
+        //     router.push('/otp-verify');
+        // } else {
+        //     Alert.alert('Error', 'Please enter mobile number and password');
+        // }
     };
 
     const handleForgotPassword = () => {
@@ -37,7 +41,7 @@ const Login = memo(({ }: LoginProps) => {
 
     return (
         <ImageBackground
-            source={require('../../assets/images/primary_bg.webp')}
+            source={require('../../../assets/images/primary_bg.webp')}
             style={{ flex: 1, width, height }}
             resizeMode="cover"
         >
@@ -46,33 +50,11 @@ const Login = memo(({ }: LoginProps) => {
                 <View
                     justifyContent="center"
                     alignItems="center"
-                    paddingTop="xl"
-                    paddingBottom="l"
                     minHeight={height * 0.25}
                 >
-                    <View alignItems="center">
-                        <Text
-                            fontSize={46}
-                            fontWeight="900"
-                            color="textOnPrimary"
-                            textAlign="center"
-                            marginBottom="m"
-                            fontFamily="SF-Pro-Display-Black"
-                            lineHeight={36}
-                        >
-                            SMART CSK
-                        </Text>
-                        <Text
-                            fontSize={16}
-                            fontWeight="400"
-                            color="textOnPrimary"
-                            textAlign="center"
-                            fontFamily="SF-Pro-Display-Regular"
-                            lineHeight={15}
-                        >
-                            YOUR DAILY FOOD COURT APP
-                        </Text>
-                    </View>
+                    <Image
+                        source={require('../../../assets/images/font-logo.png')}
+                    />
                 </View>
 
                 <View
@@ -186,11 +168,11 @@ const Login = memo(({ }: LoginProps) => {
                             <View flexDirection="row" gap="m">
                                 <SocialLoginButton
                                     onPress={handleGoogleLogin}
-                                    imageSource={require('../../assets/images/google-logo.png')}
+                                    imageSource={require('../../../assets/images/google-logo.png')}
                                 />
                                 <SocialLoginButton
                                     onPress={handleAppleLogin}
-                                    imageSource={require('../../assets/images/apple-logo.png')}
+                                    imageSource={require('../../../assets/images/apple-logo.png')}
                                 />
                             </View>
                         </View>

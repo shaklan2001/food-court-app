@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { Provider } from 'react-redux';
 import { useFonts } from '../hooks/useFonts';
 import { store } from '../store/store';
@@ -32,7 +33,7 @@ function RootLayoutContent() {
 
   return (
     <Stack>
-      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   );
@@ -43,6 +44,7 @@ export default function RootLayout() {
     <Provider store={store}>
       <ThemeProvider theme={theme}>
         <RootLayoutContent />
+        <Toast />
       </ThemeProvider>
     </Provider>
   );

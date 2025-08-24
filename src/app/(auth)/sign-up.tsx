@@ -1,12 +1,14 @@
 import { AntDesign } from '@expo/vector-icons';
 import { useTheme } from '@shopify/restyle';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React, { memo, useState } from 'react';
 import { Dimensions, ImageBackground, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Checkbox, FormContainer } from '../components/shared';
-import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../components/ui';
-import { Theme } from '../theme/theme';
+import { Checkbox, FormContainer } from '../../components/shared';
+import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
+import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { Theme } from '../../theme/theme';
+import { showToast } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,17 +23,139 @@ const SignUp = memo(({ }: SignUpProps) => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isStudentUser, setIsStudentUser] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const formatDateForAPI = (dateString: string) => {
+        if (!dateString) return '';
+
+        if (dateString.includes('-') && dateString.length === 10) {
+            return dateString;
+        }
+
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+            const [day, month, year] = parts;
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+
+        return dateString;
+    };
+
+    const createUser = () =>
+        useApiPort({
+            intent: "intent_create_user",
+            port: betterwayApiCall({
+                method: "POST",
+                url: "CREATE_USER",
+                body: {
+                    name,
+                    email,
+                    phone: mobileNumber,
+                    dob: formatDateForAPI(dob),
+                    password,
+                    isStudent: isStudentUser
+                },
+                auth: null,
+            }),
+            success: (response) => {
+                setIsLoading(false);
+                if (response?.status) {
+                    showToast({
+                        message: 'Account created successfully!',
+                        type: 'success',
+                    });
+
+                    setTimeout(() => {
+                        if (isStudentUser) {
+                            router.push('/student-sign-up');
+                        } else {
+                            router.push('/login');
+                        }
+                    }, 1500);
+                } else {
+                    showToast({
+                        message: response?.message || 'Failed to create account',
+                        type: 'error',
+                    });
+                }
+            },
+            failure: (error) => {
+                setIsLoading(false);
+                showToast({
+                    message: error?.message || 'Failed to create account',
+                    type: 'error',
+                });
+            },
+            print: "error",
+        })();
+
+    const validateForm = () => {
+        if (!name.trim()) {
+            showToast({
+                message: 'Please enter your name',
+                type: 'error',
+            });
+            return false;
+        }
+        if (!email.trim()) {
+            showToast({
+                message: 'Please enter your email',
+                type: 'error',
+            });
+            return false;
+        }
+        if (!/\S+@\S+\.\S+/.test(email)) {
+            showToast({
+                message: 'Please enter a valid email address',
+                type: 'error',
+            });
+            return false;
+        }
+        if (!mobileNumber.trim()) {
+            showToast({
+                message: 'Please enter your mobile number',
+                type: 'error',
+            });
+            return false;
+        }
+        if (!dob.trim()) {
+            showToast({
+                message: 'Please enter your date of birth',
+                type: 'error',
+            });
+            return false;
+        }
+        if (!password.trim()) {
+            showToast({
+                message: 'Please enter a password',
+                type: 'error',
+            });
+            return false;
+        }
+        if (password.length < 6) {
+            showToast({
+                message: 'Password must be at least 6 characters long',
+                type: 'error',
+            });
+            return false;
+        }
+        if (password !== confirmPassword) {
+            showToast({
+                message: 'Passwords do not match',
+                type: 'error',
+            });
+            return false;
+        }
+        return true;
+    };
 
     const handleSignUp = () => {
-        console.log('Sign up pressed:', {
-            name,
-            email,
-            mobileNumber,
-            dob,
-            password,
-            confirmPassword,
-            isStudentUser,
-        });
+        // if (!validateForm()) {
+        //     return;
+        // }
+        // setIsLoading(true);
+        // createUser();
+        router.push('/student-sign-up');
     };
 
     const handleGoogleSignUp = () => {
@@ -43,7 +167,7 @@ const SignUp = memo(({ }: SignUpProps) => {
     };
 
     const handleLogin = () => {
-        console.log('Login pressed');
+        router.push('/login');
     };
 
     const handleBack = () => {
@@ -56,7 +180,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                 headerShown: false,
             }} />
             <ImageBackground
-                source={require('../../assets/images/primary_bg.webp')}
+                source={require('../../../assets/images/primary_bg.webp')}
                 style={{ flex: 1, width, height }}
                 resizeMode="cover"
             >
@@ -214,9 +338,10 @@ const SignUp = memo(({ }: SignUpProps) => {
 
                         <View marginTop="s" marginBottom="l">
                             <Button
-                                title="Signup"
+                                title={isLoading ? "Creating Account..." : "Signup"}
                                 variant="primary"
                                 onPress={handleSignUp}
+                                disabled={isLoading}
                             />
                         </View>
 
@@ -233,11 +358,11 @@ const SignUp = memo(({ }: SignUpProps) => {
                             <View flexDirection="row" gap="m">
                                 <SocialLoginButton
                                     onPress={handleGoogleSignUp}
-                                    imageSource={require('../../assets/images/google-logo.png')}
+                                    imageSource={require('../../../assets/images/google-logo.png')}
                                 />
                                 <SocialLoginButton
                                     onPress={handleAppleSignUp}
-                                    imageSource={require('../../assets/images/apple-logo.png')}
+                                    imageSource={require('../../../assets/images/apple-logo.png')}
                                 />
                             </View>
                         </View>

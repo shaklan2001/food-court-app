@@ -1,11 +1,10 @@
 
-import { useColorScheme } from '@/src/hooks/useColorScheme.web';
-import theme from '@/src/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 const BlurTabBarBackground = () => {
   return Platform.OS === 'ios' ? (

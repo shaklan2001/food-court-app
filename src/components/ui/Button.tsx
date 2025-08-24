@@ -3,18 +3,18 @@ import React from 'react';
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { Theme } from '../../theme/theme';
 import Text from './Text';
-import Box from './View';
+import View from './View';
 
 const ButtonBox = createRestyleComponent<
-    VariantProps<Theme, 'buttonVariants'> & React.ComponentProps<typeof Box>,
+    VariantProps<Theme, 'buttonVariants'> & React.ComponentProps<typeof View>,
     Theme
->([createVariant({ themeKey: 'buttonVariants' })], Box);
+>([createVariant({ themeKey: 'buttonVariants' })], View);
 
 interface ButtonProps extends
     VariantProps<Theme, 'buttonVariants'>,
     TouchableOpacityProps {
     title: string;
-    textVariant?: keyof Theme['textVariants'];
+    textVariant?: Exclude<keyof Theme['textVariants'], 'defaults'>;
 }
 
 const Button: React.FC<ButtonProps> = ({

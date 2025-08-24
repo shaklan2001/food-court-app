@@ -1,7 +1,8 @@
 import React, { memo } from 'react';
-import { View } from 'react-native';
+import { Theme } from '../../theme/theme';
 import Text from './Text';
 import CustomTextInput from './TextInput';
+import View from './View';
 
 interface FormFieldProps {
     label: string;
@@ -14,12 +15,12 @@ interface FormFieldProps {
     autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
     height?: number;
     paddingRight?: number;
-    backgroundColor?: string;
-    borderColor?: string;
-    borderRadius?: string;
+    backgroundColor?: keyof Theme['colors'];
+    borderColor?: keyof Theme['colors'];
+    borderRadius?: keyof Theme['borderRadii'];
     fontSize?: number;
     fontFamily?: string;
-    marginBottom?: string | 'none';
+    marginBottom?: keyof Theme['spacing'] | 'none';
 }
 
 const FormField = memo(({
@@ -33,12 +34,12 @@ const FormField = memo(({
     autoCapitalize = 'sentences',
     height = 48,
     paddingRight = 16,
-    backgroundColor = 'mainBackground',
-    borderColor = 'inputBorder',
-    borderRadius = 'm',
+    backgroundColor = 'mainBackground' as keyof Theme['colors'],
+    borderColor = 'inputBorder' as keyof Theme['colors'],
+    borderRadius = 'm' as keyof Theme['borderRadii'],
     fontSize = 16,
     fontFamily = 'Inter-Regular',
-    marginBottom = 'l',
+    marginBottom = 'l' as keyof Theme['spacing'],
     ...props
 }: FormFieldProps) => {
     return (
