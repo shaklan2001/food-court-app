@@ -51,7 +51,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
             try {
                 const clipboardContent = await Clipboard.getStringAsync();
                 if (clipboardContent && /^\d{6}$/.test(clipboardContent)) {
-                    // Auto-fill OTP if it's a 6-digit number
                     const otpArray = clipboardContent.split('');
                     setOtp(otpArray);
                 }
@@ -95,15 +94,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
         }
     };
 
-    // Handle paste OTP
-    const handlePaste = (text: string) => {
-        if (text.length === 6 && /^\d{6}$/.test(text)) {
-            const otpArray = text.split('');
-            setOtp(otpArray);
-            // Focus last input after paste
-            inputRefs.current[5]?.focus();
-        }
-    };
+
 
     // Verify OTP
     const handleVerifyOTP = () => {
@@ -119,7 +110,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
 
         // Navigate to next screen after verification
         setTimeout(() => {
-            router.push('/(tabs)');
+            router.push('/(tabs)/(home)');
         }, 1000);
     };
 

@@ -54,6 +54,11 @@ const Login = memo(({ }: LoginProps) => {
                 >
                     <Image
                         source={require('../../../assets/images/font-logo.png')}
+                        style={{
+                            height: 110,
+                            width: '100%',
+                            resizeMode: 'contain',
+                        }}
                     />
                 </View>
 
