@@ -1,8 +1,8 @@
+import * as Haptics from 'expo-haptics';
 import { Tabs } from "expo-router";
 import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Path, Svg } from 'react-native-svg';
-import * as Haptics from 'expo-haptics';
 
 const HomeIcon = (props: any) => {
     const fill = props.isFocused ? "#A20538" : "#808080";
@@ -109,7 +109,7 @@ const CustomTabButton = (props: any) => {
         if (Platform.OS === 'ios') {
             Haptics.selectionAsync();
         }
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (props.onPress) {
             props.onPress();
         }
@@ -139,10 +139,13 @@ function TabsLayout() {
                         paddingBottom: insets.bottom,
                         height: 70 + insets.bottom,
                         backgroundColor: '#FFFFFF',
-                        borderTopWidth: 1,
-                        borderTopColor: '#E5E7EB',
-                        elevation: 0,
-                        shadowOpacity: 0,
+                        borderTopWidth: 0,
+                        borderTopColor: 'transparent',
+                        elevation: 8,
+                        shadowOpacity: 0.15,
+                        shadowColor: '#000000',
+                        shadowOffset: { width: 0, height: -8 },
+                        shadowRadius: 12,
                     },
                     tabBarItemStyle: {
                         backgroundColor: 'transparent',

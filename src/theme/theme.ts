@@ -23,7 +23,8 @@ const palette = {
 
     gray50: '#F9FAFB',
     gray100: '#F3F4F6',
-    gray200: '#E5E7EB',
+    gray200: '#e5e5e5',
+    gray300: '#d1d5db',
     gray400: '#9CA3AF',
     gray500: '#6B7280',
     gray600: '#4B5563',
@@ -56,6 +57,7 @@ const theme = createTheme({
         inputBorder: palette.redLighter,
         inputPlaceholder: palette.gray500,
         backgroundColor: palette.white,
+        crousalDot: palette.gray300,
 
         red: 'red',
     },
