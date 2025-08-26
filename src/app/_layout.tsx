@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { Provider } from 'react-redux';
 import { useFonts } from '../hooks/useFonts';
@@ -42,10 +43,12 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <RootLayoutContent />
-        <Toast />
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <ThemeProvider theme={theme}>
+          <RootLayoutContent />
+          <Toast />
+        </ThemeProvider>
+      </SafeAreaProvider>
     </Provider>
   );
 }
