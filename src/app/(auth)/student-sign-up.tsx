@@ -88,12 +88,13 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
             </View>
             <View alignItems="center">
               <Text
-                fontSize={36}
+                fontSize={32}
                 fontWeight="medium"
                 color="textOnPrimary"
                 textAlign="center"
-                fontFamily="SF-Pro"
+                fontFamily="Poppins-Medium"
                 lineHeight={43}
+                marginLeft="xl"
               >
                 For Students
               </Text>
@@ -155,7 +156,7 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
                 fontWeight="400"
                 color="textSecondary"
                 textAlign="center"
-                fontFamily="Inter-Regular"
+                fontFamily="Poppins-Regular"
               >
                 Already have an account?{' '}
                 <Text
@@ -163,7 +164,7 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
                   fontWeight="700"
                   color="textPrimary"
                   textDecorationLine="underline"
-                  fontFamily="Inter-Bold"
+                  fontFamily="Poppins-Bold"
                   onPress={handleLogin}
                 >
                   Login

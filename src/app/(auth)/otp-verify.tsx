@@ -220,12 +220,13 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                     </View>
                                     <View alignItems="center">
                                         <Text
-                                            fontSize={36}
+                                            fontSize={32}
                                             fontWeight="600"
                                             color="textOnPrimary"
                                             textAlign="center"
-                                            fontFamily="SF-Pro"
+                                            fontFamily="Poppins-Medium"
                                             lineHeight={43}
+                                            marginLeft="l"
                                         >
                                             OTP Verify
                                         </Text>
@@ -246,7 +247,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                             fontWeight="400"
                                             color="textSecondary"
                                             marginBottom="m"
-                                            fontFamily="Inter-Regular"
+                                            fontFamily="Poppins-Regular"
                                         >
                                             Submit OTP
                                         </Text>
@@ -285,14 +286,14 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                                 fontSize={14}
                                                 fontWeight="400"
                                                 color="textSecondary"
-                                                fontFamily="Inter-Regular"
+                                                fontFamily="Poppins-Regular"
                                             >
                                                 Resend OTP in:{' '}
                                                 <Text
                                                     fontSize={14}
                                                     fontWeight="600"
                                                     color="danger"
-                                                    fontFamily="Inter-Bold"
+                                                    fontFamily="Poppins-Bold"
                                                 >
                                                     {timer} Sec
                                                 </Text>
@@ -311,7 +312,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                                 fontWeight="400"
                                                 color="textSecondary"
                                                 textAlign="center"
-                                                fontFamily="Inter-Regular"
+                                                fontFamily="Poppins-Regular"
                                             >
                                                 Didn't receive the code yet?{' '}
                                                 <Text
@@ -319,7 +320,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                                     fontWeight="700"
                                                     color="textPrimary"
                                                     textDecorationLine="underline"
-                                                    fontFamily="Inter-Bold"
+                                                    fontFamily="Poppins-Bold"
                                                     onPress={handleResendOTP}
                                                 >
                                                     Request Again

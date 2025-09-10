@@ -1,7 +1,8 @@
 import { useTheme } from '@shopify/restyle';
-import React, { memo } from 'react';
-import { TextInput as RNTextInput, TextInputProps } from 'react-native';
+import React, { memo, useState } from 'react';
+import { TextInput as RNTextInput, View as RNView, TextInputProps } from 'react-native';
 import { Theme } from '../../theme/theme';
+import Text from './Text';
 
 interface CustomTextInputProps extends TextInputProps {
     placeholder?: string;
@@ -17,6 +18,7 @@ interface CustomTextInputProps extends TextInputProps {
     borderRadius?: keyof Theme['borderRadii'];
     fontSize?: number;
     fontFamily?: string;
+    placeholderFontSize?: number;
 }
 
 const CustomTextInput = memo(({
@@ -32,33 +34,68 @@ const CustomTextInput = memo(({
     borderColor = 'inputBorder',
     borderRadius = 'm',
     fontSize = 16,
-    fontFamily = 'Inter-Regular',
+    fontFamily = 'Poppins-Regular',
+    placeholderFontSize = 14,
     ...props
 }: CustomTextInputProps) => {
     const theme = useTheme<Theme>();
+    const [isFocused, setIsFocused] = useState(false);
 
     return (
-        <RNTextInput
+        <RNView
             style={{
                 backgroundColor: theme.colors[backgroundColor],
                 borderWidth: 1,
                 borderColor: theme.colors[borderColor],
                 borderRadius: theme.borderRadii[borderRadius],
-                paddingHorizontal: 16,
-                fontSize,
-                fontFamily,
                 height,
-                paddingRight,
+                justifyContent: 'center',
+                position: 'relative',
             }}
-            placeholder={placeholder}
-            placeholderTextColor={theme.colors.inputPlaceholder}
-            value={value}
-            onChangeText={onChangeText}
-            secureTextEntry={secureTextEntry}
-            keyboardType={keyboardType}
-            autoCapitalize={autoCapitalize}
-            {...props}
-        />
+        >
+            {!value && !isFocused && placeholder && (
+                <RNView
+                    style={{
+                        position: 'absolute',
+                        left: 16,
+                        right: paddingRight,
+                        zIndex: 1,
+                        pointerEvents: 'none',
+                    }}
+                >
+                    <Text
+                        fontSize={placeholderFontSize}
+                        fontFamily={fontFamily}
+                        color="inputPlaceholder"
+                        style={{ opacity: 0.7 }}
+                    >
+                        {placeholder}
+                    </Text>
+                </RNView>
+            )}
+            <RNTextInput
+                style={{
+                    backgroundColor: 'transparent',
+                    paddingHorizontal: 16,
+                    fontSize,
+                    fontFamily,
+                    height,
+                    paddingRight,
+                    textAlignVertical: 'center',
+                    color: theme.colors.textPrimary,
+                }}
+                value={value}
+                onChangeText={onChangeText}
+                secureTextEntry={secureTextEntry}
+                keyboardType={keyboardType}
+                autoCapitalize={autoCapitalize}
+                scrollEnabled={false}
+                multiline={false}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                {...props}
+            />
+        </RNView>
     );
 });
 

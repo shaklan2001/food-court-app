@@ -205,11 +205,11 @@ const SignUp = memo(({ }: SignUpProps) => {
                         </View>
                         <View alignItems="center">
                             <Text
-                                fontSize={36}
+                                fontSize={32}
                                 fontWeight="600"
                                 color="textOnPrimary"
                                 textAlign="center"
-                                fontFamily="SF-Pro"
+                                fontFamily="Poppins-Medium"
                                 lineHeight={43}
                             >
                                 Signup
@@ -242,7 +242,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Mobile number <Text color="primary">*</Text>
                             </Text>
@@ -267,7 +267,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 DOB <Text color="primary">*</Text>
                             </Text>
@@ -302,7 +302,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Password <Text color="primary">*</Text>
                             </Text>
@@ -318,7 +318,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Confirm Password <Text color="primary">*</Text>
                             </Text>
@@ -351,7 +351,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="m"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Sign up with
                             </Text>
@@ -373,7 +373,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 textAlign="center"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Already have an account?{' '}
                                 <Text
@@ -381,7 +381,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                                     fontWeight="700"
                                     color="textPrimary"
                                     textDecorationLine="underline"
-                                    fontFamily="Inter-Bold"
+                                    fontFamily="Poppins-Bold"
                                     onPress={handleLogin}
                                 >
                                     Login

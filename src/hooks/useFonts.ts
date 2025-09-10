@@ -2,12 +2,16 @@ import { useFonts as useExpoFonts } from 'expo-font';
 
 export const useFonts = () => {
     const [fontsLoaded] = useExpoFonts({
-        'SF-Pro-Display-Black': require('../../assets/fonts/SF-Pro-Display-Black.otf'),
-        'SF-Pro-Display-Regular': require('../../assets/fonts/SF-Pro-Display-Regular.otf'),
-        'SF-Pro-Display-Semibold': require('../../assets/fonts/SF-Pro-Display-Semibold.otf'),
-        'Inter-Regular': require('../../assets/fonts/Inter-Regular.ttf'),
-        'Inter-Medium': require('../../assets/fonts/Inter-Medium.ttf'),
-        'Inter-Bold': require('../../assets/fonts/Inter-Bold.ttf'),
+        'Poppins-Black': require('../../assets/font/Poppins-Black.ttf'),
+        'Poppins-Bold': require('../../assets/font/Poppins-Bold.ttf'),
+        'Poppins-ExtraBold': require('../../assets/font/Poppins-ExtraBold.ttf'),
+        'Poppins-ExtraLight': require('../../assets/font/Poppins-ExtraLight.ttf'),
+        'Poppins-Light': require('../../assets/font/Poppins-Light.ttf'),
+        'Poppins-Medium': require('../../assets/font/Poppins-Medium.ttf'),
+        'Poppins-Regular': require('../../assets/font/Poppins-Regular.ttf'),
+        'Poppins-SemiBold': require('../../assets/font/Poppins-SemiBold.ttf'),
+        'Poppins-SemiBoldItalic': require('../../assets/font/Poppins-SemiBoldItalic.ttf'),
+        'Poppins-Thin': require('../../assets/font/Poppins-Thin.ttf'),
     });
 
     return fontsLoaded;
