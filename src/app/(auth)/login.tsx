@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { memo, useState } from 'react';
-import { Alert, Dimensions, Image, ImageBackground, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
+import { Dimensions, Image, ImageBackground, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 const { width, height } = Dimensions.get('window');
@@ -82,7 +82,7 @@ const Login = memo(({ }: LoginProps) => {
                             color="textPrimary"
                             textAlign="left"
                             marginBottom="l"
-                            fontFamily="SF-Pro"
+                            fontFamily="Poppins-Bold"
                             lineHeight={28}
                         >
                             Login
@@ -103,7 +103,7 @@ const Login = memo(({ }: LoginProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Mobile number <Text color="primary">*</Text>
                             </Text>
@@ -128,7 +128,7 @@ const Login = memo(({ }: LoginProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Password <Text color="primary">*</Text>
                             </Text>
@@ -153,7 +153,7 @@ const Login = memo(({ }: LoginProps) => {
                                     fontSize={16}
                                     fontWeight="400"
                                     color="loginBackground"
-                                    fontFamily="Inter-Regular"
+                                    fontFamily="Poppins-Regular"
                                 >
                                     Forgot password?
                                 </Text>
@@ -166,7 +166,7 @@ const Login = memo(({ }: LoginProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="m"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Login with
                             </Text>
@@ -188,7 +188,7 @@ const Login = memo(({ }: LoginProps) => {
                                 fontWeight="400"
                                 color="textSecondary"
                                 textAlign="center"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Don't have an account?{' '}
                                 <Text
@@ -196,7 +196,7 @@ const Login = memo(({ }: LoginProps) => {
                                     fontWeight="700"
                                     color="textPrimary"
                                     textDecorationLine="underline"
-                                    fontFamily="Inter-Bold"
+                                    fontFamily="Poppins-Bold"
                                     onPress={handleSignUp}
                                 >
                                     Sign Up
