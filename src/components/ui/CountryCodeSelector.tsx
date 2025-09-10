@@ -54,7 +54,7 @@ const CountryCodeSelector = memo(({
                         fontSize={16}
                         fontWeight="400"
                         color="textPrimary"
-                        fontFamily="Inter-Regular"
+                        fontFamily="Poppins-Regular"
                     >
                         {countryCode}
                     </Text>

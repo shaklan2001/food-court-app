@@ -14,6 +14,18 @@ export default {
         assetBundlePatterns: [
             "**/*"
         ],
+        fonts: [
+            "./assets/font/Poppins-Black.ttf",
+            "./assets/font/Poppins-Bold.ttf",
+            "./assets/font/Poppins-ExtraBold.ttf",
+            "./assets/font/Poppins-ExtraLight.ttf",
+            "./assets/font/Poppins-Light.ttf",
+            "./assets/font/Poppins-Medium.ttf",
+            "./assets/font/Poppins-Regular.ttf",
+            "./assets/font/Poppins-SemiBold.ttf",
+            "./assets/font/Poppins-SemiBoldItalic.ttf",
+            "./assets/font/Poppins-Thin.ttf",
+        ],
         ios: {
             supportsTablet: true,
             bundleIdentifier: "com.yuvan97.foodcourtapp"
