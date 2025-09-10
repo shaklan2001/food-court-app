@@ -88,12 +88,13 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
             </View>
             <View alignItems="center">
               <Text
-                fontSize={36}
+                fontSize={32}
                 fontWeight="medium"
                 color="textOnPrimary"
                 textAlign="center"
-                fontFamily="Poppins-Bold"
+                fontFamily="Poppins-Medium"
                 lineHeight={43}
+                marginLeft="xl"
               >
                 For Students
               </Text>
