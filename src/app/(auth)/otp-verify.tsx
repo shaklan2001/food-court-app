@@ -220,12 +220,13 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                     </View>
                                     <View alignItems="center">
                                         <Text
-                                            fontSize={36}
+                                            fontSize={32}
                                             fontWeight="600"
                                             color="textOnPrimary"
                                             textAlign="center"
-                                            fontFamily="Poppins-Bold"
+                                            fontFamily="Poppins-Medium"
                                             lineHeight={43}
+                                            marginLeft="l"
                                         >
                                             OTP Verify
                                         </Text>

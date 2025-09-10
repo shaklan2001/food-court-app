@@ -78,11 +78,11 @@ const Login = memo(({ }: LoginProps) => {
                     >
                         <Text
                             fontSize={20}
-                            fontWeight="600"
+                            fontWeight="500"
                             color="textPrimary"
                             textAlign="left"
                             marginBottom="l"
-                            fontFamily="Poppins-Bold"
+                            fontFamily="Poppins-SemiBold"
                             lineHeight={28}
                         >
                             Login
