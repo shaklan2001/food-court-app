@@ -21,7 +21,7 @@ const Checkbox = memo(({
     onToggle,
     size = 20,
     fontSize = 14,
-    fontFamily = "Inter-Regular",
+    fontFamily = "Poppins-Regular",
     color = "textSecondary",
 }: CheckboxProps) => {
     const theme = useTheme<Theme>();

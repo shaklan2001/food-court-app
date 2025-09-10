@@ -32,7 +32,7 @@ const CustomTextInput = memo(({
     borderColor = 'inputBorder',
     borderRadius = 'm',
     fontSize = 16,
-    fontFamily = 'Inter-Regular',
+    fontFamily = 'Poppins-Regular',
     ...props
 }: CustomTextInputProps) => {
     const theme = useTheme<Theme>();

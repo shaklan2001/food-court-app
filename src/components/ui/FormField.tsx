@@ -38,7 +38,7 @@ const FormField = memo(({
     borderColor = 'inputBorder' as keyof Theme['colors'],
     borderRadius = 'm' as keyof Theme['borderRadii'],
     fontSize = 16,
-    fontFamily = 'Inter-Regular',
+    fontFamily = 'Poppins-Regular',
     marginBottom = 'l' as keyof Theme['spacing'],
     ...props
 }: FormFieldProps) => {
@@ -50,7 +50,7 @@ const FormField = memo(({
                     fontWeight="400"
                     color="textSecondary"
                     marginBottom="s"
-                    fontFamily="Inter-Regular"
+                    fontFamily="Poppins-Regular"
                 >
                     {label} {required && <Text color="primary">*</Text>}
                 </Text>

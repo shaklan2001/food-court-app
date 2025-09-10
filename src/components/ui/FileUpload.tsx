@@ -32,7 +32,7 @@ const FileUpload = memo(({
                 fontWeight="400"
                 color="textSecondary"
                 marginBottom="s"
-                fontFamily="Inter-Regular"
+                fontFamily="Poppins-Regular"
             >
                 {label} {required && <Text color="primary">*</Text>}
             </Text>
@@ -65,7 +65,7 @@ const FileUpload = memo(({
                                 fontWeight="500"
                                 color="textPrimary"
                                 textAlign="center"
-                                fontFamily="Inter-Medium"
+                                fontFamily="Poppins-Medium"
                                 marginBottom="xs"
                             >
                                 {fileName}
@@ -75,7 +75,7 @@ const FileUpload = memo(({
                                 fontWeight="400"
                                 color="textSecondary"
                                 textAlign="center"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                             >
                                 Tap to change file
                             </Text>
@@ -89,7 +89,7 @@ const FileUpload = memo(({
                                 fontWeight="500"
                                 color="textPrimary"
                                 textAlign="center"
-                                fontFamily="Inter-Medium"
+                                fontFamily="Poppins-Medium"
                                 marginBottom="xs"
                             >
                                 Upload your student I'd here
@@ -99,7 +99,7 @@ const FileUpload = memo(({
                                 fontWeight="400"
                                 color="textSecondary"
                                 textAlign="center"
-                                fontFamily="Inter-Regular"
+                                fontFamily="Poppins-Regular"
                                 marginBottom="m"
                             >
                                 {description}
@@ -114,7 +114,7 @@ const FileUpload = memo(({
                                     fontSize={14}
                                     fontWeight="600"
                                     color="textOnPrimary"
-                                    fontFamily="Inter-Medium"
+                                    fontFamily="Poppins-Medium"
                                 >
                                     Browse now
                                 </Text>
