@@ -1,6 +1,6 @@
 import { AntDesign } from '@expo/vector-icons';
 import { useTheme } from '@shopify/restyle';
-import React, { memo, useState } from 'react';
+import { memo, useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Theme } from '../../theme/theme';
 import CustomTextInput from './TextInput';

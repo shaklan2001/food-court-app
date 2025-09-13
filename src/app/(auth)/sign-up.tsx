@@ -1,7 +1,7 @@
 import { AntDesign } from '@expo/vector-icons';
 import { useTheme } from '@shopify/restyle';
 import { router, Stack } from 'expo-router';
-import React, { memo, useState } from 'react';
+import { memo, useState } from 'react';
 import { Dimensions, ImageBackground, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Checkbox, FormContainer } from '../../components/shared';
