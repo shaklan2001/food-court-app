@@ -19,13 +19,6 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
   const [studentIdFile, setStudentIdFile] = useState<string | null>(null);
 
   const handleSignUp = () => {
-    // console.log('Student sign up pressed:', {
-    //   collegeName,
-    //   courseName,
-    //   branch,
-    //   currentSemester,
-    //   studentIdFile,
-    // });
     router.push('/');
   };
 
