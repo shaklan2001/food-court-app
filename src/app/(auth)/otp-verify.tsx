@@ -3,7 +3,7 @@ import { useTheme } from '@shopify/restyle';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack } from 'expo-router';
 import * as SMS from 'expo-sms';
-import React, { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Dimensions,
@@ -215,7 +215,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                         zIndex={1}
                                     >
                                         <TouchableOpacity onPress={handleBack}>
-                                            <AntDesign name="arrowleft" size={24} color="white" />
+                                            <AntDesign name="arrow-left" size={24} color="white" />
                                         </TouchableOpacity>
                                     </View>
                                     <View alignItems="center">
