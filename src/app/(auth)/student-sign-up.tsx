@@ -1,7 +1,7 @@
 import { AntDesign } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, Stack } from 'expo-router';
-import React, { memo, useState } from 'react';
+import { memo, useState } from 'react';
 import { Alert, Dimensions, ImageBackground, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FormContainer } from '../../components/shared';
@@ -19,13 +19,6 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
   const [studentIdFile, setStudentIdFile] = useState<string | null>(null);
 
   const handleSignUp = () => {
-    // console.log('Student sign up pressed:', {
-    //   collegeName,
-    //   courseName,
-    //   branch,
-    //   currentSemester,
-    //   studentIdFile,
-    // });
     router.push('/');
   };
 

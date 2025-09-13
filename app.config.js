@@ -3,6 +3,7 @@ export default {
         name: "Food Court App",
         slug: "food-court-app",
         version: "1.0.0",
+        sdkVersion: "54.0.0",
         orientation: "portrait",
         icon: "./assets/images/icon.png",
         userInterfaceStyle: "light",

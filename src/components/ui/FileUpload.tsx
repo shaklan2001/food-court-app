@@ -1,7 +1,7 @@
 import { AntDesign } from '@expo/vector-icons';
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import { useTheme } from '@shopify/restyle';
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Theme } from '../../theme/theme';
 import { Text, View } from './index';
