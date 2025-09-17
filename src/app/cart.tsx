@@ -100,30 +100,30 @@ const CartItem = memo(({
             {price}
           </Text>
         </View>
-         <View flexDirection="row" alignItems="flex-end" justifyContent="flex-end" height={100} >
-           <TouchableOpacity
-             onPress={onDecrease}
-             style={styles.quantityButton}
-           >
-             <Ionicons name="remove" size={18} color="#A20538" />
-           </TouchableOpacity>
-           <Text
-             fontSize={16}
-             fontWeight="600"
-             color="textPrimary"
-             fontFamily="Poppins-SemiBold"
-             textAlign="center"
-             paddingHorizontal="m"
-           >
-             {quantity}
-           </Text>
-           <TouchableOpacity
-             onPress={onIncrease}
-             style={styles.quantityButtonAdd}
-           >
-             <Ionicons name="add" size={18} color="#FFFFFF" />
-           </TouchableOpacity>
-         </View>
+        <View flexDirection="row" alignItems="flex-end" justifyContent="flex-end" height={100} >
+          <TouchableOpacity
+            onPress={onDecrease}
+            style={styles.quantityButton}
+          >
+            <Ionicons name="remove" size={18} color="#A20538" />
+          </TouchableOpacity>
+          <Text
+            fontSize={16}
+            fontWeight="600"
+            color="textPrimary"
+            fontFamily="Poppins-SemiBold"
+            textAlign="center"
+            paddingHorizontal="m"
+          >
+            {quantity}
+          </Text>
+          <TouchableOpacity
+            onPress={onIncrease}
+            style={styles.quantityButtonAdd}
+          >
+            <Ionicons name="add" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </View>
       <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} paddingBottom={'l'}>
       </View>
@@ -160,7 +160,7 @@ const PriceRow = memo(({
             alignItems="center"
             marginRight="s"
           >
-           <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
           </View>
         )}
         <Text
@@ -382,7 +382,14 @@ const Cart = () => {
           paddingVertical="m"
         >
           <Pressable style={styles.checkoutButton}>
-            <View style={styles.priceSection}>
+            <View
+              flex={1}
+              justifyContent="center"
+              alignItems="center"
+              borderRightWidth={1}
+              borderRightColor="border"
+              height="100%"
+            >
               <Text
                 fontSize={18}
                 fontWeight="600"
@@ -392,7 +399,13 @@ const Cart = () => {
                 ${total}
               </Text>
             </View>
-            <View style={styles.checkoutSection}>
+            <View
+              flex={2}
+              flexDirection="row"
+              justifyContent="center"
+              alignItems="center"
+              height="100%"
+            >
               <Text
                 fontSize={18}
                 fontWeight="600"
@@ -400,7 +413,7 @@ const Cart = () => {
                 fontFamily="Poppins-SemiBold"
                 marginRight="m"
               >
-                 Place Order
+                Place Order
               </Text>
               <Ionicons style={{ marginTop: 4 }} name="chevron-forward" size={20} color="#FFFFFF" />
             </View>
@@ -462,21 +475,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 0,
-  },
-  priceSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(255, 255, 255, 0.2)',
-    height: '100%',
-  },
-  checkoutSection: {
-    flex: 2,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100%',
   },
 });
 
