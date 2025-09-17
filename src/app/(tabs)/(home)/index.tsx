@@ -3,10 +3,10 @@ import { pageHorizantalPadding } from '@/src/utils/commomCompute';
 import { NotificationIcon, SearchIcon, ShoppingCartIcon, SortIcon, WalletIcon } from '@/src/utils/Svgs';
 import { router } from 'expo-router';
 import React, { memo } from 'react';
-import { FlatList, Image, Pressable, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, Image, Pressable, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const Card = memo(({ children, notification = false }: { children: React.ReactNode; notification?: boolean }) => {
+export const Card = memo(({ children, notification = false }: { children: React.ReactNode; notification?: boolean }) => {
     return (
         <View
             width={48}
@@ -61,6 +61,7 @@ const SearchBar = memo(() => {
                     fontSize={12}
                     fontWeight="400"
                     color="inputPlaceholder"
+                    fontFamily="Poppins-Regular"
                 >
                     Search
                 </Text>
@@ -105,7 +106,7 @@ const Header = memo(() => {
                 </View>
             </View>
             <View flexDirection="row" alignItems="center" gap="s">
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/cart')}>
                     <Card notification={true}>
                         <ShoppingCartIcon />
                     </Card>
@@ -130,6 +131,7 @@ const Title = memo(() => {
                     fontWeight="500"
                     color="textPrimary"
                     marginBottom="xs"
+                    fontFamily="Poppins-Medium"
                 >
                     Hi Akash 👋
                 </Text>
@@ -137,6 +139,7 @@ const Title = memo(() => {
                     fontSize={18}
                     fontWeight="bold"
                     color="textPrimary"
+                    fontFamily="Poppins-Bold"
                 >
                     Welcome To Smart CSK
                 </Text>
@@ -224,6 +227,7 @@ const CuisineSection = memo(() => {
                     fontSize={20}
                     fontWeight="bold"
                     color="textPrimary"
+                    fontFamily="Poppins-Bold"
                 >
                     Cuisine Section
                 </Text>
@@ -312,6 +316,7 @@ const FoodItem = memo(({ item }: { item: any }) => {
                         fontSize={14}
                         fontWeight="600"
                         color="textPrimary"
+                        fontFamily="Poppins-SemiBold"
                         style={{ marginBottom: -10 }}
                     >
                         {item.title}
@@ -319,6 +324,7 @@ const FoodItem = memo(({ item }: { item: any }) => {
                     <Text
                         fontSize={12}
                         color="textSecondary"
+                        fontFamily="Poppins-Regular"
                     >
                         {item.price}
                     </Text>
@@ -333,7 +339,7 @@ const FoodItem = memo(({ item }: { item: any }) => {
                             justifyContent="center"
                             alignItems="center"
                         >
-                            <Text color="textOnPrimary" fontSize={16}>+</Text>
+                            <Text color="textOnPrimary" fontSize={16} fontFamily="Poppins-Bold">+</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -351,6 +357,7 @@ const FoodSection = memo(({ title, data }: { title: string; data: Array<any> }) 
                     fontSize={20}
                     fontWeight="bold"
                     color="textPrimary"
+                    fontFamily="Poppins-Bold"
                 >
                     {title}
                 </Text>
@@ -385,7 +392,7 @@ const ReviewCard = memo(({ review }: { review: any }) => {
             shadowColor="textPrimary"
         >
             <View flexDirection="row" alignItems="flex-start" marginBottom="s">
-                <Text fontSize={24} color="textPrimary" fontWeight="bold" marginRight="s">
+                <Text fontSize={24} color="textPrimary" fontWeight="bold" marginRight="s" fontFamily="Poppins-Bold">
                     "
                 </Text>
                 <View flexDirection="row" alignItems="center">
@@ -395,6 +402,7 @@ const ReviewCard = memo(({ review }: { review: any }) => {
                             fontSize={16}
                             color={index < review.rating ? "warning" : "crousalDot"}
                             marginRight="xs"
+                            fontFamily="Poppins-Regular"
                         >
                             ★
                         </Text>
@@ -408,6 +416,7 @@ const ReviewCard = memo(({ review }: { review: any }) => {
                 lineHeight={16}
                 marginBottom="m"
                 numberOfLines={6}
+                fontFamily="Poppins-Regular"
             >
                 {review.text}
             </Text>
@@ -428,12 +437,14 @@ const ReviewCard = memo(({ review }: { review: any }) => {
                         fontWeight="600"
                         color="textPrimary"
                         marginBottom="xs"
+                        fontFamily="Poppins-SemiBold"
                     >
                         {review.name}
                     </Text>
                     <Text
                         fontSize={12}
                         color="textSecondary"
+                        fontFamily="Poppins-Regular"
                     >
                         {review.role}
                     </Text>
@@ -479,6 +490,7 @@ const UserReviewsSection = memo(() => {
                     fontSize={20}
                     fontWeight="bold"
                     color="textPrimary"
+                    fontFamily="Poppins-Bold"
                 >
                     User Reviews
                 </Text>
@@ -526,7 +538,7 @@ const Home = () => {
     ];
 
     return (
-        <SafeAreaView style={{ flex: 1, paddingTop: insets.top + 20 }}>
+        <SafeAreaView style={{ flex: 1, paddingTop: insets.top }}>
             <Header />
             <ScrollView>
                 <Title />
