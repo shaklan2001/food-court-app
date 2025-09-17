@@ -294,57 +294,63 @@ const CuisineCarousel = memo(() => {
 });
 
 const FoodItem = memo(({ item }: { item: any }) => {
+    const handleItemPress = () => {
+        router.push('/product-detail');
+    };
+
     return (
-        <View
-            height={200}
-            width={166}
-            backgroundColor="transparent"
-            borderRadius="m"
-            overflow="hidden"
-            marginRight="m"
-        >
-            <View>
-                <Image
-                    source={item.image}
-                    style={{ width: '100%', height: 140, borderRadius: 8 }}
-                    resizeMode="cover"
-                />
-            </View>
-            <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'}>
-                <View alignItems="flex-start" justifyContent="center" >
-                    <Text
-                        fontSize={14}
-                        fontWeight="600"
-                        color="textPrimary"
-                        fontFamily="Poppins-SemiBold"
-                        style={{ marginBottom: -10 }}
-                    >
-                        {item.title}
-                    </Text>
-                    <Text
-                        fontSize={12}
-                        color="textSecondary"
-                        fontFamily="Poppins-Regular"
-                    >
-                        {item.price}
-                    </Text>
+        <Pressable onPress={handleItemPress}>
+            <View
+                height={200}
+                width={166}
+                backgroundColor="transparent"
+                borderRadius="m"
+                overflow="hidden"
+                marginRight="m"
+            >
+                <View>
+                    <Image
+                        source={item.image}
+                        style={{ width: '100%', height: 140, borderRadius: 8 }}
+                        resizeMode="cover"
+                    />
                 </View>
-                <View alignItems="center" justifyContent="center">
-                    <TouchableOpacity>
-                        <View
-                            width={40}
-                            height={40}
-                            backgroundColor="primary"
-                            borderRadius="m"
-                            justifyContent="center"
-                            alignItems="center"
+                <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'}>
+                    <View alignItems="flex-start" justifyContent="center" >
+                        <Text
+                            fontSize={14}
+                            fontWeight="600"
+                            color="textPrimary"
+                            fontFamily="Poppins-SemiBold"
+                            style={{ marginBottom: -10 }}
                         >
-                            <Text color="textOnPrimary" fontSize={16} fontFamily="Poppins-Bold">+</Text>
-                        </View>
-                    </TouchableOpacity>
+                            {item.title}
+                        </Text>
+                        <Text
+                            fontSize={12}
+                            color="textSecondary"
+                            fontFamily="Poppins-Regular"
+                        >
+                            {item.price}
+                        </Text>
+                    </View>
+                    <View alignItems="center" justifyContent="center">
+                        <TouchableOpacity>
+                            <View
+                                width={40}
+                                height={40}
+                                backgroundColor="primary"
+                                borderRadius="m"
+                                justifyContent="center"
+                                alignItems="center"
+                            >
+                                <Text color="textOnPrimary" fontSize={16} fontFamily="Poppins-Bold">+</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
-        </View>
+        </Pressable>
     );
 });
 
