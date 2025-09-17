@@ -29,16 +29,11 @@ apiClient.interceptors.request.use(
             data: config.data,
             headers: config.headers
         });
-
-        // Example: add token
-        // const token = await AsyncStorage.getItem("token");
-        // if (token) config.headers.Authorization = `Bearer ${token}`;
         return config;
     },
     (error) => Promise.reject(error)
 );
 
-// Add response interceptor for logging
 apiClient.interceptors.response.use(
     (response) => {
         console.log('✅ API Response:', {

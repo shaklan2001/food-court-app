@@ -1,5 +1,4 @@
-import React from 'react';
-import { Path, Svg, SvgProps } from 'react-native-svg';
+import { Path, Svg } from 'react-native-svg';
 
 export const WalletIcon = () => (
     <Svg width= { 24} height = { 24} viewBox = "0 0 25 25" fill = "none" >
@@ -49,4 +48,32 @@ export const SortIcon = () => (
             <Path d="M6.5 12.5H18.5" stroke = "#292D32" strokeWidth = "1.5" strokeLinecap = "round" />
                 <Path d="M10.5 17.5H14.5" stroke = "#292D32" strokeWidth = "1.5" strokeLinecap = "round" />
                     </Svg>
+);
+
+export const BackIcon = () => (
+    <Svg
+    width={24}
+    height={24}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      d="M13.9802 5.31993L10.7702 8.52993L8.80023 10.4899C7.97023 11.3199 7.97023 12.6699 8.80023 13.4999L13.9802 18.6799C14.6602 19.3599 15.8202 18.8699 15.8202 17.9199L15.8202 12.3099L15.8202 6.07993C15.8202 5.11993 14.6602 4.63993 13.9802 5.31993Z"
+      fill="#010101"
+    />
+  </Svg>
+);
+
+export const MoreIcon = () => (
+    <Svg
+    width={24}
+    height={24}
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <Path
+      d="M16.19 2H7.81C4.17 2 2 4.17 2 7.81V16.18C2 19.83 4.17 22 7.81 22H16.18C19.82 22 21.99 19.83 21.99 16.19V7.81C22 4.17 19.83 2 16.19 2ZM7 13.31C6.28 13.31 5.69 12.72 5.69 12C5.69 11.28 6.28 10.69 7 10.69C7.72 10.69 8.31 11.28 8.31 12C8.31 12.72 7.72 13.31 7 13.31ZM12 13.31C11.28 13.31 10.69 12.72 10.69 12C10.69 11.28 11.28 10.69 12 10.69C12.72 10.69 13.31 11.28 13.31 12C13.31 12.72 12.72 13.31 12 13.31ZM17 13.31C16.28 13.31 15.69 12.72 15.69 12C15.69 11.28 16.28 10.69 17 10.69C17.72 10.69 18.31 11.28 18.31 12C18.31 12.72 17.72 13.31 17 13.31Z"
+      fill="#010101"
+    />
+  </Svg>
 );
