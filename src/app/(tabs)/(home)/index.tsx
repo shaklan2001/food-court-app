@@ -85,9 +85,11 @@ const SearchBar = memo(() => {
 
 const ProfileIcon = memo(() => {
     return (
-        <View overflow="hidden" width={48} height={48} backgroundColor="mainBackground" borderRadius="m" borderWidth={1} borderColor="border" justifyContent="center" alignItems="center" position="relative" >
-            <Image source={require('@/assets/images/profile.jpg')} style={{ width: 48, height: 48 }} />
-        </View>
+        <Pressable onPress={() => router.push('/profile')}>
+            <View overflow="hidden" width={48} height={48} backgroundColor="mainBackground" borderRadius="m" borderWidth={1} borderColor="border" justifyContent="center" alignItems="center" position="relative" >
+                <Image source={require('@/assets/images/profile.jpg')} style={{ width: 48, height: 48 }} />
+            </View>
+        </Pressable>
     )
 })
 
@@ -111,7 +113,7 @@ const Header = memo(() => {
                         <ShoppingCartIcon />
                     </Card>
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/notifications')}>
                     <Card notification={true}>
                         <NotificationIcon />
                     </Card>
