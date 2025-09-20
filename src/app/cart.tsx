@@ -3,7 +3,7 @@ import { useTheme } from "@shopify/restyle";
 import * as Haptics from 'expo-haptics';
 import { router, Stack } from "expo-router";
 import { memo, useCallback, useState } from "react";
-import { Image, Pressable, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, View } from "../components/ui";
 import { Theme } from "../theme/theme";
 import { pageHorizantalPadding } from "../utils/commomCompute";
@@ -243,6 +243,41 @@ const DiscountCoupon = memo(({
   );
 });
 
+export const ScreenHeader = ({ title }: { title: string }) => {
+  return (
+    <View
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="space-between"
+          paddingHorizontal={pageHorizantalPadding}
+          paddingTop="xl"
+          paddingBottom="l"
+          backgroundColor="mainBackgroundLight"
+        >
+          <TouchableOpacity onPress={() => router.back()}>
+            <Card>
+              <BackIcon />
+            </Card>
+          </TouchableOpacity>
+
+          <Text
+            fontSize={18}
+            fontWeight="bold"
+            color="textPrimary"
+            fontFamily="Poppins-Bold"
+          >
+            {title}
+          </Text>
+
+          <TouchableOpacity>
+            <Card>
+              <MoreIcon />
+            </Card>
+          </TouchableOpacity>
+    </View>
+  )
+}
+
 const Cart = () => {
   const theme = useTheme<Theme>();
   const [selectedOption, setSelectedOption] = useState<'orderNow' | 'takeaway'>('orderNow');
@@ -281,40 +316,8 @@ const Cart = () => {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.mainBackgroundLight} />
-
       <View flex={1} backgroundColor="mainBackgroundLight" >
-        <View
-          flexDirection="row"
-          alignItems="center"
-          justifyContent="space-between"
-          paddingHorizontal={pageHorizantalPadding}
-          paddingTop="xl"
-          paddingBottom="l"
-          backgroundColor="mainBackgroundLight"
-        >
-          <TouchableOpacity onPress={() => router.back()}>
-            <Card>
-              <BackIcon />
-            </Card>
-          </TouchableOpacity>
-
-          <Text
-            fontSize={18}
-            fontWeight="bold"
-            color="textPrimary"
-            fontFamily="Poppins-Bold"
-          >
-            Cart
-          </Text>
-
-          <TouchableOpacity>
-            <Card>
-              <MoreIcon />
-            </Card>
-          </TouchableOpacity>
-        </View>
-
+        <ScreenHeader title="Cart" />
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
           <View paddingHorizontal={pageHorizantalPadding} >
             <Text
