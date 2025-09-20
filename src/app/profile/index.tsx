@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
 import { useTheme } from "@shopify/restyle";
 import * as Haptics from 'expo-haptics';
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
 import { memo, useCallback } from "react";
 import { Image, Pressable, StyleSheet } from "react-native";
-import { Text, View } from "../components/ui";
-import { Theme } from "../theme/theme";
-import { pageHorizantalPadding } from "../utils/commomCompute";
-import { ScreenHeader } from './cart';
+import { Text, View } from "../../components/ui";
+import { Theme } from "../../theme/theme";
+import { pageHorizantalPadding } from "../../utils/commomCompute";
+import { ScreenHeader } from '../cart';
 
 const ProfileMenuItem = memo(({
   icon,
@@ -71,11 +71,35 @@ const Profile = () => {
 
   const handleEditProfilePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/profile/edit-profile');
   }, []);
 
   const handleMenuPress = useCallback((menuItem: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log(`Pressed: ${menuItem}`);
+    
+    switch (menuItem) {
+      case 'Favourites':
+        router.push('/profile/favourites');
+        break;
+      case 'Your Orders':
+        router.push('/profile/orders');
+        break;
+      case 'About Section':
+        router.push('/profile/about');
+        break;
+      case 'Change Password':
+        router.push('/profile/change-password');
+        break;
+      case 'Support':
+        router.push('/profile/support');
+        break;
+      case 'Feedback':
+        router.push('/profile/feedback');
+        break;
+      default:
+        console.log(`Pressed: ${menuItem}`);
+    }
   }, []);
 
   const handleLogoutPress = useCallback(() => {
@@ -84,9 +108,7 @@ const Profile = () => {
   }, []);
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View flex={1} backgroundColor="mainBackgroundLight">
+    <View flex={1} backgroundColor="mainBackgroundLight">
        <ScreenHeader title="Profile" />
 
         <View paddingHorizontal={pageHorizantalPadding} marginBottom="l">
@@ -190,7 +212,6 @@ const Profile = () => {
           />
         </View>
       </View>
-    </>
   );
 };
 

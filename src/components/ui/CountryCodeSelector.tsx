@@ -1,6 +1,5 @@
-import { AntDesign } from '@expo/vector-icons';
 import { useTheme } from '@shopify/restyle';
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Theme } from '../../theme/theme';
 import Text from './Text';
@@ -51,7 +50,7 @@ const CountryCodeSelector = memo(({
                         <Text fontSize={14}>{flag}</Text>
                     </View>
                     <Text
-                        fontSize={16}
+                        fontSize={14}
                         fontWeight="400"
                         color="textPrimary"
                         fontFamily="Poppins-Regular"
@@ -59,7 +58,7 @@ const CountryCodeSelector = memo(({
                         {countryCode}
                     </Text>
                 </View>
-                <AntDesign name="down" size={12} color={theme.colors.textSecondary} />
+                {/* <AntDesign name="down" size={12} color={theme.colors.textSecondary} /> */}
             </View>
         </TouchableOpacity>
     );

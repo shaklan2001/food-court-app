@@ -1,11 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from "@shopify/restyle";
 import * as Haptics from 'expo-haptics';
 import { router, Stack } from "expo-router";
 import { memo, useCallback, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, View } from "../components/ui";
-import { Theme } from "../theme/theme";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { BackIcon, MoreIcon } from "../utils/Svgs";
 import { Card } from "./(tabs)/(home)";
@@ -243,7 +241,7 @@ const DiscountCoupon = memo(({
   );
 });
 
-export const ScreenHeader = ({ title }: { title: string }) => {
+export const ScreenHeader = ({ title, moreAction = true }: { title: string, moreAction?: boolean }) => {
   return (
     <View
           flexDirection="row"
@@ -254,11 +252,11 @@ export const ScreenHeader = ({ title }: { title: string }) => {
           paddingBottom="l"
           backgroundColor="mainBackgroundLight"
         >
-          <TouchableOpacity onPress={() => router.back()}>
+          <Pressable onPress={() => router.back()}>
             <Card>
               <BackIcon />
             </Card>
-          </TouchableOpacity>
+          </Pressable>
 
           <Text
             fontSize={18}
@@ -269,17 +267,16 @@ export const ScreenHeader = ({ title }: { title: string }) => {
             {title}
           </Text>
 
-          <TouchableOpacity>
+          <Pressable style={{ opacity: moreAction ? 1 : 0 }}>
             <Card>
               <MoreIcon />
             </Card>
-          </TouchableOpacity>
+          </Pressable>
     </View>
   )
 }
 
 const Cart = () => {
-  const theme = useTheme<Theme>();
   const [selectedOption, setSelectedOption] = useState<'orderNow' | 'takeaway'>('orderNow');
   const [promocode, setPromocode] = useState('TASTY12');
   const [cartItems, setCartItems] = useState([

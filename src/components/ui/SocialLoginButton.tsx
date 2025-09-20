@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { Image, ImageSourcePropType, TouchableOpacity } from 'react-native';
+import { memo } from 'react';
+import { Image, ImageSourcePropType, Pressable } from 'react-native';
 import View from './View';
 
 interface SocialLoginButtonProps {
@@ -20,7 +20,7 @@ const SocialLoginButton = memo(({
     imageHeight = 26,
 }: SocialLoginButtonProps) => {
     return (
-        <TouchableOpacity onPress={onPress}>
+        <Pressable onPress={onPress}>
             <View
                 width={width}
                 height={height}
@@ -48,7 +48,7 @@ const SocialLoginButton = memo(({
                     }}
                 />
             </View>
-        </TouchableOpacity>
+        </Pressable>
     );
 });
 
