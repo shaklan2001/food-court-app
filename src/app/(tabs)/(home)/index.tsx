@@ -1,10 +1,15 @@
 import { Carousel, Text, View } from '@/src/components/ui';
+import { betterwayApiCall, useApiPort } from '@/src/network/useApiPort';
+import { RootState } from '@/src/store/store';
 import { pageHorizantalPadding } from '@/src/utils/commomCompute';
 import { NotificationIcon, SearchIcon, ShoppingCartIcon, SortIcon, WalletIcon } from '@/src/utils/Svgs';
+import Fontisto from '@expo/vector-icons/build/Fontisto';
+import Octicons from '@expo/vector-icons/Octicons';
 import { router } from 'expo-router';
-import React, { memo } from 'react';
+import React, { memo, useCallback, useEffect } from 'react';
 import { FlatList, Image, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
 
 export const Card = memo(({ children, notification = false }: { children: React.ReactNode; notification?: boolean }) => {
     return (
@@ -85,7 +90,7 @@ const SearchBar = memo(() => {
 
 const ProfileIcon = memo(() => {
     return (
-        <Pressable onPress={() => router.push('/profile')}>
+        <Pressable onPress={() => router.push('/profile/')}>
             <View overflow="hidden" width={48} height={48} backgroundColor="mainBackground" borderRadius="m" borderWidth={1} borderColor="border" justifyContent="center" alignItems="center" position="relative" >
                 <Image source={require('@/assets/images/profile.jpg')} style={{ width: 48, height: 48 }} />
             </View>
@@ -393,37 +398,32 @@ const ReviewCard = memo(({ review }: { review: any }) => {
             borderRadius="m"
             padding="m"
             marginRight="m"
-            elevation={4}
+            elevation={3}
             shadowOffset={{ width: 0, height: 2 }}
             shadowOpacity={0.1}
             shadowRadius={4}
             shadowColor="textPrimary"
         >
-            <View flexDirection="row" alignItems="flex-start" marginBottom="s">
-                <Text fontSize={24} color="textPrimary" fontWeight="bold" marginRight="s" fontFamily="Poppins-Bold">
-                    "
-                </Text>
+            <View flexDirection="row" alignItems="flex-start" marginBottom="s" justifyContent="space-between">
+                <Fontisto name="quote-a-right" size={18} color="black" />
                 <View flexDirection="row" alignItems="center">
                     {[...Array(5)].map((_, index) => (
                         <Text
                             key={index}
-                            fontSize={16}
                             color={index < review.rating ? "warning" : "crousalDot"}
-                            marginRight="xs"
-                            fontFamily="Poppins-Regular"
                         >
-                            ★
+                            <Octicons name="star-fill" size={16} color=" #FFA500" />
                         </Text>
                     ))}
                 </View>
             </View>
 
             <Text
-                fontSize={12}
+                fontSize={10}
                 color="textSecondary"
                 lineHeight={16}
                 marginBottom="m"
-                numberOfLines={6}
+                numberOfLines={5}
                 fontFamily="Poppins-Regular"
             >
                 {review.text}
@@ -433,26 +433,27 @@ const ReviewCard = memo(({ review }: { review: any }) => {
                 <Image
                     source={review.avatar}
                     style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 20,
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
                         marginRight: 12
                     }}
                 />
                 <View>
                     <Text
-                        fontSize={14}
+                        fontSize={12}
                         fontWeight="600"
                         color="textPrimary"
-                        marginBottom="xs"
                         fontFamily="Poppins-SemiBold"
+                        lineHeight={16}
                     >
                         {review.name}
                     </Text>
                     <Text
-                        fontSize={12}
+                        fontSize={10}
                         color="textSecondary"
                         fontFamily="Poppins-Regular"
+                        lineHeight={14}
                     >
                         {review.role}
                     </Text>
@@ -510,7 +511,7 @@ const UserReviewsSection = memo(() => {
                 keyExtractor={(item) => item.id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingLeft: 0 }}
+                contentContainerStyle={{ paddingLeft: 2, paddingVertical: 10 }}
                 decelerationRate="fast"
                 snapToAlignment="start"
             />
@@ -520,6 +521,9 @@ const UserReviewsSection = memo(() => {
 
 const Home = () => {
     const insets = useSafeAreaInsets();
+    const { user, token } = useSelector((state: RootState) => state.auth);
+
+    console.log("user", user, "token", token);
 
     const recommendationsData = [
         { id: 'rec1', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
@@ -544,6 +548,31 @@ const Home = () => {
         { id: 'na4', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
         { id: 'na5', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
     ];
+
+    const getMenu = useCallback(() => {
+        useApiPort({
+            intent: "intent_get_menu",
+            port: betterwayApiCall({
+                method: "POST",
+                url: "GET_MENU",
+                auth: token,
+                query: {
+                    page: 1,
+                    limit: 10,
+                },
+            }),
+            success: (response) => {
+                console.log("responsessss", response?.data);
+            },
+            failure: (error) => {
+                console.log("error", error?.response?.data);
+            },
+        });
+    }, [token]);
+
+    useEffect(() => {
+        getMenu();
+    }, [getMenu]);
 
     return (
         <SafeAreaView style={{ flex: 1, paddingTop: insets.top }}>

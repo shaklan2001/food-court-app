@@ -1,7 +1,7 @@
 import { AntDesign } from '@expo/vector-icons';
 import { useTheme } from '@shopify/restyle';
 import { memo, useState } from 'react';
-import { TouchableOpacity } from 'react-native';
+import { Pressable } from 'react-native';
 import { Theme } from '../../theme/theme';
 import CustomTextInput from './TextInput';
 import View from './View';
@@ -26,7 +26,7 @@ const PasswordInput = memo(({
     backgroundColor = 'mainBackground',
     borderColor = 'inputBorder',
     borderRadius = 'm',
-    fontSize = 16,
+    fontSize = 14,
     fontFamily = 'Poppins-Regular',
 }: PasswordInputProps) => {
     const theme = useTheme<Theme>();
@@ -47,7 +47,7 @@ const PasswordInput = memo(({
                 fontSize={fontSize}
                 fontFamily={fontFamily}
             />
-            <TouchableOpacity
+            <Pressable
                 style={{
                     position: 'absolute',
                     right: 16,
@@ -60,11 +60,11 @@ const PasswordInput = memo(({
                 onPress={() => setShowPassword(!showPassword)}
             >
                 <AntDesign
-                    name={showPassword ? "eye" : "eyeo"}
+                    name={showPassword ? "eye" : "eye-invisible"}
                     size={20}
                     color={theme.colors.textSecondary}
                 />
-            </TouchableOpacity>
+            </Pressable>
         </View>
     );
 });
