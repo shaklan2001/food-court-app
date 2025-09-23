@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from "@shopify/restyle";
 import * as Haptics from 'expo-haptics';
 import { router, Stack } from "expo-router";
-import { memo, useCallback, useState } from "react";
-import { Image, Pressable, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from "react-native";
+import { memo, useCallback, useEffect, useState } from "react";
+import { Image, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import SuccessModal from "../components/SuccessModal";
 import { Text, View } from "../components/ui";
-import { Theme } from "../theme/theme";
+import { fetchCart, processPayment, updateCartItem } from "../store/slices/cartSlice";
+import { RootState, useAppDispatch, useAppSelector } from "../store/store";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { BackIcon, MoreIcon } from "../utils/Svgs";
 import { Card } from "./(tabs)/(home)";
@@ -61,13 +62,15 @@ const CartItem = memo(({
   price,
   quantity,
   onIncrease,
-  onDecrease
+  onDecrease,
+  image
 }: {
   name: string;
   price: string;
   quantity: number;
   onIncrease: () => void;
   onDecrease: () => void;
+  image?: any;
 }) => {
   return (
     <View>
@@ -78,51 +81,56 @@ const CartItem = memo(({
         alignItems="center"
       >
         <Image
-          source={require('@/assets/images/bowl.png')}
+          source={image || require('@/assets/images/bowl.png')}
           style={styles.cartItemImage}
         />
-        <View flex={1} marginLeft="m" justifyContent="space-between" height={100}>
+        <View marginLeft="m" justifyContent="space-between" height={100} width="60%">
           <Text
-            fontSize={16}
+            fontSize={Platform.OS === 'ios' ? 16 : 12}
             fontWeight="600"
             color="textPrimary"
             fontFamily="Poppins-SemiBold"
             marginBottom="xs"
+            lineHeight={Platform.OS === 'ios' ? 18 : 12}
           >
             {name}
           </Text>
-          <Text
-            fontSize={14}
-            fontWeight="600"
-            color="textPrimary"
-            fontFamily="Poppins-SemiBold"
-          >
-            {price}
-          </Text>
-        </View>
-        <View flexDirection="row" alignItems="flex-end" justifyContent="flex-end" height={100} >
-          <TouchableOpacity
-            onPress={onDecrease}
-            style={styles.quantityButton}
-          >
-            <Ionicons name="remove" size={18} color="#A20538" />
-          </TouchableOpacity>
-          <Text
-            fontSize={16}
-            fontWeight="600"
-            color="textPrimary"
-            fontFamily="Poppins-SemiBold"
-            textAlign="center"
-            paddingHorizontal="m"
-          >
-            {quantity}
-          </Text>
-          <TouchableOpacity
-            onPress={onIncrease}
-            style={styles.quantityButtonAdd}
-          >
-            <Ionicons name="add" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
+          <View flexDirection="row" justifyContent="space-between" alignItems="center" width="100%"> 
+            <View>
+              <Text
+                fontSize={Platform.OS === 'ios' ? 16 : 12}
+                fontWeight="600"
+                color="textPrimary"
+                fontFamily="Poppins-SemiBold"
+              >
+                {price}
+              </Text>
+            </View>
+          <View flexDirection="row" >
+            <TouchableOpacity
+              onPress={onDecrease}
+              style={styles.quantityButton}
+            >
+              <Ionicons name="remove" size={18} color="#A20538" />
+            </TouchableOpacity>
+            <Text
+              fontSize={16}
+              fontWeight="600"
+              color="textPrimary"
+              fontFamily="Poppins-SemiBold"
+              textAlign="center"
+              paddingHorizontal="m"
+            >
+              {quantity}
+            </Text>
+            <TouchableOpacity
+              onPress={onIncrease}
+              style={styles.quantityButtonAdd}
+            >
+              <Ionicons name="add" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          </View>
         </View>
       </View>
       <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} paddingBottom={'l'}>
@@ -243,30 +251,73 @@ const DiscountCoupon = memo(({
   );
 });
 
+export const ScreenHeader = ({ title, moreAction = true }: { title: string, moreAction?: boolean }) => {
+  return (
+    <View
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="space-between"
+          paddingHorizontal={pageHorizantalPadding}
+          paddingTop="xl"
+          paddingBottom="l"
+          backgroundColor="mainBackgroundLight"
+        >
+          <Pressable onPress={() => router.back()}>
+            <Card>
+              <BackIcon />
+            </Card>
+          </Pressable>
+
+          <Text
+            fontSize={18}
+            fontWeight="bold"
+            color="textPrimary"
+            fontFamily="Poppins-Bold"
+          >
+            {title}
+          </Text>
+
+          <Pressable style={{ opacity: moreAction ? 1 : 0 }}>
+            <Card>
+              <MoreIcon />
+            </Card>
+          </Pressable>
+    </View>
+  )
+}
+
 const Cart = () => {
-  const theme = useTheme<Theme>();
+  const dispatch = useAppDispatch();
+  const { token, user } = useAppSelector((state: RootState) => state.auth);
+  const { 
+    items: cartItems, 
+    total: cartTotal, 
+    loading, 
+    paymentLoading, 
+    paymentSuccess, 
+    paymentError 
+  } = useAppSelector((state: RootState) => state.cart);
   const [selectedOption, setSelectedOption] = useState<'orderNow' | 'takeaway'>('orderNow');
   const [promocode, setPromocode] = useState('TASTY12');
-  const [cartItems, setCartItems] = useState([
-    { id: 1, name: 'Desi Bowl', price: '$500', quantity: 1 },
-    { id: 2, name: 'Desi Bowl', price: '$500', quantity: 1 }
-  ]);
-
-  const updateQuantity = (id: number, change: number) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(0, item.quantity + change) }
-          : item
-      ).filter(item => item.quantity > 0)
-    );
-  };
-
-  const subtotal = cartItems.reduce((sum, item) => sum + (parseInt(item.price.replace('$', '')) * item.quantity), 0);
-  const walletCoins = 25;
-  const deliveryFee = 30;
-  const discount = 20;
+  const [showSuccessModal, setShowSuccessModal] = useState(true);
+  
+  const subtotal = cartTotal / 100;
+  const walletCoins = 0;
+  const deliveryFee = 0;
+  const discount = 0;
   const total = subtotal - walletCoins + deliveryFee - (subtotal * discount / 100);
+
+  useEffect(() => {
+    if (token) {
+      dispatch(fetchCart(token));
+    }
+  }, [token, dispatch]);
+
+  useEffect(() => {
+    if (paymentSuccess) {
+      setShowSuccessModal(true);
+    }
+  }, [paymentSuccess]);
 
   const handleOrderNowPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -278,43 +329,53 @@ const Cart = () => {
     setSelectedOption('takeaway');
   }, []);
 
+  const handleSuccessModalClose = useCallback(() => {
+    setShowSuccessModal(false);
+    router.push('/(tabs)/(home)/');
+  }, []);
+
+  const handlePlaceOrder = useCallback(async () => {
+    if (!token) {
+      console.log('❌ No authentication token available');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      console.log('❌ Cart is empty');
+      return;
+    }
+
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Prepare user details for payment
+      const userDetails = {
+        name: user?.name || 'Customer',
+        email: user?.email || '',
+        contact: user?.phone || '',
+      };
+
+      // Determine order type and delivery address based on selected option
+      const orderType = selectedOption === 'orderNow' ? 'order_now' : 'takeaway';
+      const deliveryAddress = selectedOption === 'orderNow' ? 'Food Court Location' : 'Takeaway Counter';
+
+      console.log('🔄 Initiating payment process...');
+      console.log('📋 Order Type:', orderType);
+      console.log('📍 Delivery Address:', deliveryAddress);
+      
+      await dispatch(processPayment(userDetails, orderType, deliveryAddress, token));
+      
+    } catch (error: any) {
+      console.log('❌ Payment process failed:', error);
+      // Error handling is done in the processPayment thunk
+    }
+  }, [token, cartItems, user, selectedOption, dispatch]);
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.mainBackgroundLight} />
-
       <View flex={1} backgroundColor="mainBackgroundLight" >
-        <View
-          flexDirection="row"
-          alignItems="center"
-          justifyContent="space-between"
-          paddingHorizontal={pageHorizantalPadding}
-          paddingTop="xl"
-          paddingBottom="l"
-          backgroundColor="mainBackgroundLight"
-        >
-          <TouchableOpacity onPress={() => router.back()}>
-            <Card>
-              <BackIcon />
-            </Card>
-          </TouchableOpacity>
-
-          <Text
-            fontSize={18}
-            fontWeight="bold"
-            color="textPrimary"
-            fontFamily="Poppins-Bold"
-          >
-            Cart
-          </Text>
-
-          <TouchableOpacity>
-            <Card>
-              <MoreIcon />
-            </Card>
-          </TouchableOpacity>
-        </View>
-
+        <ScreenHeader title="Cart" />
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
           <View paddingHorizontal={pageHorizantalPadding} >
             <Text
@@ -341,16 +402,53 @@ const Cart = () => {
           </View>
 
           <View paddingHorizontal={pageHorizantalPadding} mt="l">
-            {cartItems.map((item) => (
-              <CartItem
-                key={item.id}
-                name={item.name}
-                price={item.price}
-                quantity={item.quantity}
-                onIncrease={() => updateQuantity(item.id, 1)}
-                onDecrease={() => updateQuantity(item.id, -1)}
-              />
-            ))}
+            {loading ? (
+              <View paddingVertical="xl" alignItems="center">
+                <Text
+                  fontSize={16}
+                  fontWeight="500"
+                  color="textSecondary"
+                  fontFamily="Poppins-Medium"
+                  textAlign="center"
+                >
+                  Loading cart...
+                </Text>
+              </View>
+            ) : cartItems.length > 0 ? (
+              cartItems.map((item) => (
+                <CartItem
+                  key={item.id}
+                  name={item.name}
+                  price={item.price}
+                  quantity={item.quantity}
+                  image={item.image}
+                  onIncrease={() => token && dispatch(updateCartItem(item.id, item.quantity + 1, token))}
+                  onDecrease={() => token && dispatch(updateCartItem(item.id, item.quantity - 1, token))}
+                />
+              ))
+            ) : (
+              <View paddingVertical="xl" alignItems="center">
+                <Text
+                  fontSize={16}
+                  fontWeight="500"
+                  color="textSecondary"
+                  fontFamily="Poppins-Medium"
+                  textAlign="center"
+                >
+                  Your cart is empty
+                </Text>
+                <Text
+                  fontSize={14}
+                  fontWeight="400"
+                  color="textSecondary"
+                  fontFamily="Poppins-Regular"
+                  textAlign="center"
+                  marginTop="s"
+                >
+                  Add some delicious items to get started!
+                </Text>
+              </View>
+            )}
           </View>
 
           <DiscountCoupon promocode={promocode} onPress={() => setPromocode('')} />
@@ -360,19 +458,23 @@ const Cart = () => {
             marginBottom="l"
             borderRadius="m"
           >
-            <PriceRow label="Subtotal:" value={`$${subtotal}`} />
-            <PriceRow label="Wallet Coins" value={`-$${walletCoins}`} showIcon />
-            <PriceRow label="Delivery Fee:" value={`$${deliveryFee}`} />
-            <PriceRow label="Discount:" value={`${discount}%`} isDiscount />
-            <Text
-              fontSize={10}
-              fontWeight="400"
-              color="textSecondary"
-              fontFamily="Poppins-Regular"
-              marginBottom="s"
-            >
-              the discount does not apply to all products
-            </Text>
+            <PriceRow label="Subtotal:" value={`₹${subtotal.toFixed(0)}`} />
+            {walletCoins > 0 && <PriceRow label="Wallet Coins" value={`-₹${walletCoins}`} showIcon />}
+            {deliveryFee > 0 && <PriceRow label="Delivery Fee:" value={`₹${deliveryFee}`} />}
+            {discount > 0 && (
+              <>
+                <PriceRow label="Discount:" value={`${discount}%`} isDiscount />
+                <Text
+                  fontSize={10}
+                  fontWeight="400"
+                  color="textSecondary"
+                  fontFamily="Poppins-Regular"
+                  marginBottom="s"
+                >
+                  the discount does not apply to all products
+                </Text>
+              </>
+            )}
           </View>
         </ScrollView>
 
@@ -381,7 +483,14 @@ const Cart = () => {
           paddingHorizontal={pageHorizantalPadding}
           paddingVertical="m"
         >
-          <Pressable style={styles.checkoutButton}>
+          <Pressable 
+            style={[
+              styles.checkoutButton,
+              { opacity: (paymentLoading || cartItems.length === 0) ? 0.6 : 1 }
+            ]}
+            onPress={handlePlaceOrder}
+            disabled={paymentLoading || cartItems.length === 0}
+          >
             <View
               flex={1}
               justifyContent="center"
@@ -389,6 +498,7 @@ const Cart = () => {
               borderRightWidth={1}
               borderRightColor="border"
               height="100%"
+              marginBottom="m"
             >
               <Text
                 fontSize={18}
@@ -396,7 +506,7 @@ const Cart = () => {
                 color="textOnPrimary"
                 fontFamily="Poppins-SemiBold"
               >
-                ${total}
+                ₹{total.toFixed(0)}
               </Text>
             </View>
             <View
@@ -405,6 +515,7 @@ const Cart = () => {
               justifyContent="center"
               alignItems="center"
               height="100%"
+              marginBottom="m"
             >
               <Text
                 fontSize={18}
@@ -413,12 +524,28 @@ const Cart = () => {
                 fontFamily="Poppins-SemiBold"
                 marginRight="m"
               >
-                Place Order
+                {paymentLoading ? 'Processing...' : paymentSuccess ? 'Success!' : 'Place Order'}
               </Text>
-              <Ionicons style={{ marginTop: 4 }} name="chevron-forward" size={20} color="#FFFFFF" />
+              {!paymentLoading && !paymentSuccess && (
+                <Ionicons style={{ marginTop: 4 }} name="chevron-forward" size={20} color="#FFFFFF" />
+              )}
+              {paymentLoading && (
+                <Ionicons style={{ marginTop: 4 }} name="hourglass-outline" size={20} color="#FFFFFF" />
+              )}
+              {paymentSuccess && (
+                <Ionicons style={{ marginTop: 4 }} name="checkmark" size={20} color="#FFFFFF" />
+              )}
             </View>
           </Pressable>
         </View>
+
+       {showSuccessModal && <SuccessModal
+          visible={showSuccessModal}
+          onClose={handleSuccessModalClose}
+          title="Successful"
+          message="Congratulations your order is accepted."
+          buttonText="Checkout"
+        />}
       </View>
     </>
   );

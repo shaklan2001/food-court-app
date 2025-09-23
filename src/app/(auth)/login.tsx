@@ -1,27 +1,90 @@
 import { router } from 'expo-router';
-import React, { memo, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Dimensions, Image, ImageBackground, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
+import { useDispatch } from 'react-redux';
+import { Button, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
+import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { setToken, setUser } from '../../store/slices/authSlice';
+import { showToast } from '../../utils';
 const { width, height } = Dimensions.get('window');
 
-interface LoginProps { }
-
-const Login = memo(({ }: LoginProps) => {
-    const [mobileNumber, setMobileNumber] = useState('');
+const Login = memo(() => {
+    const dispatch = useDispatch();
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = () => {
-        console.log('Login pressed:', { mobileNumber, password });
+    const loginUser = () =>
+        useApiPort({
+            intent: "intent_login_user",
+            port: betterwayApiCall({
+                method: "POST",
+                url: "SIGN_IN_EMAIL",
+                body: {
+                    email,
+                    password
+                },
+                auth: null,
+            }),
+            success: (response) => {
+                setIsLoading(false);
+                
+                if (response?.token && response?.user) {
+                    dispatch(setToken(response.token));
+                    dispatch(setUser({
+                        id: response.user.id,
+                        email: response.user.email,
+                        name: response.user.name,
+                        image: response.user.image,
+                        emailVerified: response.user.emailVerified,
+                        createdAt: response.user.createdAt,
+                        updatedAt: response.user.updatedAt,
+                    }));
+                    router.push('/(tabs)');
+                } else {
+                    showToast({
+                        message: 'Invalid credentials',
+                        type: 'error',
+                    });
+                }
+            },
+            failure: (error) => {
+                setIsLoading(false);
+                showToast({
+                    message: error?.message || 'Login failed',
+                    type: 'error',
+                });
+            },
+            print: "error",
+        })();
 
-        router.push('/otp-verify');
-
-        // if (mobileNumber.trim() && password.trim()) {
-        //     router.push('/otp-verify');
-        // } else {
-        //     Alert.alert('Error', 'Please enter mobile number and password');
-        // }
-    };
+    const handleLogin = useCallback(() => {
+        if (!email.trim()) {
+            showToast({
+                message: 'Please enter your email',
+                type: 'error',
+            });
+            return;
+        }
+        if (!password.trim()) {
+            showToast({
+                message: 'Please enter your password',
+                type: 'error',
+            });
+            return;
+        }
+        if (!/\S+@\S+\.\S+/.test(email)) {
+            showToast({
+                message: 'Please enter a valid email address',
+                type: 'error',
+            });
+            return;
+        }
+        
+        setIsLoading(true);
+        loginUser();
+    }, [email, password]);
 
     const handleForgotPassword = () => {
         console.log('Forgot password pressed');
@@ -105,21 +168,17 @@ const Login = memo(({ }: LoginProps) => {
                                 marginBottom="s"
                                 fontFamily="Poppins-Regular"
                             >
-                                Mobile number <Text color="primary">*</Text>
+                                Email <Text color="primary">*</Text>
                             </Text>
-                            <View flexDirection="row" gap="s">
-                                <CountryCodeSelector />
-                                <View flex={1}>
-                                    <FormField
-                                        label=""
-                                        placeholder="Mobile number"
-                                        value={mobileNumber}
-                                        onChangeText={setMobileNumber}
-                                        keyboardType="phone-pad"
-                                        marginBottom="xs"
-                                    />
-                                </View>
-                            </View>
+                            <FormField
+                                label=""
+                                placeholder="Enter your email"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                marginBottom="xs"
+                            />
                         </View>
 
                         <View marginBottom="l">
@@ -141,9 +200,10 @@ const Login = memo(({ }: LoginProps) => {
 
                         <View marginTop="s" marginBottom="m">
                             <Button
-                                title="LOGIN"
+                                title={isLoading ? "LOGGING IN..." : "LOGIN"}
                                 variant="primary"
                                 onPress={handleLogin}
+                                disabled={isLoading}
                             />
                         </View>
 

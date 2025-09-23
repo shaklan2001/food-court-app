@@ -109,7 +109,6 @@ const CustomTabButton = (props: any) => {
         if (Platform.OS === 'ios') {
             Haptics.selectionAsync();
         }
-        // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (props.onPress) {
             props.onPress();
         }

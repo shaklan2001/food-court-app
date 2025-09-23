@@ -2,7 +2,7 @@ import { API_ROUTES } from "./apiRoutes";
 import { apiClient } from "./index";
 
 interface BetterwayApiCall {
-  method: "GET" | "POST" | "PUT" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   url: keyof typeof API_ROUTES | string;
   body?: any;
   query?: Record<string, any>;
@@ -25,10 +25,6 @@ export const betterwayApiCall = ({
   auth,
 }: BetterwayApiCall) => {
   const endpoint = API_ROUTES[url as keyof typeof API_ROUTES] || url;
-
-  console.log('🔗 Base URL:', apiClient.defaults.baseURL);
-  console.log('🔗 Endpoint:', endpoint);
-  console.log('🔗 Full URL will be:', `${apiClient.defaults.baseURL}${endpoint}`);
 
   return apiClient.request({
     method,

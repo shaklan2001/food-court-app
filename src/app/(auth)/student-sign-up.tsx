@@ -1,7 +1,7 @@
 import { AntDesign } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, Stack } from 'expo-router';
-import { memo, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Alert, Dimensions, ImageBackground, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FormContainer } from '../../components/shared';
@@ -18,11 +18,11 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
   const [currentSemester, setCurrentSemester] = useState('');
   const [studentIdFile, setStudentIdFile] = useState<string | null>(null);
 
-  const handleSignUp = () => {
+  const handleSignUp = useCallback(() => {
     router.push('/');
-  };
+  }, []);
 
-  const handleFileUpload = async () => {
+  const handleFileUpload = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['image/*', 'application/pdf'],
@@ -39,16 +39,16 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
       console.error('Error picking document:', error);
       Alert.alert('Error', 'Failed to pick document. Please try again.');
     }
-  };
+  }, []);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     router.back();
     console.log('Back pressed');
-  };
+  }, []);
 
-  const handleLogin = () => {
+  const handleLogin = useCallback(() => {
     router.push('/login');
-  };
+  }, []);
 
   return (
     <>
@@ -76,7 +76,7 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
               zIndex={1}
             >
               <TouchableOpacity onPress={handleBack}>
-                <AntDesign name="arrowleft" size={24} color="white" />
+                <AntDesign name="arrow-left" size={24} color="white" />
               </TouchableOpacity>
             </View>
             <View alignItems="center">

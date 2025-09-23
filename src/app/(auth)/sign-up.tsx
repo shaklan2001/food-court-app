@@ -1,12 +1,15 @@
 import { AntDesign } from '@expo/vector-icons';
 import { useTheme } from '@shopify/restyle';
 import { router, Stack } from 'expo-router';
-import { memo, useState } from 'react';
-import { Dimensions, ImageBackground, StatusBar, TouchableOpacity } from 'react-native';
+import { memo, useCallback, useState } from 'react';
+import { Dimensions, ImageBackground, Modal, Pressable, StatusBar } from 'react-native';
+import { Calendar } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
 import { Checkbox, FormContainer } from '../../components/shared';
 import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { setUser } from '../../store/slices/authSlice';
 import { Theme } from '../../theme/theme';
 import { showToast } from '../../utils';
 
@@ -16,6 +19,7 @@ interface SignUpProps { }
 
 const SignUp = memo(({ }: SignUpProps) => {
     const theme = useTheme<Theme>();
+    const dispatch = useDispatch();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
@@ -24,8 +28,9 @@ const SignUp = memo(({ }: SignUpProps) => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isStudentUser, setIsStudentUser] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
 
-    const formatDateForAPI = (dateString: string) => {
+    const formatDateForAPI = useCallback((dateString: string) => {
         if (!dateString) return '';
 
         if (dateString.includes('-') && dateString.length === 10) {
@@ -39,9 +44,30 @@ const SignUp = memo(({ }: SignUpProps) => {
         }
 
         return dateString;
-    };
+    }, []);
 
-    const createUser = () =>
+    const formatDateForDisplay = useCallback((dateString: string) => {
+        if (!dateString) return '';
+
+        if (dateString.includes('-') && dateString.length === 10) {
+            const [year, month, day] = dateString.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        return dateString;
+    }, []);
+
+    const handleDateSelect = useCallback((day: any) => {
+        const selectedDate = day.dateString; // Format: YYYY-MM-DD
+        setDob(formatDateForDisplay(selectedDate));
+        setShowCalendar(false);
+    }, [formatDateForDisplay]);
+
+    const handleCalendarPress = useCallback(() => {
+        setShowCalendar(true);
+    }, []);
+
+    const createUser = useCallback(() => {
         useApiPort({
             intent: "intent_create_user",
             port: betterwayApiCall({
@@ -59,7 +85,21 @@ const SignUp = memo(({ }: SignUpProps) => {
             }),
             success: (response) => {
                 setIsLoading(false);
-                if (response?.status) {
+                console.log('API Response:', response);
+                
+                if (response?.data?.success && response?.data?.user) {
+                    const userData = response.data.user;
+                    
+                    dispatch(setUser({
+                        id: userData.id,
+                        email: userData.email,
+                        name: userData.name,
+                        phone: userData.phone,
+                        dob: userData.dob,
+                        isStudent: userData.isStudent,
+                        image: userData.image,
+                    }));
+                    
                     showToast({
                         message: 'Account created successfully!',
                         type: 'success',
@@ -69,12 +109,12 @@ const SignUp = memo(({ }: SignUpProps) => {
                         if (isStudentUser) {
                             router.push('/student-sign-up');
                         } else {
-                            router.push('/login');
+                            router.push('/(tabs)');
                         }
                     }, 1500);
                 } else {
                     showToast({
-                        message: response?.message || 'Failed to create account',
+                        message: response?.data?.message || 'Failed to create account',
                         type: 'error',
                     });
                 }
@@ -87,9 +127,10 @@ const SignUp = memo(({ }: SignUpProps) => {
                 });
             },
             print: "error",
-        })();
+    })();
+    }, [name, email, mobileNumber, dob, password, isStudentUser]);
 
-    const validateForm = () => {
+    const validateForm = useCallback(() => {
         if (!name.trim()) {
             showToast({
                 message: 'Please enter your name',
@@ -147,32 +188,31 @@ const SignUp = memo(({ }: SignUpProps) => {
             return false;
         }
         return true;
-    };
+    }, [name, email, mobileNumber, dob, password, confirmPassword]);
 
-    const handleSignUp = () => {
-        // if (!validateForm()) {
-        //     return;
-        // }
-        // setIsLoading(true);
-        // createUser();
-        router.push('/student-sign-up');
-    };
+    const handleSignUp = useCallback(() => {
+        if (!validateForm()) {
+            return;
+        }
+        setIsLoading(true);
+        createUser();
+    }, [validateForm, createUser]);
 
-    const handleGoogleSignUp = () => {
+    const handleGoogleSignUp = useCallback(() => {
         console.log('Google sign up pressed');
-    };
+    }, []);
 
-    const handleAppleSignUp = () => {
+    const handleAppleSignUp = useCallback(() => {
         console.log('Apple sign up pressed');
-    };
+    }, []);
 
-    const handleLogin = () => {
+    const handleLogin = useCallback(() => {
         router.push('/login');
-    };
+    }, []);
 
-    const handleBack = () => {
-        console.log('Back pressed');
-    };
+    const handleBack = useCallback(() => {
+        router.back();
+    }, []);
 
     return (
         <>
@@ -199,9 +239,9 @@ const SignUp = memo(({ }: SignUpProps) => {
                             left={24}
                             zIndex={1}
                         >
-                            <TouchableOpacity onPress={handleBack}>
-                                <AntDesign name="arrowleft" size={24} color="white" />
-                            </TouchableOpacity>
+                            <Pressable onPress={handleBack}>
+                                <AntDesign name="arrow-left" size={24} color="white" />
+                            </Pressable>
                         </View>
                         <View alignItems="center">
                             <Text
@@ -238,7 +278,7 @@ const SignUp = memo(({ }: SignUpProps) => {
 
                         <View marginBottom="l">
                             <Text
-                                fontSize={14}
+                                fontSize={12}
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
@@ -263,7 +303,7 @@ const SignUp = memo(({ }: SignUpProps) => {
 
                         <View marginBottom="l">
                             <Text
-                                fontSize={14}
+                                fontSize={12}
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
@@ -272,15 +312,19 @@ const SignUp = memo(({ }: SignUpProps) => {
                                 DOB <Text color="primary">*</Text>
                             </Text>
                             <View position="relative">
-                                <FormField
-                                    label=""
-                                    placeholder="DD/MM/YYYY"
-                                    value={dob}
-                                    onChangeText={setDob}
-                                    marginBottom="xs"
-                                    paddingRight={50}
-                                />
-                                <TouchableOpacity
+                                <Pressable onPress={handleCalendarPress}>
+                                    <FormField
+                                        label=""
+                                        placeholder="DD/MM/YYYY"
+                                        value={dob}
+                                        onChangeText={setDob}
+                                        marginBottom="xs"
+                                        paddingRight={50}
+                                        editable={false}
+                                    />
+                                </Pressable>
+                                <Pressable
+                                    onPress={handleCalendarPress}
                                     style={{
                                         position: 'absolute',
                                         right: 16,
@@ -292,13 +336,13 @@ const SignUp = memo(({ }: SignUpProps) => {
                                     }}
                                 >
                                     <AntDesign name="calendar" size={20} color={theme.colors.textSecondary} />
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                         </View>
 
                         <View marginBottom="l">
                             <Text
-                                fontSize={14}
+                                fontSize={12}
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
@@ -314,7 +358,7 @@ const SignUp = memo(({ }: SignUpProps) => {
 
                         <View marginBottom="l">
                             <Text
-                                fontSize={14}
+                                fontSize={12}
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
@@ -391,6 +435,81 @@ const SignUp = memo(({ }: SignUpProps) => {
                     </FormContainer>
                 </SafeAreaView>
             </ImageBackground>
+
+            {/* Calendar Modal */}
+            <Modal
+                visible={showCalendar}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowCalendar(false)}
+            >
+                <View
+                    style={{
+                        flex: 1,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <View
+                        style={{
+                            backgroundColor: 'white',
+                            borderRadius: 20,
+                            padding: 20,
+                            margin: 20,
+                            width: width * 0.9,
+                            maxHeight: height * 0.7,
+                        }}
+                    >
+                        <View
+                            flexDirection="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            marginBottom="l"
+                        >
+                            <Text
+                                fontSize={18}
+                                fontWeight="600"
+                                color="textPrimary"
+                                fontFamily="Poppins-SemiBold"
+                            >
+                                Select Date of Birth
+                            </Text>
+                            <Pressable onPress={() => setShowCalendar(false)}>
+                                <AntDesign name="close" size={24} color={theme.colors.textSecondary} />
+                            </Pressable>
+                        </View>
+                        
+                        <Calendar
+                            onDayPress={handleDateSelect}
+                            theme={{
+                                backgroundColor: 'white',
+                                calendarBackground: 'white',
+                                textSectionTitleColor: theme.colors.textPrimary,
+                                selectedDayBackgroundColor: theme.colors.primary,
+                                selectedDayTextColor: 'white',
+                                todayTextColor: theme.colors.primary,
+                                dayTextColor: theme.colors.textPrimary,
+                                textDisabledColor: theme.colors.textSecondary,
+                                dotColor: theme.colors.primary,
+                                selectedDotColor: 'white',
+                                arrowColor: theme.colors.primary,
+                                disabledArrowColor: theme.colors.textSecondary,
+                                monthTextColor: theme.colors.textPrimary,
+                                indicatorColor: theme.colors.primary,
+                                textDayFontFamily: 'Poppins-Regular',
+                                textMonthFontFamily: 'Poppins-SemiBold',
+                                textDayHeaderFontFamily: 'Poppins-Medium',
+                                textDayFontSize: 16,
+                                textMonthFontSize: 18,
+                                textDayHeaderFontSize: 14,
+                            }}
+                            maxDate={new Date().toISOString().split('T')[0]}
+                            initialDate={dob ? formatDateForAPI(dob) : new Date().toISOString().split('T')[0]}
+                        />
+                    </View>
+                </View>
+            </Modal>
         </>
     );
 });
