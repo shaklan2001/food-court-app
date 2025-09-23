@@ -1,5 +1,5 @@
 import { useTheme } from '@shopify/restyle';
-import React, { memo, useState } from 'react';
+import { memo, useState } from 'react';
 import { TextInput as RNTextInput, View as RNView, TextInputProps } from 'react-native';
 import { Theme } from '../../theme/theme';
 import Text from './Text';
@@ -19,6 +19,8 @@ interface CustomTextInputProps extends TextInputProps {
     fontSize?: number;
     fontFamily?: string;
     placeholderFontSize?: number;
+    multiline?: boolean;
+    numberOfLines?: number;
 }
 
 const CustomTextInput = memo(({
@@ -36,6 +38,8 @@ const CustomTextInput = memo(({
     fontSize = 16,
     fontFamily = 'Poppins-Regular',
     placeholderFontSize = 14,
+    multiline = false,
+    numberOfLines = 1,
     ...props
 }: CustomTextInputProps) => {
     const theme = useTheme<Theme>();
@@ -77,20 +81,23 @@ const CustomTextInput = memo(({
                 style={{
                     backgroundColor: 'transparent',
                     paddingHorizontal: 16,
+                    paddingVertical: 10,
                     fontSize,
                     fontFamily,
                     height,
                     paddingRight,
                     textAlignVertical: 'center',
                     color: theme.colors.textPrimary,
+                    includeFontPadding: false,
                 }}
                 value={value}
+                multiline={multiline}
+                numberOfLines={numberOfLines}
                 onChangeText={onChangeText}
                 secureTextEntry={secureTextEntry}
                 keyboardType={keyboardType}
                 autoCapitalize={autoCapitalize}
                 scrollEnabled={false}
-                multiline={false}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 {...props}

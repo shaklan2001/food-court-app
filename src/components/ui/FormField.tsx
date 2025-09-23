@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { Theme } from '../../theme/theme';
 import Text from './Text';
 import CustomTextInput from './TextInput';
@@ -21,6 +21,7 @@ interface FormFieldProps {
     fontSize?: number;
     fontFamily?: string;
     marginBottom?: keyof Theme['spacing'] | 'none';
+    editable?: boolean;
 }
 
 const FormField = memo(({
@@ -37,16 +38,17 @@ const FormField = memo(({
     backgroundColor = 'mainBackground' as keyof Theme['colors'],
     borderColor = 'inputBorder' as keyof Theme['colors'],
     borderRadius = 'm' as keyof Theme['borderRadii'],
-    fontSize = 16,
+    fontSize = 14,
     fontFamily = 'Poppins-Regular',
     marginBottom = 'l' as keyof Theme['spacing'],
+    editable = true,
     ...props
 }: FormFieldProps) => {
     return (
         <View marginBottom={marginBottom === 'none' ? undefined : marginBottom}>
             {label && (
                 <Text
-                    fontSize={14}
+                    fontSize={12}
                     fontWeight="400"
                     color="textSecondary"
                     marginBottom="s"
@@ -69,6 +71,7 @@ const FormField = memo(({
                 borderRadius={borderRadius}
                 fontSize={fontSize}
                 fontFamily={fontFamily}
+                editable={editable}
                 {...props}
             />
         </View>

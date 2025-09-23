@@ -1,7 +1,15 @@
 
 export const API_ROUTES = {
-    CREATE_USER: "/api/onboarding/create-user",
-    UPLOAD_STUDENT_ID: "/api/onboarding/upload-student-id",
-    SIGN_IN_EMAIL: "/api/auth/sign-in/email",
-  };
+  CREATE_USER: "/api/onboarding/create-user",
+  UPLOAD_STUDENT_ID: "/api/onboarding/upload-student-id",
+  SIGN_IN_EMAIL: "/api/auth/sign-in/email",
+  VALIDATE_TOKEN: "/api/auth/validate-token",
+  REFRESH_TOKEN: "/api/auth/refresh-token",
+  GET_MENU: "/api/menu",
+  ADD_TO_CART: "/api/cart/add",
+  GET_CART: "/api/cart",
+  UPDATE_CART: "/api/cart/update",
+  CLEAR_CART: "/api/cart/clear",
+  BILLING_PUSH: "/api/billing/push-to-petpooja",
+};
   
