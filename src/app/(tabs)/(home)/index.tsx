@@ -1,15 +1,15 @@
 import { Carousel, Text, View } from '@/src/components/ui';
 import { betterwayApiCall, useApiPort } from '@/src/network/useApiPort';
-import { RootState } from '@/src/store/store';
+import { addToCart, fetchCart, updateCartItem } from '@/src/store/slices/cartSlice';
+import { RootState, useAppDispatch, useAppSelector } from '@/src/store/store';
 import { pageHorizantalPadding } from '@/src/utils/commomCompute';
 import { NotificationIcon, SearchIcon, ShoppingCartIcon, SortIcon, WalletIcon } from '@/src/utils/Svgs';
 import Fontisto from '@expo/vector-icons/build/Fontisto';
 import Octicons from '@expo/vector-icons/Octicons';
 import { router } from 'expo-router';
-import React, { memo, useCallback, useEffect } from 'react';
-import { FlatList, Image, Pressable, ScrollView, TouchableOpacity } from 'react-native';
+import React, { memo, useCallback, useEffect, useState } from 'react';
+import { FlatList, Image, Platform, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSelector } from 'react-redux';
 
 export const Card = memo(({ children, notification = false }: { children: React.ReactNode; notification?: boolean }) => {
     return (
@@ -38,6 +38,89 @@ export const Card = memo(({ children, notification = false }: { children: React.
                     borderColor="mainBackground"
                 />
             )}
+        </View>
+    );
+});
+
+const QuantitySelector = memo(({ 
+    itemId, 
+    currentQuantity = 0, 
+    onQuantityChange 
+}: { 
+    itemId: string; 
+    currentQuantity: number; 
+    onQuantityChange: (itemId: string, quantity: number) => void;
+}) => {
+    const handleIncrement = useCallback(() => {
+        onQuantityChange(itemId, currentQuantity + 1);
+    }, [itemId, currentQuantity, onQuantityChange]);
+
+    const handleDecrement = useCallback(() => {
+        if (currentQuantity > 0) {
+            onQuantityChange(itemId, currentQuantity - 1);
+        }
+    }, [itemId, currentQuantity, onQuantityChange]);
+
+    if (currentQuantity === 0) {
+        return (
+            <TouchableOpacity onPress={handleIncrement}>
+                <View
+                    width={80}
+                    backgroundColor="primary"
+                    borderRadius="m"
+                    justifyContent="center"
+                    alignItems="center"
+                >
+                    <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
+                        Add
+                    </Text>
+                </View>
+            </TouchableOpacity>
+        );
+    }
+
+    return (
+        <View
+            flexDirection="row"
+            alignItems="center"
+            backgroundColor="primary"
+            borderRadius="m"
+            minWidth={80}
+        >
+            <Pressable onPress={handleDecrement}>
+                <View
+                    width={25}
+                    justifyContent="center"
+                    alignItems="center"
+                >
+                    <Text color="textOnPrimary" fontSize={14} fontFamily="Poppins-Bold">
+                        -
+                    </Text>
+                </View>
+            </Pressable>
+            
+            <View
+                flex={1}
+                justifyContent="center"
+                alignItems="center"
+                minWidth={30}
+            >
+                <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
+                    {currentQuantity}
+                </Text>
+            </View>
+            
+            <Pressable onPress={handleIncrement}>
+                <View
+                    width={25}
+                    justifyContent="center"
+                    alignItems="center"
+                >
+                    <Text color="textOnPrimary" fontSize={14} fontFamily="Poppins-Bold">
+                        +
+                    </Text>
+                </View>
+            </Pressable>
         </View>
     );
 });
@@ -98,7 +181,9 @@ const ProfileIcon = memo(() => {
     )
 })
 
-const Header = memo(() => {
+const Header = memo(({ user }: { user: any }) => {
+    const cartItemCount = useAppSelector((state: RootState) => state.cart.itemCount);
+
     return (
         <View flexDirection="row" justifyContent="space-between" alignItems="center" paddingHorizontal={pageHorizantalPadding} mb='s'>
             <View>
@@ -114,7 +199,7 @@ const Header = memo(() => {
             </View>
             <View flexDirection="row" alignItems="center" gap="s">
                 <TouchableOpacity onPress={() => router.push('/cart')}>
-                    <Card notification={true}>
+                    <Card notification={cartItemCount > 0}>
                         <ShoppingCartIcon />
                     </Card>
                 </TouchableOpacity>
@@ -129,7 +214,7 @@ const Header = memo(() => {
     )
 })
 
-const Title = memo(() => {
+const Title = memo(({ user }: { user: any }) => {
     return (
         <View flexDirection="row" alignItems="center" paddingHorizontal={pageHorizantalPadding} mt='s'>
             <View flex={1}>
@@ -140,7 +225,7 @@ const Title = memo(() => {
                     marginBottom="xs"
                     fontFamily="Poppins-Medium"
                 >
-                    Hi Akash 👋
+                    Hi {user?.name.split(' ')[0]} 👋
                 </Text>
                 <Text
                     fontSize={18}
@@ -301,15 +386,40 @@ const CuisineCarousel = memo(() => {
 });
 
 const FoodItem = memo(({ item }: { item: any }) => {
+    const dispatch = useAppDispatch();
+    const { token } = useAppSelector((state: RootState) => state.auth);
+    const cartItems = useAppSelector((state: RootState) => state.cart.items);
+
     const handleItemPress = () => {
         router.push('/product-detail');
     };
 
+    const currentQuantity = cartItems.find(cartItem => cartItem.id === item.id)?.quantity || 0;
+
+    const handleQuantityChange = useCallback(async (itemId: string, quantity: number) => {
+        if (!token) return;
+
+        if (quantity === 0) {
+            dispatch(updateCartItem(itemId, 0, token));
+        } else if (currentQuantity === 0 && quantity === 1) {
+            dispatch(addToCart({
+                id: item.id,
+                name: item.title,
+                price: item.price,
+                pricePaise: item.pricePaise || 0,
+                image: item.image,
+                description: item.description
+            }, token));
+        } else {
+            dispatch(updateCartItem(itemId, quantity, token));
+        }
+    }, [item, token, dispatch, currentQuantity]);
+
     return (
         <Pressable onPress={handleItemPress}>
             <View
-                height={200}
-                width={166}
+                minHeight={220}
+                width={200}
                 backgroundColor="transparent"
                 borderRadius="m"
                 overflow="hidden"
@@ -322,38 +432,35 @@ const FoodItem = memo(({ item }: { item: any }) => {
                         resizeMode="cover"
                     />
                 </View>
+                <View marginVertical='s'>
+                    <Text
+                        fontSize={Platform.OS === 'ios' ? 14 : 12}
+                        fontWeight="600"
+                        lineHeight={Platform.OS === 'ios' ? 16 : 12}
+                        color="textPrimary"
+                        fontFamily="Poppins-SemiBold"
+                        style={{ marginBottom: -10 }}
+                    >
+                        {item.title}
+                    </Text>
+                </View>
                 <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'}>
-                    <View alignItems="flex-start" justifyContent="center" >
+                    <View width={'60%'} alignItems="flex-start" justifyContent="center" >
                         <Text
                             fontSize={14}
-                            fontWeight="600"
-                            color="textPrimary"
-                            fontFamily="Poppins-SemiBold"
-                            style={{ marginBottom: -10 }}
-                        >
-                            {item.title}
-                        </Text>
-                        <Text
-                            fontSize={12}
+                            marginTop={'xs'}
                             color="textSecondary"
-                            fontFamily="Poppins-Regular"
+                            fontFamily="Poppins-SemiBold"
                         >
                             {item.price}
                         </Text>
                     </View>
-                    <View alignItems="center" justifyContent="center">
-                        <TouchableOpacity>
-                            <View
-                                width={40}
-                                height={40}
-                                backgroundColor="primary"
-                                borderRadius="m"
-                                justifyContent="center"
-                                alignItems="center"
-                            >
-                                <Text color="textOnPrimary" fontSize={16} fontFamily="Poppins-Bold">+</Text>
-                            </View>
-                        </TouchableOpacity>
+                    <View width={'40%'} alignItems="center" justifyContent="center">
+                        <QuantitySelector
+                            itemId={item.id}
+                            currentQuantity={currentQuantity}
+                            onQuantityChange={handleQuantityChange}
+                        />
                     </View>
                 </View>
             </View>
@@ -521,64 +628,76 @@ const UserReviewsSection = memo(() => {
 
 const Home = () => {
     const insets = useSafeAreaInsets();
-    const { user, token } = useSelector((state: RootState) => state.auth);
+    const dispatch = useAppDispatch();
+    const { user, token } = useAppSelector((state: RootState) => state.auth);
+    const [menuData, setMenuData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    console.log("user", user, "token", token);
+    const transformMenuData = useCallback((apiData: any[]) => {
+        return apiData.map((item) => ({
+            id: item.id,
+            title: item.name,
+            price: `₹${(item.pricePaise / 100).toFixed(0)}`,
+            pricePaise: item.pricePaise,
+            image: item.image || require('@/assets/images/bowl.png'),
+            description: item.description,
+            categoryId: item.categoryId,
+            payload: item.payload
+        }));
+    }, []);
 
-    const recommendationsData = [
-        { id: 'rec1', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'rec2', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'rec3', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'rec4', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'rec5', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-    ];
+    const recommendationsData = transformMenuData(menuData);
+    const bestSellersData = transformMenuData(menuData.slice(0, 5));
+    const newArrivalsData = transformMenuData(menuData.slice(5, 10));
 
-    const bestSellersData = [
-        { id: 'bs1', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'bs2', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'bs3', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'bs4', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'bs5', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-    ];
-
-    const newArrivalsData = [
-        { id: 'na1', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'na2', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'na3', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'na4', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-        { id: 'na5', image: require('@/assets/images/bowl.png'), title: 'Desi Bowl', price: '$500' },
-    ];
-
-    const getMenu = useCallback(() => {
-        useApiPort({
+    const getMenu = useCallback(async () => {
+        setLoading(true);
+        const apiCall = useApiPort({
             intent: "intent_get_menu",
             port: betterwayApiCall({
                 method: "POST",
                 url: "GET_MENU",
                 auth: token,
-                query: {
+                body: {
                     page: 1,
                     limit: 10,
                 },
             }),
             success: (response) => {
-                console.log("responsessss", response?.data);
+                let menuItems = response;
+                if (response && !Array.isArray(response) && response.data) {
+                    menuItems = response.data;
+                }
+
+                if (menuItems && Array.isArray(menuItems)) {
+                    setMenuData(menuItems);
+                }
+                setLoading(false);
             },
             failure: (error) => {
-                console.log("error", error?.response?.data);
+                setLoading(false);
             },
         });
+
+        try {
+            await apiCall();
+        } catch (error) {
+            setLoading(false);
+        }
     }, [token]);
 
     useEffect(() => {
         getMenu();
-    }, [getMenu]);
+        if (token) {
+            dispatch(fetchCart(token));
+        }
+    }, [getMenu, token, dispatch]);
 
     return (
-        <SafeAreaView style={{ flex: 1, paddingTop: insets.top }}>
-            <Header />
+        <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
+            <Header user={user} />
             <ScrollView>
-                <Title />
+                <Title user={user} />
                 <SearchBar />
                 <CuisineCarousel />
                 <CuisineSection />
