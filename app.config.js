@@ -5,6 +5,7 @@ export default {
         version: "1.0.0",
         sdkVersion: "54.0.0",
         orientation: "portrait",
+        owner: "team-csk",
         icon: "./assets/images/icon.png",
         userInterfaceStyle: "light",
         splash: {
@@ -29,18 +30,22 @@ export default {
         ],
         ios: {
             supportsTablet: true,
-            bundleIdentifier: "com.yuvan97.foodcourtapp"
+            bundleIdentifier: "com.yuvan97.foodcourtapp",
+            allowFontScaling: false,
+
         },
         android: {
             package: "com.yuvan97.foodcourtapp",
             adaptiveIcon: {
                 foregroundImage: "./assets/images/adaptive-icon.png",
                 backgroundColor: "#ffffff"
-            }
+            },
+            allowFontScaling: false,
         },
         web: {},
         plugins: [
-            "expo-router"
+            "expo-router",
+            "expo-dev-client"
         ],
         extra: {
             router: {},

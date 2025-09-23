@@ -1,7 +1,6 @@
-// src/network/index.ts
 import axios from "axios";
 
-const isProd = true; // change with process.env.NODE_ENV
+const isProd = true;
 const BASE_URL = isProd
     ? "https://food-court-backend-3jmg.onrender.com"
     : "http://localhost:8000";
@@ -14,13 +13,8 @@ export const apiClient = axios.create({
     },
 });
 
-// Debug: Log the configured base URL
-console.log('🚀 API Client initialized with baseURL:', BASE_URL);
-
-// Attach interceptors if needed (auth tokens, logging, errors)
 apiClient.interceptors.request.use(
     async (config) => {
-        // Log all requests for debugging
         console.log('🌐 API Request:', {
             method: config.method?.toUpperCase(),
             url: config.url,
