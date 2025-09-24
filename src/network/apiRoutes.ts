@@ -11,5 +11,6 @@ export const API_ROUTES = {
   UPDATE_CART: "/api/cart/update",
   CLEAR_CART: "/api/cart/clear",
   BILLING_PUSH: "/api/billing/push-to-petpooja",
+  GET_ALL_COUPONS: "/api/coupon/get-all-coupons",
 };
   

@@ -9,7 +9,8 @@ export type ApiType =
   "GET_CART" |
   "UPDATE_CART" |
   "CLEAR_CART" |
-  "BILLING_PUSH";
+  "BILLING_PUSH" |
+  "GET_ALL_COUPONS";
   
 
 export type TransactionIntentType =
@@ -23,4 +24,15 @@ export type TransactionIntentType =
   "intent_get_cart" |
   "intent_update_cart" |
   "intent_clear_cart" |
-  "intent_billing_push";
+  "intent_billing_push" |
+  "intent_get_all_coupons";
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discountPercent: number;
+  minOrderPaise: number;
+  maxDiscountPaise: number;
+  createdAt: string;
+  updatedAt: string;
+}
