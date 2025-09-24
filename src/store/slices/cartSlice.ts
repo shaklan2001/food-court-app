@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { Coupon } from '../../network/routeTypes';
 import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
 import { convertToPaise, generateReceiptId, initiatePayment } from '../../services/paymentService';
 
@@ -21,6 +22,8 @@ interface CartState {
   paymentLoading: boolean;
   paymentSuccess: boolean;
   paymentError: string | null;
+  appliedCoupon: Coupon | null;
+  discountAmount: number;
 }
 
 const initialState: CartState = {
@@ -32,6 +35,8 @@ const initialState: CartState = {
   paymentLoading: false,
   paymentSuccess: false,
   paymentError: null,
+  appliedCoupon: null,
+  discountAmount: 0,
 };
 
 const cartSlice = createSlice({
@@ -79,11 +84,6 @@ const cartSlice = createSlice({
       state.total = action.payload.reduce((sum, item) => sum + (item.pricePaise * item.quantity), 0);
     },
     
-    clearCart: (state) => {
-      state.items = [];
-      state.total = 0;
-      state.itemCount = 0;
-    },
     
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -114,6 +114,36 @@ const cartSlice = createSlice({
       state.paymentSuccess = false;
       state.paymentError = null;
     },
+    
+    applyCoupon: (state, action: PayloadAction<Coupon>) => {
+      const coupon = action.payload;
+      const subtotal = state.total;
+      
+      // Check if coupon is applicable
+      if (subtotal >= coupon.minOrderPaise) {
+        state.appliedCoupon = coupon;
+        
+        // Calculate discount amount
+        const discountPercent = coupon.discountPercent / 100;
+        const calculatedDiscount = subtotal * discountPercent;
+        const maxDiscount = coupon.maxDiscountPaise;
+        
+        state.discountAmount = Math.min(calculatedDiscount, maxDiscount);
+      }
+    },
+    
+    removeCoupon: (state) => {
+      state.appliedCoupon = null;
+      state.discountAmount = 0;
+    },
+    
+    clearCart: (state) => {
+      state.items = [];
+      state.total = 0;
+      state.itemCount = 0;
+      state.appliedCoupon = null;
+      state.discountAmount = 0;
+    },
   },
 });
 
@@ -130,6 +160,8 @@ export const {
   setPaymentSuccess,
   setPaymentError,
   resetPaymentState,
+  applyCoupon,
+  removeCoupon,
 } = cartSlice.actions;
 
 export const fetchCart = (token: string) => async (dispatch: any) => {
