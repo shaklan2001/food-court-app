@@ -1,11 +1,12 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router, Stack } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Image, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import SuccessModal from "../components/SuccessModal";
 import { Text, View } from "../components/ui";
-import { fetchCart, processPayment, updateCartItem } from "../store/slices/cartSlice";
+import { Coupon } from "../network/routeTypes";
+import { applyCoupon, fetchCart, processPayment, removeCoupon, updateCartItem } from "../store/slices/cartSlice";
 import { RootState, useAppDispatch, useAppSelector } from "../store/store";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { BackIcon, MoreIcon } from "../utils/Svgs";
@@ -233,7 +234,7 @@ const CartLoadingSkeleton = memo(() => {
       >
       </View>
       <View>
-        {[1, 2, 3].map((index) => (
+        {[1, 2, 3, 4, 5].map((index) => (
           <View key={index}>
             <View
               flexDirection="row"
@@ -276,12 +277,12 @@ const CartLoadingSkeleton = memo(() => {
 });
 
 const DiscountCoupon = memo(({
-  promocode,
-  onPress,
+  appliedCoupon,
+  onRemoveCoupon,
   onViewAllCoupons
 }: {
-  promocode: string;
-  onPress: () => void;
+  appliedCoupon: any;
+  onRemoveCoupon: () => void;
   onViewAllCoupons: () => void;
 }) => {
   return (
@@ -310,7 +311,7 @@ const DiscountCoupon = memo(({
             color="textSecondary"
             fontFamily="Poppins-Regular"
           >
-            Promocode
+            {appliedCoupon ? 'Applied Coupon' : 'Promocode'}
           </Text>
           <Pressable onPress={onViewAllCoupons}>
             <Text
@@ -319,7 +320,7 @@ const DiscountCoupon = memo(({
               color="primary"
               fontFamily="Poppins-Medium"
             >
-              View All Coupons
+              {appliedCoupon ? 'Change' : 'View All Coupons'}
             </Text>
           </Pressable>
         </View>
@@ -328,23 +329,51 @@ const DiscountCoupon = memo(({
           alignItems="center"
           justifyContent="space-between"
         >
-          <Text
-            fontSize={16}
-            fontWeight="600"
-            color="textPrimary"
-            fontFamily="Poppins-SemiBold"
-          >
-            {promocode}
-          </Text>
-          <View
-            width={24}
-            height={24}
-            borderRadius="s"
-            backgroundColor="success"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+          <View flex={1}>
+            {appliedCoupon ? (
+              <>
+                <Text
+                  fontSize={16}
+                  fontWeight="600"
+                  color="textPrimary"
+                  fontFamily="Poppins-SemiBold"
+                  marginBottom="xs"
+                >
+                  {appliedCoupon.code}
+                </Text>
+                <Text
+                  fontSize={12}
+                  fontWeight="400"
+                  color="success"
+                  fontFamily="Poppins-Regular"
+                >
+                  {appliedCoupon.discountPercent}% OFF up to ₹{(appliedCoupon.maxDiscountPaise / 100).toFixed(0)}
+                </Text>
+              </>
+            ) : (
+              <Text
+                fontSize={14}
+                fontWeight="400"
+                color="textSecondary"
+                fontFamily="Poppins-Regular"
+              >
+                No coupon applied
+              </Text>
+            )}
+          </View>
+          <View flexDirection="row" alignItems="center">
+            <Pressable onPress={onRemoveCoupon}>
+              <View
+                width={24}
+                height={24}
+                borderRadius="s"
+                backgroundColor={appliedCoupon ? "success" : "border"}
+                justifyContent="center"
+                alignItems="center"
+              >
+                <Ionicons name="checkmark" size={20} color={appliedCoupon ? "#FFFFFF" : "#9CA3AF"} />
+              </View>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -396,17 +425,21 @@ const Cart = () => {
     loading,
     paymentLoading,
     paymentSuccess,
-    paymentError
+    paymentError,
+    appliedCoupon,
+    discountAmount
   } = useAppSelector((state: RootState) => state.cart);
   const [selectedOption, setSelectedOption] = useState<'orderNow' | 'takeaway'>('orderNow');
   const [promocode, setPromocode] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  const params = useLocalSearchParams();
 
   const subtotal = cartTotal / 100;
   const walletCoins = 0;
   const deliveryFee = 0;
-  const discount = 0;
-  const total = subtotal - walletCoins + deliveryFee - (subtotal * discount / 100);
+  const couponDiscount = discountAmount / 100;
+  const total = subtotal - walletCoins + deliveryFee - couponDiscount;
 
   useEffect(() => {
     if (token) {
@@ -419,6 +452,17 @@ const Cart = () => {
       setShowSuccessModal(true);
     }
   }, [paymentSuccess]);
+
+  useEffect(() => {
+    if (params.selectedCoupon) {
+      try {
+        const selectedCoupon: Coupon = JSON.parse(params.selectedCoupon as string);
+        dispatch(applyCoupon(selectedCoupon));
+      } catch (error) {
+        console.log('❌ Failed to parse selected coupon:', error);
+      }
+    }
+  }, [params.selectedCoupon, dispatch]);
 
   const handleOrderNowPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -438,6 +482,10 @@ const Cart = () => {
   const handleViewAllCoupons = useCallback(() => {
     router.push('/all-coupons');
   }, []);
+
+  const handleRemoveCoupon = useCallback(() => {
+    dispatch(removeCoupon());
+  }, [dispatch]);
 
   const handlePlaceOrder = useCallback(async () => {
     if (!token) {
@@ -521,8 +569,8 @@ const Cart = () => {
           {cartItems.length > 0 && (
             <>
               <DiscountCoupon 
-                promocode={promocode} 
-                onPress={() => setPromocode('')} 
+                appliedCoupon={appliedCoupon} 
+                onRemoveCoupon={handleRemoveCoupon} 
                 onViewAllCoupons={handleViewAllCoupons}
               />
               <View
@@ -533,9 +581,9 @@ const Cart = () => {
                 <PriceRow label="Subtotal:" value={`₹${subtotal.toFixed(0)}`} />
                 {walletCoins > 0 && <PriceRow label="Wallet Coins" value={`-₹${walletCoins}`} showIcon />}
                 {deliveryFee > 0 && <PriceRow label="Delivery Fee:" value={`₹${deliveryFee}`} />}
-                {discount > 0 && (
+                {appliedCoupon && couponDiscount > 0 && (
                   <>
-                    <PriceRow label="Discount:" value={`${discount}%`} isDiscount />
+                    <PriceRow label={`Coupon (${appliedCoupon.code}):`} value={`-₹${couponDiscount.toFixed(0)}`} isDiscount showIcon />
                     <Text
                       fontSize={10}
                       fontWeight="400"
@@ -543,7 +591,7 @@ const Cart = () => {
                       fontFamily="Poppins-Regular"
                       marginBottom="s"
                     >
-                      the discount does not apply to all products
+                      {appliedCoupon.discountPercent}% OFF up to ₹{(appliedCoupon.maxDiscountPaise / 100).toFixed(0)}
                     </Text>
                   </>
                 )}

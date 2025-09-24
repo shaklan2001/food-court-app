@@ -3,9 +3,12 @@ import Feather from '@expo/vector-icons/Feather';
 import { useTheme } from "@shopify/restyle";
 import * as Haptics from 'expo-haptics';
 import { router } from "expo-router";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import { Image, Pressable, StyleSheet } from "react-native";
+import LogoutModal from "../../components/LogoutModal";
 import { Text, View } from "../../components/ui";
+import { logout } from "../../store/slices/authSlice";
+import { useAppDispatch } from "../../store/store";
 import { Theme } from "../../theme/theme";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
 import { ScreenHeader } from '../cart';
@@ -59,6 +62,8 @@ const ProfileMenuItem = memo(({
 
 const Profile = () => {
   const theme = useTheme<Theme>();
+  const dispatch = useAppDispatch();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleBackPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -104,7 +109,19 @@ const Profile = () => {
 
   const handleLogoutPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    console.log('Logout pressed');
+    setShowLogoutModal(true);
+  }, []);
+
+  const handleLogoutConfirm = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    dispatch(logout());
+    setShowLogoutModal(false);
+    router.replace('/(auth)/');
+  }, [dispatch]);
+
+  const handleLogoutCancel = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowLogoutModal(false);
   }, []);
 
   return (
@@ -211,6 +228,12 @@ const Profile = () => {
             isLogout={true}
           />
         </View>
+
+        <LogoutModal
+          visible={showLogoutModal}
+          onClose={handleLogoutCancel}
+          onConfirm={handleLogoutConfirm}
+        />
       </View>
   );
 };

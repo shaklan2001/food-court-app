@@ -143,7 +143,6 @@ const AllCoupons = () => {
     
     try {
       setLoading(true);
-      
       const apiCall = useApiPort({
         intent: "intent_get_all_coupons",
         port: betterwayApiCall({
@@ -180,7 +179,12 @@ const AllCoupons = () => {
     if (selectedCouponId) {
       const selectedCoupon = coupons.find(c => c.id === selectedCouponId);
       if (selectedCoupon) {
-        router.back();
+        router.push({
+          pathname: '/cart',
+          params: { 
+            selectedCoupon: JSON.stringify(selectedCoupon)
+          }
+        });
       }
     }
   }, [selectedCouponId, coupons]);

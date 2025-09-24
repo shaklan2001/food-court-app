@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Animated, Dimensions, Image, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Image, StyleSheet } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { setToken, setUser } from '../store/slices/authSlice';
 import { RootState } from '../store/store';
+import { View } from './ui';
 
 const { width, height } = Dimensions.get('window');
 
@@ -87,7 +88,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View flex={1} backgroundColor="primary">
       <Image 
         source={require('../../assets/images/primary_bg.webp')} 
         style={styles.backgroundImage}
@@ -125,10 +126,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#A20538',
-  },
   backgroundImage: {
     position: 'absolute',
     top: 0,
@@ -142,7 +139,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: width,
     height: height,
-    backgroundColor: 'rgba(162, 5, 56, 0.7)', // Semi-transparent overlay
+    backgroundColor: 'rgba(162, 5, 56, 0.7)',
   },
   content: {
     flex: 1,
