@@ -1,6 +1,7 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from "expo-router";
+import { MotiView } from 'moti';
 import { memo, useCallback, useEffect, useState } from "react";
 import { Image, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import SuccessModal from "../components/SuccessModal";
@@ -232,47 +233,124 @@ EmptyCart.displayName = 'EmptyCart';
 const CartLoadingSkeleton = memo(() => {
   return (
     <View>
-      <View
-        height={25}
-        width={180}
-        borderRadius="s"
-        style={{ borderRadius: 6, backgroundColor: '#E5E5E5' }}
-        marginBottom="xl"
-       />
+      <MotiView
+        from={{ opacity: 0.3 }}
+        animate={{ opacity: 1 }}
+        transition={{
+          type: 'timing',
+          duration: 1000,
+          loop: true,
+          repeatReverse: true,
+        }}
+      >
+        <View
+          height={25}
+          width={180}
+          borderRadius="s"
+          style={{ borderRadius: 6, backgroundColor: '#E5E5E5' }}
+          marginBottom="xl"
+        />
+      </MotiView>
       <View>
         {[1, 2, 3, 4, 5].map((index) => (
           <View key={index}>
-            <View
-              flexDirection="row"
-              marginBottom="l"
-              borderRadius="s"
-              alignItems="center"
+            <MotiView
+              from={{ opacity: 0.3 }}
+              animate={{ opacity: 1 }}
+              transition={{
+                type: 'timing',
+                duration: 1000,
+                delay: index * 100,
+                loop: true,
+                repeatReverse: true,
+              }}
             >
               <View
-                style={styles.skeletonImage}
-              />
-              <View marginLeft="m" justifyContent="space-between" height={100} width="60%">
-                <View
-                  style={styles.skeletonText}
+                flexDirection="row"
+                marginBottom="l"
+                borderRadius="s"
+                alignItems="center"
+              >
+                <MotiView
+                  from={{ opacity: 0.3 }}
+                  animate={{ opacity: 1 }}
+                  transition={{
+                    type: 'timing',
+                    duration: 1000,
+                    delay: index * 100 + 200,
+                    loop: true,
+                    repeatReverse: true,
+                  }}
+                  style={styles.skeletonImage}
                 />
-                <View flexDirection="row" justifyContent="space-between" alignItems="center" width="100%">
-                  <View
-                    style={styles.skeletonPrice}
+                <View marginLeft="m" justifyContent="space-between" height={100} width="60%">
+                  <MotiView
+                    from={{ opacity: 0.3 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      type: 'timing',
+                      duration: 1000,
+                      delay: index * 100 + 300,
+                      loop: true,
+                      repeatReverse: true,
+                    }}
+                    style={styles.skeletonText}
                   />
-                  <View flexDirection="row">
-                    <View
-                      style={styles.skeletonButton}
+                  <View flexDirection="row" justifyContent="space-between" alignItems="center" width="100%">
+                    <MotiView
+                      from={{ opacity: 0.3 }}
+                      animate={{ opacity: 1 }}
+                      transition={{
+                        type: 'timing',
+                        duration: 1000,
+                        delay: index * 100 + 400,
+                        loop: true,
+                        repeatReverse: true,
+                      }}
+                      style={styles.skeletonPrice}
                     />
-                    <View
-                      style={styles.skeletonQuantity}
-                    />
-                    <View
-                      style={styles.skeletonButton}
-                    />
+                    <View flexDirection="row">
+                      <MotiView
+                        from={{ opacity: 0.3 }}
+                        animate={{ opacity: 1 }}
+                        transition={{
+                          type: 'timing',
+                          duration: 1000,
+                          delay: index * 100 + 500,
+                          loop: true,
+                          repeatReverse: true,
+                        }}
+                        style={styles.skeletonButton}
+                      />
+                      <MotiView
+                        from={{ opacity: 0.3 }}
+                        animate={{ opacity: 1 }}
+                        transition={{
+                          type: 'timing',
+                          duration: 1000,
+                          delay: index * 100 + 600,
+                          loop: true,
+                          repeatReverse: true,
+                        }}
+                        style={styles.skeletonQuantity}
+                      />
+                      <MotiView
+                        from={{ opacity: 0.3 }}
+                        animate={{ opacity: 1 }}
+                        transition={{
+                          type: 'timing',
+                          duration: 1000,
+                          delay: index * 100 + 700,
+                          loop: true,
+                          repeatReverse: true,
+                        }}
+                        style={styles.skeletonButton}
+                      />
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
+            </MotiView>
             <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} paddingBottom={'l'} />
           </View>
         ))}

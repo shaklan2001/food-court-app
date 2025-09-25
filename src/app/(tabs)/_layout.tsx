@@ -218,5 +218,5 @@ const styles = StyleSheet.create({
     },
     tabBar: {
         height: 60,
-    }
+    },
 });
