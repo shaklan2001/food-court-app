@@ -1,5 +1,5 @@
 import { Carousel, Text, View } from '@/src/components/ui';
-import { betterwayApiCall, useApiPort } from '@/src/network/useApiPort';
+import { betterwayApiCall } from '@/src/network/useApiPort';
 import { addToCart, fetchCart, updateCartItem } from '@/src/store/slices/cartSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@/src/store/store';
 import { pageHorizantalPadding } from '@/src/utils/commomCompute';
@@ -7,7 +7,8 @@ import { NotificationIcon, SearchIcon, ShoppingCartIcon, SortIcon, WalletIcon } 
 import Fontisto from '@expo/vector-icons/build/Fontisto';
 import Octicons from '@expo/vector-icons/Octicons';
 import { router } from 'expo-router';
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import { MotiView } from 'moti';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Image, Platform, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -47,7 +48,7 @@ Card.displayName = 'Card';
 const QuantitySelector = memo(({ 
     itemId, 
     currentQuantity = 0, 
-    onQuantityChange 
+    onQuantityChange, 
 }: { 
     itemId: string; 
     currentQuantity: number; 
@@ -172,8 +173,8 @@ const SearchBar = memo(() => {
                 </View>
             </TouchableOpacity>
         </View>
-    )
-})
+    );
+});
 
 SearchBar.displayName = 'SearchBar';
 
@@ -184,12 +185,12 @@ const ProfileIcon = memo(() => {
                 <Image source={require('@/assets/images/profile.jpg')} style={{ width: 48, height: 48 }} />
             </View>
         </Pressable>
-    )
-})
+    );
+});
 
 ProfileIcon.displayName = 'ProfileIcon';
 
-const Header = memo(({ user }: { user: any }) => {
+const Header = memo(() => {
     const cartItemCount = useAppSelector((state: RootState) => state.cart.itemCount);
 
     return (
@@ -197,7 +198,7 @@ const Header = memo(({ user }: { user: any }) => {
             <View>
                 <View flexDirection="row" alignItems="center" gap="s">
                     <ProfileIcon />
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/wallet')}>
                         <Card notification={false}>
                             <WalletIcon />
                         </Card>
@@ -219,14 +220,14 @@ const Header = memo(({ user }: { user: any }) => {
 
             </View>
         </View>
-    )
-})
+    );
+});
 
 Header.displayName = 'Header';
 
 const Title = memo(({ user }: { user: any }) => {
     return (
-        <View flexDirection="row" alignItems="center" paddingHorizontal={pageHorizantalPadding} mt='s'>
+        <View flexDirection="row" alignItems="center" paddingHorizontal={pageHorizantalPadding} mt='m'>
             <View flex={1}>
                 <Text
                     fontSize={18}
@@ -234,11 +235,13 @@ const Title = memo(({ user }: { user: any }) => {
                     color="textPrimary"
                     marginBottom="xs"
                     fontFamily="Poppins-Medium"
+                    lineHeight={24}
                 >
                     Hi {user?.name.split(' ')[0]} 👋
                 </Text>
                 <Text
                     fontSize={20}
+                    lineHeight={28}
                     fontWeight="bold"
                     color="textPrimary"
                     fontFamily="Poppins-Bold"
@@ -247,8 +250,8 @@ const Title = memo(({ user }: { user: any }) => {
                 </Text>
             </View>
         </View>
-    )
-})
+    );
+});
 
 Title.displayName = 'Title';
 
@@ -293,36 +296,36 @@ const CuisineSection = memo(() => {
             image: require('@/assets/images/Cuisins/cuisine 1.png'),
             title: 'Mini South',
             subtitle: 'Deliciously South Indian',
-            route: '/menu'
+            route: '/menu',
         },
         {
             id: '2',
             image: require('@/assets/images/Cuisins/cuisine 2.png'),
             title: 'Mo Ch',
             subtitle: 'More Chini',
-            route: '/menu'
+            route: '/menu',
         },
         {
             id: '3',
             image: require('@/assets/images/Cuisins/cuisine 3.png'),
             title: 'Italian Delight',
             subtitle: 'Authentic Italian flavors',
-            route: '/menu'
+            route: '/menu',
         },
         {
             id: '4',
             image: require('@/assets/images/Cuisins/cuisine 4.png'),
             title: 'Asian Fusion',
             subtitle: 'Modern Asian delights',
-            route: '/menu'
+            route: '/menu',
         },
         {
             id: '5',
             image: require('@/assets/images/Cuisins/cuisine 5.png'),
             title: 'American Classics',
             subtitle: 'Traditional favorites',
-            route: '/menu'
-        }
+            route: '/menu',
+        },
     ];
 
     return (
@@ -361,32 +364,32 @@ const CuisineCarousel = memo(() => {
             id: '1',
             image: require('@/assets/images/Menuuuu.png'),
             title: 'Italian Cuisine',
-            subtitle: 'Authentic flavors from Italy'
+            subtitle: 'Authentic flavors from Italy',
         },
         {
             id: '2',
             image: require('@/assets/images/Menuuuu.png'),
             title: 'Asian Fusion',
-            subtitle: 'Modern Asian delights'
+            subtitle: 'Modern Asian delights',
         },
         {
             id: '3',
             image: require('@/assets/images/Menuuuu.png'),
             title: 'Mediterranean',
-            subtitle: 'Fresh and healthy options'
+            subtitle: 'Fresh and healthy options',
         },
         {
             id: '4',
             image: require('@/assets/images/Menuuuu.png'),
             title: 'American Classics',
-            subtitle: 'Traditional favorites'
+            subtitle: 'Traditional favorites',
         },
         {
             id: '5',
             image: require('@/assets/images/Menuuuu.png'),
             title: 'International',
-            subtitle: 'Global culinary journey'
-        }
+            subtitle: 'Global culinary journey',
+        },
     ];
 
     return (
@@ -426,7 +429,7 @@ const FoodItem = memo(({ item }: { item: any }) => {
                 price: item.price,
                 pricePaise: item.pricePaise || 0,
                 image: item.image,
-                description: item.description
+                description: item.description,
             }, token));
         } else {
             dispatch(updateCartItem(itemId, quantity, token));
@@ -489,7 +492,7 @@ const FoodItem = memo(({ item }: { item: any }) => {
 
 FoodItem.displayName = 'FoodItem';
 
-const FoodSection = memo(({ title, data }: { title: string; data: any[] }) => {
+const FoodSection = memo(({ title, data, loading = false }: { title: string; data: any[]; loading?: boolean }) => {
     return (
         <View marginTop="l" paddingHorizontal={pageHorizantalPadding}>
             <View flexDirection="row" alignItems="center" marginBottom="m">
@@ -504,16 +507,20 @@ const FoodSection = memo(({ title, data }: { title: string; data: any[] }) => {
                 </Text>
             </View>
 
-            <FlatList
-                data={data}
-                renderItem={({ item }) => <FoodItem item={item} />}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingLeft: 0 }}
-                decelerationRate="fast"
-                snapToAlignment="start"
-            />
+            {loading ? (
+                <FoodSectionSkeleton count={5} />
+            ) : (
+                <FlatList
+                    data={data}
+                    renderItem={({ item }) => <FoodItem item={item} />}
+                    keyExtractor={(item) => item.id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingLeft: 0 }}
+                    decelerationRate="fast"
+                    snapToAlignment="start"
+                />
+            )}
         </View>
     );
 });
@@ -566,7 +573,7 @@ const ReviewCard = memo(({ review }: { review: any }) => {
                         width: 44,
                         height: 44,
                         borderRadius: 22,
-                        marginRight: 12
+                        marginRight: 12,
                     }}
                 />
                 <View>
@@ -603,7 +610,7 @@ const UserReviewsSection = memo(() => {
             text: "Amazing food and great service! The dishes were fresh, tasty, and served on time. Loved the ambiance will definitely visit again. Perfect spot for both family and friends.",
             name: "Anna Whale",
             role: "Student",
-            avatar: require('@/assets/images/profile.jpg')
+            avatar: require('@/assets/images/profile.jpg'),
         },
         {
             id: '2',
@@ -611,7 +618,7 @@ const UserReviewsSection = memo(() => {
             text: "Amazing food and great service! The dishes were fresh, tasty, and served on time. Loved the ambiance will definitely visit again. Perfect spot for both family and friends.",
             name: "John Doe",
             role: "Student",
-            avatar: require('@/assets/images/profile.jpg')
+            avatar: require('@/assets/images/profile.jpg'),
         },
         {
             id: '3',
@@ -619,8 +626,8 @@ const UserReviewsSection = memo(() => {
             text: "Amazing food and great service! The dishes were fresh, tasty, and served on time. Loved the ambiance will definitely visit again. Perfect spot for both family and friends.",
             name: "Sarah Smith",
             role: "Student",
-            avatar: require('@/assets/images/profile.jpg')
-        }
+            avatar: require('@/assets/images/profile.jpg'),
+        },
     ];
 
     return (
@@ -653,12 +660,165 @@ const UserReviewsSection = memo(() => {
 
 UserReviewsSection.displayName = 'UserReviewsSection';
 
+const FoodItemSkeleton = memo(() => {
+    return (
+        <MotiView
+            from={{ opacity: 0.4 }}
+            animate={{ opacity: 0.8 }}
+            transition={{
+                type: 'timing',
+                duration: 1000,
+                loop: true,
+                repeatReverse: true,
+            }}
+        >
+            <View
+                minHeight={220}
+                width={200}
+                backgroundColor="transparent"
+                borderRadius="m"
+                overflow="hidden"
+                marginRight="m"
+            >
+                <MotiView
+                    from={{ opacity: 0.4 }}
+                    animate={{ opacity: 0.8 }}
+                    transition={{
+                        type: 'timing',
+                        duration: 1000,
+                        delay: 200,
+                        loop: true,
+                        repeatReverse: true,
+                    }}
+                    style={{
+                        width: '100%',
+                        height: 140,
+                        borderRadius: 8,
+                        backgroundColor: '#c9c9c9',
+                    }}
+                />
+                <View marginVertical='s'>
+                    <MotiView
+                        from={{ opacity: 0.4 }}
+                        animate={{ opacity: 0.8 }}
+                        transition={{
+                            type: 'timing',
+                            duration: 1000,
+                            delay: 300,
+                            loop: true,
+                            repeatReverse: true,
+                        }}
+                        style={{
+                            width: '90%',
+                            height: 18,
+                            backgroundColor: '#c9c9c9',
+                            borderRadius: 4,
+                            marginBottom: 8,
+                        }}
+                    />
+                    <MotiView
+                        from={{ opacity: 0.4 }}
+                        animate={{ opacity: 0.8 }}
+                        transition={{
+                            type: 'timing',
+                            duration: 1000,
+                            delay: 400,
+                            loop: true,
+                            repeatReverse: true,
+                        }}
+                        style={{
+                            width: '70%',
+                            height: 16,
+                            backgroundColor: '#c9c9c9',
+                            borderRadius: 4,
+                        }}
+                    />
+                </View>
+                <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'}>
+                    <View width={'60%'} alignItems="flex-start" justifyContent="center">
+                        <MotiView
+                            from={{ opacity: 0.4 }}
+                            animate={{ opacity: 0.8 }}
+                            transition={{
+                                type: 'timing',
+                                duration: 1000,
+                                delay: 500,
+                                loop: true,
+                                repeatReverse: true,
+                            }}
+                            style={{
+                                width: 60,
+                                height: 16,
+                                backgroundColor: '#c9c9c9',
+                                borderRadius: 4,
+                            }}
+                        />
+                    </View>
+                    <View width={'40%'} alignItems="center" justifyContent="center">
+                        <MotiView
+                            from={{ opacity: 0.4 }}
+                            animate={{ opacity: 0.8 }}
+                            transition={{
+                                type: 'timing',
+                                duration: 1000,
+                                delay: 600,
+                                loop: true,
+                                repeatReverse: true,
+                            }}
+                            style={{
+                                width: 80,
+                                height: 32,
+                                backgroundColor: '#c9c9c9',
+                                borderRadius: 8,
+                            }}
+                        />
+                    </View>
+                </View>
+            </View>
+        </MotiView>
+    );
+});
+
+FoodItemSkeleton.displayName = 'FoodItemSkeleton';
+
+const FoodSectionSkeleton = memo(({ count = 5 }: { count?: number }) => {
+    return (
+        <FlatList
+            data={Array.from({ length: count }, (_, index) => index)}
+            renderItem={({ index }) => (
+                <MotiView
+                    from={{ opacity: 0.4 }}
+                    animate={{ opacity: 0.8 }}
+                    transition={{
+                        type: 'timing',
+                        duration: 1000,
+                        delay: index * 100,
+                        loop: true,
+                        repeatReverse: true,
+                    }}
+                >
+                    <FoodItemSkeleton />
+                </MotiView>
+            )}
+            keyExtractor={(item) => item.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingLeft: 0 }}
+            decelerationRate="fast"
+            snapToAlignment="start"
+        />
+    );
+});
+
+FoodSectionSkeleton.displayName = 'FoodSectionSkeleton';
+
 const Home = () => {
     const insets = useSafeAreaInsets();
     const dispatch = useAppDispatch();
     const { user, token } = useAppSelector((state: RootState) => state.auth);
     const [menuData, setMenuData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const isLoadingRef = useRef(false);
 
     const transformMenuData = useCallback((apiData: any[]) => {
         return apiData.map((item) => ({
@@ -669,7 +829,7 @@ const Home = () => {
             image: item.image || require('@/assets/images/bowl.png'),
             description: item.description,
             categoryId: item.categoryId,
-            payload: item.payload
+            payload: item.payload,
         }));
     }, []);
 
@@ -678,10 +838,12 @@ const Home = () => {
     const newArrivalsData = transformMenuData(menuData.slice(5, 10));
 
     const getMenu = useCallback(async () => {
+        if (!token || isLoadingRef.current) return;
+        
+        isLoadingRef.current = true;
         setLoading(true);
-        const apiCall = useApiPort({
-            intent: "intent_get_menu",
-            port: betterwayApiCall({
+        try {
+            const response = await betterwayApiCall({
                 method: "POST",
                 url: "GET_MENU",
                 auth: token,
@@ -689,27 +851,21 @@ const Home = () => {
                     page: 1,
                     limit: 10,
                 },
-            }),
-            success: (response) => {
-                let menuItems = response;
-                if (response && !Array.isArray(response) && response.data) {
-                    menuItems = response.data;
-                }
+            });
 
-                if (menuItems && Array.isArray(menuItems)) {
-                    setMenuData(menuItems);
-                }
-                setLoading(false);
-            },
-            failure: (error) => {
-                setLoading(false);
-            },
-        });
+            let menuItems = response;
+            if (response && !Array.isArray(response) && response.data) {
+                menuItems = response.data;
+            }
 
-        try {
-            await apiCall();
+            if (menuItems && Array.isArray(menuItems)) {
+                setMenuData(menuItems);
+            }
         } catch (error) {
+            console.log('Error fetching menu:', error);
+        } finally {
             setLoading(false);
+            isLoadingRef.current = false;
         }
     }, [token]);
 
@@ -722,15 +878,15 @@ const Home = () => {
 
     return (
         <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 0 : insets.top - 10 }}>
-            <Header user={user} />
+            <Header />
             <ScrollView style={{ marginBottom: -15 }}>
                 <Title user={user} />
                 <SearchBar />
                 <CuisineCarousel />
                 <CuisineSection />
-                <FoodSection title="Recommendations" data={recommendationsData} />
-                <FoodSection title="Best Sellers" data={bestSellersData} />
-                <FoodSection title="New Arrivals" data={newArrivalsData} />
+                <FoodSection title="Recommendations" data={recommendationsData} loading={loading} />
+                <FoodSection title="Best Sellers" data={bestSellersData} loading={loading} />
+                <FoodSection title="New Arrivals" data={newArrivalsData} loading={loading} />
                 <UserReviewsSection />
             </ScrollView>
         </SafeAreaView>
