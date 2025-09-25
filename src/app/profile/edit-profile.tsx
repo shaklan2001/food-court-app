@@ -42,6 +42,8 @@ const InputField = memo(({
   );
 });
 
+InputField.displayName = 'InputField';
+
 const EditProfile = () => {
     const [name, setName] = useState('Nishant Singh');
     const [position, setPosition] = useState('Student');

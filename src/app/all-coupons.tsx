@@ -86,6 +86,8 @@ const CouponCard = memo(({
   );
 });
 
+CouponCard.displayName = 'CouponCard';
+
 const CouponSection = memo(({
   title,
   coupons,
@@ -128,6 +130,8 @@ const CouponSection = memo(({
     </View>
   );
 });
+
+CouponSection.displayName = 'CouponSection';
 
 const AllCoupons = () => {
   const { token } = useAppSelector((state: RootState) => state.auth);

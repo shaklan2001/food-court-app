@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
-import { useTheme } from "@shopify/restyle";
 import * as Haptics from 'expo-haptics';
 import { router } from "expo-router";
 import { memo, useCallback, useState } from "react";
@@ -9,7 +8,6 @@ import LogoutModal from "../../components/LogoutModal";
 import { Text, View } from "../../components/ui";
 import { logout } from "../../store/slices/authSlice";
 import { useAppDispatch } from "../../store/store";
-import { Theme } from "../../theme/theme";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
 import { ScreenHeader } from '../cart';
 
@@ -60,19 +58,11 @@ const ProfileMenuItem = memo(({
   );
 });
 
+ProfileMenuItem.displayName = 'ProfileMenuItem';
+
 const Profile = () => {
-  const theme = useTheme<Theme>();
   const dispatch = useAppDispatch();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  const handleBackPress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.back();
-  }, []);
-
-  const handleMorePress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
 
   const handleEditProfilePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

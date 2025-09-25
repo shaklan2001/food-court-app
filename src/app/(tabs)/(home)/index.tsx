@@ -42,6 +42,8 @@ export const Card = memo(({ children, notification = false }: { children: React.
     );
 });
 
+Card.displayName = 'Card';
+
 const QuantitySelector = memo(({ 
     itemId, 
     currentQuantity = 0, 
@@ -125,6 +127,8 @@ const QuantitySelector = memo(({
     );
 });
 
+QuantitySelector.displayName = 'QuantitySelector';
+
 const SearchBar = memo(() => {
     return (
         <View
@@ -171,6 +175,8 @@ const SearchBar = memo(() => {
     )
 })
 
+SearchBar.displayName = 'SearchBar';
+
 const ProfileIcon = memo(() => {
     return (
         <Pressable onPress={() => router.push('/profile/')}>
@@ -180,6 +186,8 @@ const ProfileIcon = memo(() => {
         </Pressable>
     )
 })
+
+ProfileIcon.displayName = 'ProfileIcon';
 
 const Header = memo(({ user }: { user: any }) => {
     const cartItemCount = useAppSelector((state: RootState) => state.cart.itemCount);
@@ -214,13 +222,15 @@ const Header = memo(({ user }: { user: any }) => {
     )
 })
 
+Header.displayName = 'Header';
+
 const Title = memo(({ user }: { user: any }) => {
     return (
         <View flexDirection="row" alignItems="center" paddingHorizontal={pageHorizantalPadding} mt='s'>
             <View flex={1}>
                 <Text
-                    fontSize={14}
-                    fontWeight="500"
+                    fontSize={18}
+                    fontWeight="600"
                     color="textPrimary"
                     marginBottom="xs"
                     fontFamily="Poppins-Medium"
@@ -228,7 +238,7 @@ const Title = memo(({ user }: { user: any }) => {
                     Hi {user?.name.split(' ')[0]} 👋
                 </Text>
                 <Text
-                    fontSize={18}
+                    fontSize={20}
                     fontWeight="bold"
                     color="textPrimary"
                     fontFamily="Poppins-Bold"
@@ -239,6 +249,8 @@ const Title = memo(({ user }: { user: any }) => {
         </View>
     )
 })
+
+Title.displayName = 'Title';
 
 const CuisineItem = memo(({ item }: { item: any }) => {
     const handleCuisinePress = (route: string) => {
@@ -271,6 +283,8 @@ const CuisineItem = memo(({ item }: { item: any }) => {
         </Pressable>
     );
 });
+
+CuisineItem.displayName = 'CuisineItem';
 
 const CuisineSection = memo(() => {
     const cuisineData = [
@@ -339,6 +353,8 @@ const CuisineSection = memo(() => {
     );
 });
 
+CuisineSection.displayName = 'CuisineSection';
+
 const CuisineCarousel = memo(() => {
     const cuisineData = [
         {
@@ -384,6 +400,8 @@ const CuisineCarousel = memo(() => {
         </View>
     );
 });
+
+CuisineCarousel.displayName = 'CuisineCarousel';
 
 const FoodItem = memo(({ item }: { item: any }) => {
     const dispatch = useAppDispatch();
@@ -434,12 +452,13 @@ const FoodItem = memo(({ item }: { item: any }) => {
                 </View>
                 <View marginVertical='s'>
                     <Text
-                        fontSize={Platform.OS === 'ios' ? 14 : 12}
+                        fontSize={14}
                         fontWeight="600"
-                        lineHeight={Platform.OS === 'ios' ? 16 : 12}
+                        lineHeight={16}
                         color="textPrimary"
                         fontFamily="Poppins-SemiBold"
                         style={{ marginBottom: -10 }}
+                        minHeight={40}
                     >
                         {item.title}
                     </Text>
@@ -468,7 +487,9 @@ const FoodItem = memo(({ item }: { item: any }) => {
     );
 });
 
-const FoodSection = memo(({ title, data }: { title: string; data: Array<any> }) => {
+FoodItem.displayName = 'FoodItem';
+
+const FoodSection = memo(({ title, data }: { title: string; data: any[] }) => {
     return (
         <View marginTop="l" paddingHorizontal={pageHorizantalPadding}>
             <View flexDirection="row" alignItems="center" marginBottom="m">
@@ -496,6 +517,8 @@ const FoodSection = memo(({ title, data }: { title: string; data: Array<any> }) 
         </View>
     );
 });
+
+FoodSection.displayName = 'FoodSection';
 
 const ReviewCard = memo(({ review }: { review: any }) => {
     return (
@@ -526,7 +549,7 @@ const ReviewCard = memo(({ review }: { review: any }) => {
             </View>
 
             <Text
-                fontSize={10}
+                fontSize={11}
                 color="textSecondary"
                 lineHeight={16}
                 marginBottom="m"
@@ -569,6 +592,8 @@ const ReviewCard = memo(({ review }: { review: any }) => {
         </View>
     );
 });
+
+ReviewCard.displayName = 'ReviewCard';
 
 const UserReviewsSection = memo(() => {
     const reviewsData = [
@@ -625,6 +650,8 @@ const UserReviewsSection = memo(() => {
         </View>
     );
 });
+
+UserReviewsSection.displayName = 'UserReviewsSection';
 
 const Home = () => {
     const insets = useSafeAreaInsets();
@@ -694,9 +721,9 @@ const Home = () => {
     }, [getMenu, token, dispatch]);
 
     return (
-        <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
+        <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 0 : insets.top - 10 }}>
             <Header user={user} />
-            <ScrollView>
+            <ScrollView style={{ marginBottom: -15 }}>
                 <Title user={user} />
                 <SearchBar />
                 <CuisineCarousel />

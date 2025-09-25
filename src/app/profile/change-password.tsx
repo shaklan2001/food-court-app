@@ -41,6 +41,8 @@ const PasswordField = memo(({
   );
 });
 
+PasswordField.displayName = 'PasswordField';
+
 const ChangePassword = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

@@ -1,6 +1,6 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Image, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import SuccessModal from "../components/SuccessModal";
@@ -8,14 +8,14 @@ import { Text, View } from "../components/ui";
 import { Coupon } from "../network/routeTypes";
 import { applyCoupon, fetchCart, processPayment, removeCoupon, updateCartItem } from "../store/slices/cartSlice";
 import { RootState, useAppDispatch, useAppSelector } from "../store/store";
-import { pageHorizantalPadding } from "../utils/commomCompute";
 import { BackIcon, MoreIcon } from "../utils/Svgs";
+import { pageHorizantalPadding } from "../utils/commomCompute";
 import { Card } from "./(tabs)/(home)";
 
 const RadioButton = memo(({
   selected,
   onPress,
-  label
+  label,
 }: {
   selected: boolean;
   onPress: () => void;
@@ -58,13 +58,15 @@ const RadioButton = memo(({
   );
 });
 
+RadioButton.displayName = 'RadioButton';
+
 const CartItem = memo(({
   name,
   price,
   quantity,
   onIncrease,
   onDecrease,
-  image
+  image,
 }: {
   name: string;
   price: string;
@@ -134,17 +136,18 @@ const CartItem = memo(({
           </View>
         </View>
       </View>
-      <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} paddingBottom={'l'}>
-      </View>
+      <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} paddingBottom={'l'} />
     </View>
   );
 });
+
+CartItem.displayName = 'CartItem';
 
 const PriceRow = memo(({
   label,
   value,
   isDiscount = false,
-  showIcon = false
+  showIcon = false,
 }: {
   label: string;
   value: string;
@@ -193,6 +196,8 @@ const PriceRow = memo(({
   );
 });
 
+PriceRow.displayName = 'PriceRow';
+
 const EmptyCart = memo(() => {
   return (
     <View flex={1} justifyContent="center" alignItems="center" style={{ minHeight: 400 }}>
@@ -222,6 +227,8 @@ const EmptyCart = memo(() => {
   );
 });
 
+EmptyCart.displayName = 'EmptyCart';
+
 const CartLoadingSkeleton = memo(() => {
   return (
     <View>
@@ -231,8 +238,7 @@ const CartLoadingSkeleton = memo(() => {
         borderRadius="s"
         style={{ borderRadius: 6, backgroundColor: '#E5E5E5' }}
         marginBottom="xl"
-      >
-      </View>
+       />
       <View>
         {[1, 2, 3, 4, 5].map((index) => (
           <View key={index}>
@@ -267,8 +273,7 @@ const CartLoadingSkeleton = memo(() => {
                 </View>
               </View>
             </View>
-            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} paddingBottom={'l'}>
-            </View>
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} paddingBottom={'l'} />
           </View>
         ))}
       </View>
@@ -276,10 +281,12 @@ const CartLoadingSkeleton = memo(() => {
   );
 });
 
+CartLoadingSkeleton.displayName = 'CartLoadingSkeleton';
+
 const DiscountCoupon = memo(({
   appliedCoupon,
   onRemoveCoupon,
-  onViewAllCoupons
+  onViewAllCoupons,
 }: {
   appliedCoupon: any;
   onRemoveCoupon: () => void;
@@ -381,6 +388,8 @@ const DiscountCoupon = memo(({
   );
 });
 
+DiscountCoupon.displayName = 'DiscountCoupon';
+
 export const ScreenHeader = ({ title, moreAction = true }: { title: string, moreAction?: boolean }) => {
   return (
     <View
@@ -399,7 +408,7 @@ export const ScreenHeader = ({ title, moreAction = true }: { title: string, more
       </Pressable>
 
       <Text
-        fontSize={18}
+        fontSize={22}
         fontWeight="bold"
         color="textPrimary"
         fontFamily="Poppins-Bold"
@@ -413,8 +422,8 @@ export const ScreenHeader = ({ title, moreAction = true }: { title: string, more
         </Card>
       </Pressable>
     </View>
-  )
-}
+  );
+};
 
 const Cart = () => {
   const dispatch = useAppDispatch();
@@ -427,7 +436,7 @@ const Cart = () => {
     paymentSuccess,
     paymentError,
     appliedCoupon,
-    discountAmount
+    discountAmount,
   } = useAppSelector((state: RootState) => state.cart);
   const [selectedOption, setSelectedOption] = useState<'orderNow' | 'takeaway'>('orderNow');
   const [promocode, setPromocode] = useState('');
@@ -609,7 +618,7 @@ const Cart = () => {
             <Pressable
               style={[
                 styles.checkoutButton,
-                { opacity: (paymentLoading || cartItems.length === 0) ? 0.6 : 1 }
+                { opacity: (paymentLoading || cartItems.length === 0) ? 0.6 : 1 },
               ]}
               onPress={handlePlaceOrder}
               disabled={paymentLoading || cartItems.length === 0}
