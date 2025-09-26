@@ -3,18 +3,25 @@ import { router, Stack } from "expo-router";
 import { memo, useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput } from "react-native";
 import { Text, View } from "../components/ui";
-import { Coupon } from "../network/routeTypes";
 import { betterwayApiCall, useApiPort } from "../network/useApiPort";
 import { RootState, useAppSelector } from "../store/store";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { DiscountIcon } from "../utils/Svgs";
 import { ScreenHeader } from "./cart";
 
+export interface Coupon {
+  id: string;
+  code: string;
+  minOrderPaise: number;
+  discountPercent: number;
+  maxDiscountPaise: number;
+}
+
 const CouponCard = memo(({
   coupon,
   isApplicable,
   isSelected,
-  onPress
+  onPress,
 }: {
   coupon: Coupon;
   isApplicable: boolean;
@@ -23,7 +30,7 @@ const CouponCard = memo(({
 }) => {
   const discountAmount = Math.min(
     (coupon.minOrderPaise * coupon.discountPercent) / 100,
-    coupon.maxDiscountPaise
+    coupon.maxDiscountPaise,
   ) / 100;
 
   return (
@@ -32,7 +39,7 @@ const CouponCard = memo(({
       disabled={!isApplicable}
       style={[
         styles.couponCard,
-        { opacity: isApplicable ? 1 : 0.6 }
+        { opacity: isApplicable ? 1 : 0.6 },
       ]}
     >
       <View flexDirection="row" alignItems="center" justifyContent="space-between">
@@ -93,7 +100,7 @@ const CouponSection = memo(({
   coupons,
   cartTotal,
   selectedCouponId,
-  onCouponSelect
+  onCouponSelect,
 }: {
   title: string;
   coupons: Coupon[];
@@ -186,23 +193,23 @@ const AllCoupons = () => {
         router.push({
           pathname: '/cart',
           params: { 
-            selectedCoupon: JSON.stringify(selectedCoupon)
-          }
+            selectedCoupon: JSON.stringify(selectedCoupon),
+          },
         });
       }
     }
   }, [selectedCouponId, coupons]);
 
   const filteredCoupons = coupons.filter(coupon =>
-    coupon.code.toLowerCase().includes(searchQuery.toLowerCase())
+    coupon.code.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const applicableCoupons = filteredCoupons.filter(coupon => 
-    cartTotal >= coupon.minOrderPaise
+    cartTotal >= coupon.minOrderPaise,
   );
   
   const nonApplicableCoupons = filteredCoupons.filter(coupon => 
-    cartTotal < coupon.minOrderPaise
+    cartTotal < coupon.minOrderPaise,
   );
 
   return (
@@ -235,7 +242,7 @@ const AllCoupons = () => {
                 onPress={handleApplyCoupon}
                 style={[
                   styles.applyButton,
-                  { opacity: selectedCouponId ? 1 : 0.5 }
+                  { opacity: selectedCouponId ? 1 : 0.5 },
                 ]}
                 disabled={!selectedCouponId}
               >

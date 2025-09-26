@@ -1,13 +1,20 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Animated, Dimensions, Image, StyleSheet } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { setToken, setUser } from '../store/slices/authSlice';
-import { RootState } from '../store/store';
-import { View } from './ui';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  ImageBackground,
+  StatusBar,
+  StyleSheet,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch } from "react-redux";
+import { setToken, setUser } from "../store/slices/authSlice";
+import { View } from "./ui";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -16,9 +23,6 @@ interface SplashScreenProps {
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const router = useRouter();
   const dispatch = useDispatch();
-  const { user, token } = useSelector((state: RootState) => state.auth);
-  console.log('user', user);
-  console.log('token', token);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [dotAnimations] = useState([
     new Animated.Value(0.3),
@@ -58,28 +62,28 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const storedToken = await AsyncStorage.getItem('auth_token');
-      const storedUser = await AsyncStorage.getItem('user_data');
+      const storedToken = await AsyncStorage.getItem("auth_token");
+      const storedUser = await AsyncStorage.getItem("user_data");
 
       if (storedToken && storedUser) {
         const userData = JSON.parse(storedUser);
         dispatch(setToken(storedToken));
         dispatch(setUser(userData));
-        
+
         setTimeout(() => {
-          router.replace('/(tabs)');
+          router.replace("/(tabs)");
           onFinish();
         }, 2000);
       } else {
         setTimeout(() => {
-          router.replace('/(auth)');
+          router.replace("/(auth)");
           onFinish();
         }, 2000);
       }
     } catch (error) {
-      console.error('Error checking auth status:', error);
+      console.log("error", error);
       setTimeout(() => {
-        router.replace('/(auth)');
+        router.replace("/(auth)");
         onFinish();
       }, 2000);
     } finally {
@@ -88,100 +92,104 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   };
 
   return (
-    <View flex={1} backgroundColor="primary">
-      <Image 
-        source={require('../../assets/images/primary_bg.webp')} 
+    <View style={styles.container}>
+      <ImageBackground
+        source={require("../../assets/images/primary_bg.webp")}
         style={styles.backgroundImage}
         resizeMode="cover"
-      />
-      <View style={styles.overlay} />
-      
-      <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../assets/images/font-logo.png')} 
-            style={styles.chefHat}
-            resizeMode="contain"
-          />
-        </View>
-        
-        {isCheckingAuth && (
-          <View style={styles.loadingContainer}>
-            {dotAnimations.map((animation, index) => (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.loadingDot,
-                  {
-                    opacity: animation,
-                  },
-                ]}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.content}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require("../../assets/images/font-logo.png")}
+                style={styles.chefHat}
+                resizeMode="contain"
               />
-            ))}
+            </View>
+
+            {isCheckingAuth && (
+              <View style={styles.loadingContainer}>
+                {dotAnimations.map((animation, index) => (
+                  <Animated.View
+                    key={index}
+                    style={[
+                      styles.loadingDot,
+                      {
+                        opacity: animation,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
           </View>
-        )}
-      </View>
+        </SafeAreaView>
+      </ImageBackground>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: width,
-    height: height,
+  container: {
+    flex: 1,
+    backgroundColor: "#A20538",
   },
-  overlay: {
-    position: 'absolute',
+  backgroundImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    position: "absolute",
     top: 0,
     left: 0,
-    width: width,
-    height: height,
-    backgroundColor: 'rgba(162, 5, 56, 0.7)',
+    right: 0,
+    bottom: 0,
+  },
+  safeArea: {
+    flex: 1,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
   },
   logoContainer: {
     marginBottom: 20,
   },
   chefHat: {
-    width: 300,
-    height: 180,
-    tintColor: 'white',
+    width: 380,
+    height: 240,
+    tintColor: "white",
   },
   appName: {
     fontSize: 36,
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
     letterSpacing: 2,
     marginBottom: 10,
-    fontFamily: 'Poppins-Bold',
+    fontFamily: "Poppins-Bold",
   },
   tagline: {
     fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
+    color: "white",
+    textAlign: "center",
     letterSpacing: 1,
     opacity: 0.9,
-    fontFamily: 'Poppins-Medium',
+    fontFamily: "Poppins-Medium",
   },
   loadingContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loadingDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     marginHorizontal: 4,
     opacity: 0.3,
   },

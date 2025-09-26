@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Coupon } from '../../network/routeTypes';
+import { Coupon } from '../../app/all-coupons';
 import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
 import { convertToPaise, generateReceiptId, initiatePayment } from '../../services/paymentService';
 
@@ -176,7 +176,6 @@ export const fetchCart = (token: string) => async (dispatch: any) => {
       auth: token,
     }),
     success: (response: any) => {
-      console.log("✅ Cart fetched:", response);
       if (response && response.cartItems && Array.isArray(response.cartItems)) {
         const cartItems: CartItem[] = response.cartItems.map((item: any) => ({
           id: item.dishId || item.id,
@@ -185,7 +184,7 @@ export const fetchCart = (token: string) => async (dispatch: any) => {
           pricePaise: item.dish?.pricePaise || item.pricePaise || item.price || 0,
           quantity: item.quantity || 1,
           image: item.dish?.image || item.image || require('@/assets/images/bowl.png'),
-          description: item.dish?.description || item.description || ''
+          description: item.dish?.description || item.description || '',
         }));
         const totalPaise = response.totalPaise || cartItems.reduce((sum, item) => sum + (item.pricePaise * item.quantity), 0);
         dispatch(setCart(cartItems));
@@ -201,7 +200,7 @@ export const fetchCart = (token: string) => async (dispatch: any) => {
 
   try {
     await apiCall();
-  } catch (error) {
+  } catch {
     dispatch(setError('Failed to fetch cart'));
     dispatch(setLoading(false));
   }
@@ -217,26 +216,33 @@ export const addToCart = (item: Omit<CartItem, 'quantity'>, token: string) => as
       auth: token,
       body: {
         itemId: item.id,
-        quantity: 1
+        quantity: 1,
       },
     }),
-    success: (response: any) => {
-      console.log("✅ Item added to cart:", response);
+    success: (_response: any) => {
+      // Item added successfully
     },
-    failure: (error: any) => {
-
+    failure: (_error: any) => {
+      // Handle error silently for add to cart
     },
   });
 
   try {
     await apiCall();
-  } catch (error) {
-    console.log("❌ Cart API call failed:", error);
+  } catch {
+    // Handle error silently
   }
 };
 
 export const updateCartItem = (dishId: string, quantity: number, token: string) => async (dispatch: any) => {
   dispatch(updateQuantity({ id: dishId, quantity }));
+  
+  if (quantity <= 0) {
+    // Call the remove API when quantity becomes 0
+    await dispatch(removeCartItemAPI(dishId, token));
+    return;
+  }
+  
   const apiCall = useApiPort({
     intent: "intent_update_cart",
     port: betterwayApiCall({
@@ -245,21 +251,49 @@ export const updateCartItem = (dishId: string, quantity: number, token: string) 
       auth: token,
       body: {
         itemId: dishId,
-        quantity: quantity
+        quantity: quantity,
       },
     }),
-    success: (response: any) => {
-      
+    success: (_response: any) => {
     },
-    failure: (error: any) => {
-      
+    failure: (_error: any) => {
     },
   });
 
   try {
     await apiCall();
-  } catch (error) {
-    console.log("❌ Update cart API call failed:", error);
+  } catch {
+  }
+};
+
+export const removeCartItemAPI = (itemId: string, token: string) => async (dispatch: any) => {
+  dispatch(setLoading(true));
+  
+  const apiCall = useApiPort({
+    intent: "intent_remove_cart_item",
+    port: betterwayApiCall({
+      method: "DELETE",
+      url: "REMOVE_CART_ITEM",
+      auth: token,
+      body: {
+        itemId: itemId,
+      },
+    }),
+    success: (_response: any) => {
+      dispatch(removeItem(itemId));
+      dispatch(setLoading(false));
+    },
+    failure: (error: any) => {
+      dispatch(setError(error?.message || 'Failed to remove cart item'));
+      dispatch(setLoading(false));
+    },
+  });
+
+  try {
+    await apiCall();
+  } catch {
+    dispatch(setError('Failed to remove cart item'));
+    dispatch(setLoading(false));
   }
 };
 
@@ -273,7 +307,7 @@ export const clearCartAPI = (token: string) => async (dispatch: any) => {
       url: "CLEAR_CART",
       auth: token,
     }),
-    success: (response: any) => {
+    success: (_response: any) => {
       dispatch(clearCart());
       dispatch(setLoading(false));
     },
@@ -285,14 +319,13 @@ export const clearCartAPI = (token: string) => async (dispatch: any) => {
 
   try {
     await apiCall();
-  } catch (error) {
-    console.log("❌ Clear cart API call failed:", error);
+  } catch {
     dispatch(setError('Failed to clear cart'));
     dispatch(setLoading(false));
   }
 };
 
-export const pushBillingToPetPooja = (orderType: string, deliveryAddress: string, token: string) => async (dispatch: any) => {
+export const pushBillingToPetPooja = (orderType: string, deliveryAddress: string, token: string) => async (_dispatch: any) => {
   try {    
     const apiCall = useApiPort({
       intent: "intent_billing_push",
@@ -302,14 +335,13 @@ export const pushBillingToPetPooja = (orderType: string, deliveryAddress: string
         auth: token,
         body: {
           orderType: orderType,
-          deliveryAddress: deliveryAddress
+          deliveryAddress: deliveryAddress,
         },
       }),
-      success: (response: any) => {
-        console.log("✅ Billing pushed to PetPooja successfully:", response);
+      success: (_response: any) => {
+        // Billing pushed successfully
       },
       failure: (error: any) => {
-        console.log("❌ Failed to push billing to PetPooja:", error);
         throw new Error(error?.message || 'Failed to process billing. Please try again.');
       },
     });
@@ -318,7 +350,6 @@ export const pushBillingToPetPooja = (orderType: string, deliveryAddress: string
     return true; 
     
   } catch (error: any) {
-    console.log("❌ Billing API call failed:", error);
     throw error;
   }
 };
@@ -336,18 +367,15 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
     }
     
     // Step 1: First push billing to PetPooja
-    console.log('🔄 Step 1: Pushing billing to PetPooja...');
     await dispatch(pushBillingToPetPooja(orderType, deliveryAddress, token));
-    console.log('✅ Step 1 completed: Billing pushed to PetPooja');
     
     // Step 2: Only if billing is successful, proceed with Razorpay payment
-    console.log('🔄 Step 2: Initiating Razorpay payment...');
     
     // Convert total to paise for Razorpay
     const amountInPaise = convertToPaise(cartTotal / 100);
     const receiptId = generateReceiptId();
     
-    console.log('🔄 Processing payment for amount:', amountInPaise, 'paise (₹', cartTotal / 100, ')');
+    // Processing payment
     
     const paymentOptions = {
       amount: amountInPaise,
@@ -367,7 +395,7 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
     
     const paymentResponse = await initiatePayment(paymentOptions);
     
-    console.log('✅ Step 2 completed: Payment successful:', paymentResponse);
+    // Payment successful
     
     // Update payment state
     dispatch(setPaymentSuccess(true));
@@ -384,8 +412,6 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
     return paymentResponse;
     
   } catch (error: any) {
-    console.log('❌ Payment failed:', error);
-    
     dispatch(setPaymentError(error.message || 'Payment failed. Please try again.'));
     dispatch(setPaymentLoading(false));
     

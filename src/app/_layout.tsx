@@ -2,7 +2,7 @@ import { ThemeProvider } from '@shopify/restyle';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -42,13 +42,15 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <ThemeProvider theme={theme}>
-          <RootLayoutContent />
-          <Toast />
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <SafeAreaProvider>
+          <ThemeProvider theme={theme}>
+            <RootLayoutContent />
+            <Toast />
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }

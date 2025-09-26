@@ -12,17 +12,14 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { user, token } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    // If user is not logged in, redirect to auth
     if (!user || !token) {
       router.replace('/(auth)');
     }
   }, [user, token, router]);
 
-  // If user is logged in, show the app
   if (user && token) {
     return <>{children}</>;
   }
 
-  // Show nothing while redirecting
   return null;
 };

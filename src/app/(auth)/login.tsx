@@ -200,10 +200,11 @@ const Login = memo(() => {
 
                         <View marginTop="s" marginBottom="m">
                             <Button
-                                title={isLoading ? "LOGGING IN..." : "LOGIN"}
+                                title={"LOGIN"}
                                 variant="primary"
                                 onPress={handleLogin}
                                 disabled={isLoading}
+                                loading={isLoading}
                             />
                         </View>
 

@@ -12,7 +12,12 @@ export type ApiType =
   "CLEAR_CART" |
   "BILLING_PUSH" |
   "GET_ALL_COUPONS" |
-  "SIGN_OUT";
+  "SIGN_OUT" |
+  "REMOVE_CART_ITEM" |
+  "ADD_TO_FAVOURITE" |
+  "REMOVE_FROM_FAVOURITE" |
+  "GET_FAVOURITES";
+
   
 
 export type TransactionIntentType =
@@ -29,4 +34,8 @@ export type TransactionIntentType =
   "intent_clear_cart" |
   "intent_billing_push" |
   "intent_get_all_coupons" |
-  "intent_sign_out";
+  "intent_sign_out" |
+  "intent_remove_cart_item" |
+  "intent_add_to_favourite" |
+  "intent_remove_from_favourite" |
+  "intent_get_favourites";

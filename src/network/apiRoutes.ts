@@ -14,5 +14,9 @@ export const API_ROUTES = {
   BILLING_PUSH: "/api/billing/push-to-petpooja",
   GET_ALL_COUPONS: "/api/coupon/get-all-coupons",
   SIGN_OUT: "/api/auth/sign-out",
+  REMOVE_CART_ITEM: "/api/cart/remove",
+  ADD_TO_FAVOURITE: "/api/favourite/add",
+  REMOVE_FROM_FAVOURITE: "/api/favourite/remove",
+  GET_FAVOURITES: "/api/favourite",
 };
   
