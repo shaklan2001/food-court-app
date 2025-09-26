@@ -21,7 +21,7 @@ const FileUpload = memo(({
     onPress,
     fileName,
     description = "(345x255 or larger recommended, upto 1MB each)",
-    marginBottom = 'l'
+    marginBottom = 'l',
 }: FileUploadProps) => {
     const theme = useTheme<Theme>();
 
@@ -55,7 +55,7 @@ const FileUpload = memo(({
                     {fileName ? (
                         <View alignItems="center">
                             <AntDesign
-                                name="checkcircle"
+                                name="check-circle"
                                 size={32}
                                 color={theme.colors.primary}
                                 style={{ marginBottom: 8 }}

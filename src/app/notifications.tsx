@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
 import { memo } from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Text, View } from "../components/ui";
 import { pageHorizantalPadding } from "../utils/commomCompute";
@@ -34,7 +35,6 @@ const NotificationsHeader = memo(({ onClearAll }: { onClearAll: () => void }) =>
       alignItems="center"
       justifyContent="space-between"
       paddingHorizontal={pageHorizantalPadding}
-      paddingTop="xl"
       paddingBottom="l"
       backgroundColor="mainBackgroundLight"
     >
@@ -165,6 +165,7 @@ const Notifications = () => {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+      <SafeAreaView style={{ flex: 1 }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
         <NotificationsHeader onClearAll={handleClearAll} />
 
@@ -219,6 +220,7 @@ const Notifications = () => {
           </View>
         </ScrollView>
       </View>
+      </SafeAreaView>
     </>
   ); 
 };

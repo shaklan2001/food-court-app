@@ -9,14 +9,14 @@ import Octicons from '@expo/vector-icons/Octicons';
 import { router } from 'expo-router';
 import { MotiView } from 'moti';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Image, Platform, Pressable, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, Image, Pressable, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const Card = memo(({ children, notification = false }: { children: React.ReactNode; notification?: boolean }) => {
     return (
         <View
-            width={48}
-            height={48}
+            width={52}
+            height={52}
             backgroundColor="mainBackground"
             borderRadius="m"
             borderWidth={1}
@@ -29,8 +29,8 @@ export const Card = memo(({ children, notification = false }: { children: React.
             {notification && (
                 <View
                     position="absolute"
-                    top={10}
-                    right={10}
+                    top={12}
+                    right={12}
                     width={12}
                     height={12}
                     borderRadius="xxl"
@@ -181,8 +181,8 @@ SearchBar.displayName = 'SearchBar';
 const ProfileIcon = memo(() => {
     return (
         <Pressable onPress={() => router.push('/profile/')}>
-            <View overflow="hidden" width={48} height={48} backgroundColor="mainBackground" borderRadius="m" borderWidth={1} borderColor="border" justifyContent="center" alignItems="center" position="relative" >
-                <Image source={require('@/assets/images/profile.jpg')} style={{ width: 48, height: 48 }} />
+            <View overflow="hidden" width={54} height={54} backgroundColor="mainBackground" borderRadius="m" borderWidth={1} borderColor="border" justifyContent="center" alignItems="center" position="relative" >
+                <Image source={require('@/assets/images/profile.jpg')} style={{ width: 54, height: 54 }} />
             </View>
         </Pressable>
     );
@@ -207,17 +207,16 @@ const Header = memo(() => {
                 </View>
             </View>
             <View flexDirection="row" alignItems="center" gap="s">
-                <TouchableOpacity onPress={() => router.push('/cart')}>
-                    <Card notification={cartItemCount > 0}>
-                        <ShoppingCartIcon />
-                    </Card>
-                </TouchableOpacity>
                 <TouchableOpacity onPress={() => router.push('/notifications')}>
                     <Card notification={true}>
                         <NotificationIcon />
                     </Card>
                 </TouchableOpacity>
-
+                <TouchableOpacity onPress={() => router.push('/cart')}>
+                    <Card notification={cartItemCount > 0}>
+                        <ShoppingCartIcon />
+                    </Card>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -813,7 +812,6 @@ const FoodSectionSkeleton = memo(({ count = 5 }: { count?: number }) => {
 FoodSectionSkeleton.displayName = 'FoodSectionSkeleton';
 
 const Home = () => {
-    const insets = useSafeAreaInsets();
     const dispatch = useAppDispatch();
     const { user, token } = useAppSelector((state: RootState) => state.auth);
     const [menuData, setMenuData] = useState<any[]>([]);
@@ -877,9 +875,9 @@ const Home = () => {
     }, [getMenu, token, dispatch]);
 
     return (
-        <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 0 : insets.top - 10 }}>
+        <SafeAreaView style={{ paddingTop: 10 }}>
             <Header />
-            <ScrollView style={{ marginBottom: -15 }}>
+            <ScrollView>
                 <Title user={user} />
                 <SearchBar />
                 <CuisineCarousel />

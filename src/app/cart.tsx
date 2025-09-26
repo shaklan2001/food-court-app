@@ -4,6 +4,7 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { MotiView } from 'moti';
 import { memo, useCallback, useEffect, useState } from "react";
 import { Image, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import SuccessModal from "../components/SuccessModal";
 import { Text, View } from "../components/ui";
 import { Coupon } from "../network/routeTypes";
@@ -475,7 +476,6 @@ export const ScreenHeader = ({ title, moreAction = true }: { title: string, more
       alignItems="center"
       justifyContent="space-between"
       paddingHorizontal={pageHorizantalPadding}
-      paddingTop="xl"
       paddingBottom="l"
       backgroundColor="mainBackgroundLight"
     >
@@ -604,6 +604,7 @@ const Cart = () => {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+      <SafeAreaView style={{ flex: 1 }}>
       <View flex={1} backgroundColor="mainBackgroundLight" >
         <ScreenHeader title="Cart" />
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
@@ -708,7 +709,6 @@ const Cart = () => {
                 borderRightWidth={1}
                 borderRightColor="border"
                 height="100%"
-                marginBottom="m"
               >
                 <Text
                   fontSize={18}
@@ -725,14 +725,12 @@ const Cart = () => {
                 justifyContent="center"
                 alignItems="center"
                 height="100%"
-                marginBottom="m"
               >
                 <Text
                   fontSize={18}
                   fontWeight="600"
                   color="textOnPrimary"
                   fontFamily="Poppins-SemiBold"
-                  marginRight="m"
                 >
                   {paymentLoading ? 'Processing...' : paymentSuccess ? 'Success!' : 'Place Order'}
                 </Text>
@@ -758,6 +756,7 @@ const Cart = () => {
           buttonText="Checkout"
         />}
       </View>
+      </SafeAreaView>
     </>
   );
 };
