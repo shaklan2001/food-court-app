@@ -2,22 +2,20 @@ import { AntDesign } from '@expo/vector-icons';
 import { useTheme } from '@shopify/restyle';
 import { router, Stack } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
-import { Dimensions, ImageBackground, Modal, Pressable, StatusBar } from 'react-native';
+import { Dimensions, ImageBackground, Modal, Platform, Pressable, StatusBar } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { Checkbox, FormContainer } from '../../components/shared';
 import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
-import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { betterwayApiCall } from '../../network/useApiPort';
 import { setUser } from '../../store/slices/authSlice';
 import { Theme } from '../../theme/theme';
 import { showToast } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
 
-interface SignUpProps { }
-
-const SignUp = memo(({ }: SignUpProps) => {
+const SignUp = memo(() => {
     const theme = useTheme<Theme>();
     const dispatch = useDispatch();
     const [name, setName] = useState('');
@@ -58,7 +56,7 @@ const SignUp = memo(({ }: SignUpProps) => {
     }, []);
 
     const handleDateSelect = useCallback((day: any) => {
-        const selectedDate = day.dateString; // Format: YYYY-MM-DD
+        const selectedDate = day.dateString;
         setDob(formatDateForDisplay(selectedDate));
         setShowCalendar(false);
     }, [formatDateForDisplay]);
@@ -67,10 +65,9 @@ const SignUp = memo(({ }: SignUpProps) => {
         setShowCalendar(true);
     }, []);
 
-    const createUser = useCallback(() => {
-        useApiPort({
-            intent: "intent_create_user",
-            port: betterwayApiCall({
+    const createUser = useCallback(async () => {
+        try {
+            const response = await betterwayApiCall({
                 method: "POST",
                 url: "CREATE_USER",
                 body: {
@@ -79,56 +76,54 @@ const SignUp = memo(({ }: SignUpProps) => {
                     phone: mobileNumber,
                     dob: formatDateForAPI(dob),
                     password,
-                    isStudent: isStudentUser
+                    isStudent: isStudentUser,
                 },
                 auth: null,
-            }),
-            success: (response) => {
-                setIsLoading(false);
-                console.log('API Response:', response);
+            });
+            
+            console.log('API Response:', response);
+            
+            if (response?.data?.success && response?.data?.user) {
+                const userData = response.data.user;
                 
-                if (response?.data?.success && response?.data?.user) {
-                    const userData = response.data.user;
-                    
-                    dispatch(setUser({
-                        id: userData.id,
-                        email: userData.email,
-                        name: userData.name,
-                        phone: userData.phone,
-                        dob: userData.dob,
-                        isStudent: userData.isStudent,
-                        image: userData.image,
-                    }));
-                    
-                    showToast({
-                        message: 'Account created successfully!',
-                        type: 'success',
-                    });
+                dispatch(setUser({
+                    id: userData.id,
+                    email: userData.email,
+                    name: userData.name,
+                    phone: userData.phone,
+                    dob: userData.dob,
+                    isStudent: userData.isStudent,
+                    image: userData.image,
+                }));
+                
+                showToast({
+                    message: 'Account created successfully!',
+                    type: 'success',
+                });
 
-                    setTimeout(() => {
-                        if (isStudentUser) {
-                            router.push('/student-sign-up');
-                        } else {
-                            router.push('/(tabs)');
-                        }
-                    }, 1500);
-                } else {
-                    showToast({
-                        message: response?.data?.message || 'Failed to create account',
-                        type: 'error',
-                    });
-                }
-            },
-            failure: (error) => {
+                setTimeout(() => {
+                    setIsLoading(false);
+                    if (isStudentUser) {
+                        router.push('/student-sign-up');
+                    } else {
+                        router.push('/(tabs)');
+                    }
+                }, 1500);
+            } else {
                 setIsLoading(false);
                 showToast({
-                    message: error?.message || 'Failed to create account',
+                    message: response?.data?.message || 'Failed to create account',
                     type: 'error',
                 });
-            },
-            print: "error",
-    })();
-    }, [name, email, mobileNumber, dob, password, isStudentUser]);
+            }
+        } catch (error: any) {
+            setIsLoading(false);
+            showToast({
+                message: error?.message || 'Failed to create account',
+                type: 'error',
+            });
+        }
+    }, [name, email, mobileNumber, dob, password, isStudentUser, dispatch, formatDateForAPI]);
 
     const validateForm = useCallback(() => {
         if (!name.trim()) {
@@ -224,7 +219,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                 style={{ flex: 1, width, height }}
                 resizeMode="cover"
             >
-                <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+                <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
                 <SafeAreaView style={{ flex: 1 }}>
                     <View
                         justifyContent="center"
@@ -235,22 +230,22 @@ const SignUp = memo(({ }: SignUpProps) => {
                     >
                         <View
                             position="absolute"
-                            top={60}
+                            top={70}
                             left={24}
                             zIndex={1}
                         >
                             <Pressable onPress={handleBack}>
-                                <AntDesign name="arrow-left" size={24} color="white" />
+                                <AntDesign name="arrow-left" size={28} color="white" />
                             </Pressable>
                         </View>
                         <View alignItems="center">
                             <Text
-                                fontSize={32}
-                                fontWeight="600"
+                                fontSize={42}
+                                fontWeight="medium"
                                 color="textOnPrimary"
                                 textAlign="center"
                                 fontFamily="Poppins-Medium"
-                                lineHeight={43}
+                                lineHeight={54}
                             >
                                 Signup
                             </Text>
@@ -382,9 +377,10 @@ const SignUp = memo(({ }: SignUpProps) => {
 
                         <View marginTop="s" marginBottom="l">
                             <Button
-                                title={isLoading ? "Creating Account..." : "Signup"}
+                                title="Signup"
                                 variant="primary"
                                 onPress={handleSignUp}
+                                loading={isLoading}
                                 disabled={isLoading}
                             />
                         </View>
@@ -400,20 +396,20 @@ const SignUp = memo(({ }: SignUpProps) => {
                                 Sign up with
                             </Text>
                             <View flexDirection="row" gap="m">
-                                <SocialLoginButton
+                              {Platform.OS === 'android' && <SocialLoginButton
                                     onPress={handleGoogleSignUp}
                                     imageSource={require('../../../assets/images/google-logo.png')}
-                                />
-                                <SocialLoginButton
+                                />}
+                                {Platform.OS === 'ios' && <SocialLoginButton
                                     onPress={handleAppleSignUp}
                                     imageSource={require('../../../assets/images/apple-logo.png')}
-                                />
+                                />}
                             </View>
                         </View>
 
                         <View alignItems="center">
                             <Text
-                                fontSize={14}
+                                fontSize={16}
                                 fontWeight="400"
                                 color="textSecondary"
                                 textAlign="center"
@@ -421,7 +417,7 @@ const SignUp = memo(({ }: SignUpProps) => {
                             >
                                 Already have an account?{' '}
                                 <Text
-                                    fontSize={14}
+                                    fontSize={16}
                                     fontWeight="700"
                                     color="textPrimary"
                                     textDecorationLine="underline"
@@ -436,7 +432,6 @@ const SignUp = memo(({ }: SignUpProps) => {
                 </SafeAreaView>
             </ImageBackground>
 
-            {/* Calendar Modal */}
             <Modal
                 visible={showCalendar}
                 transparent={true}

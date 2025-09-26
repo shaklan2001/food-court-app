@@ -15,7 +15,7 @@ import {
     StatusBar,
     TextInput,
     TouchableOpacity,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, View } from '../../components/ui';
@@ -70,33 +70,26 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
 
 
 
-    // Handle OTP input change
     const handleOtpChange = (value: string, index: number) => {
         const newOtp = [...otp];
         newOtp[index] = value;
         setOtp(newOtp);
 
-        // Auto-focus next input
         if (value && index < 5) {
             inputRefs.current[index + 1]?.focus();
         }
 
-        // Auto-focus previous input on backspace
         if (!value && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
     };
 
-    // Handle backspace
     const handleKeyPress = (e: any, index: number) => {
         if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
     };
 
-
-
-    // Verify OTP
     const handleVerifyOTP = () => {
         const otpString = otp.join('');
         if (otpString.length !== 6) {
@@ -104,21 +97,17 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
             return;
         }
 
-        // TODO: Implement OTP verification API call
         console.log('Verifying OTP:', otpString);
         Alert.alert('Success', 'OTP verified successfully!');
 
-        // Navigate to next screen after verification
         setTimeout(() => {
             router.push('/(tabs)/(home)');
         }, 1000);
     };
 
-    // Resend OTP
     const handleResendOTP = () => {
         if (isResendDisabled) return;
 
-        // TODO: Implement resend OTP API call
         console.log('Resending OTP...');
         setTimer(30);
         setIsResendDisabled(true);
@@ -150,8 +139,8 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                 'No OTP found in clipboard. You can:\n1. Copy the OTP from SMS and try again\n2. Enter manually',
                 [
                     { text: 'Copy from Clipboard', onPress: handleClipboardPaste },
-                    { text: 'Enter Manually', style: 'cancel' }
-                ]
+                    { text: 'Enter Manually', style: 'cancel' },
+                ],
             );
         } catch (error) {
             console.error('Error accessing SMS:', error);
@@ -193,7 +182,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                 style={{ flex: 1, width, height }}
                 resizeMode="cover"
             >
-                <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+                <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
                 <SafeAreaView style={{ flex: 1 }}>
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -220,8 +209,8 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                     </View>
                                     <View alignItems="center">
                                         <Text
-                                            fontSize={32}
-                                            fontWeight="600"
+                                            fontSize={42}
+                                            fontWeight="medium"
                                             color="textOnPrimary"
                                             textAlign="center"
                                             fontFamily="Poppins-Medium"

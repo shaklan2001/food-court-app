@@ -1,5 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, Pressable } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Image, Modal, Pressable } from 'react-native';
+import { betterwayApiCall } from '../network/useApiPort';
+import { logout } from '../store/slices/authSlice';
+import { useAppDispatch, useAppSelector } from '../store/store';
 import { Text, View } from './ui';
 
 interface LogoutModalProps {
@@ -11,11 +14,14 @@ interface LogoutModalProps {
 const LogoutModal: React.FC<LogoutModalProps> = ({
   visible,
   onClose,
-  onConfirm
+  onConfirm,
 }) => {
   const [showContent, setShowContent] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const contentTranslateY = useRef(new Animated.Value(20)).current;
+  const dispatch = useAppDispatch();
+  const token = useAppSelector((state) => state.auth.token);
 
   useEffect(() => {
     if (visible) {
@@ -47,6 +53,27 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
     }
   }, [visible, contentOpacity, contentTranslateY]);
 
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      if (token) {
+        await betterwayApiCall({
+          method: 'POST',
+          url: 'SIGN_OUT',
+          auth: token,
+        });
+      }
+      dispatch(logout());
+      onConfirm();
+    } catch {
+      dispatch(logout());
+      onConfirm();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [dispatch, token, onConfirm, isLoggingOut]);
+
   return (
     <Modal
       visible={visible}
@@ -69,7 +96,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
           padding="l"
           alignItems="center"
           minWidth={280}
-          maxWidth={320}
+          maxWidth={"90%"}
           shadowOffset={{ width: 0, height: 4 }}
           shadowOpacity={0.25}
           shadowRadius={8}
@@ -102,7 +129,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
               </View>
 
               <Text
-                fontSize={14}
+                fontSize={16}
                 fontWeight="600"
                 color="textPrimary"
                 fontFamily="Poppins-SemiBold"
@@ -115,6 +142,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
               <View flexDirection="row" width="100%" justifyContent="space-between">
                 <Pressable
                   onPress={onClose}
+                  disabled={isLoggingOut}
                   style={{
                     flex: 1,
                     backgroundColor: '#FFFFFF',
@@ -124,6 +152,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
                     marginRight: 8,
                     borderWidth: 1,
                     borderColor: '#D1D5DB',
+                    opacity: isLoggingOut ? 0.5 : 1,
                   }}
                 >
                   <Text
@@ -138,25 +167,49 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
                 </Pressable>
 
                 <Pressable
-                  onPress={onConfirm}
+                  onPress={handleLogout}
+                  disabled={isLoggingOut}
                   style={{
                     flex: 1,
-                    backgroundColor: "#A20538",
+                    backgroundColor: isLoggingOut ? "#A2053880" : "#A20538",
                     borderRadius: 8,
                     paddingVertical: 10,
                     paddingHorizontal: 16,
                     marginLeft: 8,
+                    opacity: isLoggingOut ? 0.7 : 1,
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                   }}
                 >
-                  <Text
-                    fontSize={14}
-                    fontWeight="500"
-                    color="textOnPrimary"
-                    fontFamily="Poppins-Medium"
-                    textAlign="center"
-                  >
-                    Log out
-                  </Text>
+                  {isLoggingOut ? (
+                    <>
+                      <ActivityIndicator 
+                        size="small" 
+                        color="#FFFFFF" 
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text
+                        fontSize={14}
+                        fontWeight="500"
+                        color="textOnPrimary"
+                        fontFamily="Poppins-Medium"
+                        textAlign="center"
+                      >
+                        Logging out...
+                      </Text>
+                    </>
+                  ) : (
+                    <Text
+                      fontSize={14}
+                      fontWeight="500"
+                      color="textOnPrimary"
+                      fontFamily="Poppins-Medium"
+                      textAlign="center"
+                    >
+                      Log out
+                    </Text>
+                  )}
                 </Pressable>
               </View>
             </Animated.View>

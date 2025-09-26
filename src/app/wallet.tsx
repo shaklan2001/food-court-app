@@ -2,6 +2,7 @@ import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import React, { memo } from 'react';
 import { Image, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { ClipPath, Defs, G, Path, Rect } from 'react-native-svg';
 import Text from '../components/ui/Text';
 import View from '../components/ui/View';
@@ -279,11 +280,33 @@ export default function WalletScreen() {
       amount: '₹120',
       isCredit: false,
     },
+    {
+      icon: <ShoppingBagIcon />,
+      name: 'Bakingo',
+      date: '13 Sept, 2025',
+      amount: '₹120',
+      isCredit: false,
+    },
+    {
+      icon: <ShoppingBagIcon />,
+      name: 'Bakingo',
+      date: '13 Sept, 2025',
+      amount: '₹120',
+      isCredit: false,
+    },
+    {
+      icon: <ShoppingBagIcon />,
+      name: 'Bakingo',
+      date: '13 Sept, 2025',
+      amount: '₹120',
+      isCredit: false,
+    },
   ];
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+      <SafeAreaView style={{ flex: 1 }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
         <ScreenHeader title="My Wallet" />
 
@@ -296,6 +319,7 @@ export default function WalletScreen() {
           <TransactionsSection transactions={transactions} />
         </ScrollView>
       </View>
+      </SafeAreaView>
     </>
   );
 }

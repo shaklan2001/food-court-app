@@ -9,17 +9,20 @@ import { Button, FileUpload, FormField, Text, View } from '../../components/ui';
 
 const { width, height } = Dimensions.get('window');
 
-interface StudentSignUpProps { }
-
-const StudentSignUp = memo(({ }: StudentSignUpProps) => {
+const StudentSignUp = memo(() => {
   const [collegeName, setCollegeName] = useState('');
   const [courseName, setCourseName] = useState('');
   const [branch, setBranch] = useState('');
   const [currentSemester, setCurrentSemester] = useState('');
   const [studentIdFile, setStudentIdFile] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignUp = useCallback(() => {
-    router.push('/');
+  const handleSignUp = useCallback(async () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      router.push('/');
+    }, 2000);
   }, []);
 
   const handleFileUpload = useCallback(async () => {
@@ -60,7 +63,7 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
         style={{ flex: 1, width, height }}
         resizeMode="cover"
       >
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
         <SafeAreaView style={{ flex: 1 }}>
           <View
             justifyContent="center"
@@ -71,22 +74,22 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
           >
             <View
               position="absolute"
-              top={60}
+              top={70}
               left={24}
               zIndex={1}
             >
               <TouchableOpacity onPress={handleBack}>
-                <AntDesign name="arrow-left" size={24} color="white" />
+                <AntDesign name="arrow-left" size={28} color="white" />
               </TouchableOpacity>
             </View>
             <View alignItems="center">
               <Text
-                fontSize={32}
+                fontSize={42}
                 fontWeight="medium"
                 color="textOnPrimary"
                 textAlign="center"
                 fontFamily="Poppins-Medium"
-                lineHeight={43}
+                lineHeight={54}
                 marginLeft="xl"
               >
                 For Students
@@ -140,6 +143,8 @@ const StudentSignUp = memo(({ }: StudentSignUpProps) => {
                 title="Signup"
                 variant="primary"
                 onPress={handleSignUp}
+                loading={isLoading}
+                disabled={isLoading}
               />
             </View>
 

@@ -3,6 +3,7 @@ export const API_ROUTES = {
   CREATE_USER: "/api/onboarding/create-user",
   UPLOAD_STUDENT_ID: "/api/onboarding/upload-student-id",
   SIGN_IN_EMAIL: "/api/auth/sign-in/email",
+  SIGN_IN_PHONE: "/api/auth/sign-in/phone",
   VALIDATE_TOKEN: "/api/auth/validate-token",
   REFRESH_TOKEN: "/api/auth/refresh-token",
   GET_MENU: "/api/menu",
@@ -12,5 +13,6 @@ export const API_ROUTES = {
   CLEAR_CART: "/api/cart/clear",
   BILLING_PUSH: "/api/billing/push-to-petpooja",
   GET_ALL_COUPONS: "/api/coupon/get-all-coupons",
+  SIGN_OUT: "/api/auth/sign-out",
 };
   

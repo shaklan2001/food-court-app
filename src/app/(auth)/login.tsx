@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
-import { Dimensions, Image, ImageBackground, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
+import { Dimensions, Image, ImageBackground, Platform, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { Button, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
@@ -23,7 +23,7 @@ const Login = memo(() => {
                 url: "SIGN_IN_EMAIL",
                 body: {
                     email,
-                    password
+                    password,
                 },
                 auth: null,
             }),
@@ -108,7 +108,7 @@ const Login = memo(() => {
             style={{ flex: 1, width, height }}
             resizeMode="cover"
         >
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+            <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
             <SafeAreaView style={{ flex: 1 }}>
                 <View
                     justifyContent="center"
@@ -118,7 +118,7 @@ const Login = memo(() => {
                     <Image
                         source={require('../../../assets/images/font-logo.png')}
                         style={{
-                            height: 110,
+                            height: 135,
                             width: '100%',
                             resizeMode: 'contain',
                         }}
@@ -140,7 +140,7 @@ const Login = memo(() => {
                         }}
                     >
                         <Text
-                            fontSize={20}
+                            fontSize={24}
                             fontWeight="500"
                             color="textPrimary"
                             textAlign="left"
@@ -231,20 +231,20 @@ const Login = memo(() => {
                                 Login with
                             </Text>
                             <View flexDirection="row" gap="m">
-                                <SocialLoginButton
+                                {Platform.OS === 'android' && <SocialLoginButton
                                     onPress={handleGoogleLogin}
                                     imageSource={require('../../../assets/images/google-logo.png')}
-                                />
-                                <SocialLoginButton
+                                />}
+                                {Platform.OS === 'ios' && <SocialLoginButton
                                     onPress={handleAppleLogin}
                                     imageSource={require('../../../assets/images/apple-logo.png')}
-                                />
+                                />}
                             </View>
                         </View>
 
                         <View alignItems="center">
                             <Text
-                                fontSize={14}
+                                fontSize={16}
                                 fontWeight="400"
                                 color="textSecondary"
                                 textAlign="center"
@@ -252,7 +252,7 @@ const Login = memo(() => {
                             >
                                 Don't have an account?{' '}
                                 <Text
-                                    fontSize={14}
+                                    fontSize={16}
                                     fontWeight="700"
                                     color="textPrimary"
                                     textDecorationLine="underline"
