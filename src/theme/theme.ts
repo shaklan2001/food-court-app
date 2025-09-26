@@ -20,6 +20,9 @@ const palette = {
     redLighter: '#FAF0EF',
 
     loginButton: '#A20538',
+    
+    couponIconBg: '#323232',
+    couponSuccessBg: '#4CAF50',
 
     gray50: '#F9FAFB',
     gray100: '#F3F4F6',
@@ -60,6 +63,10 @@ const theme = createTheme({
         crousalDot: palette.gray300,
 
         red: 'red',
+        
+        // Coupon UI colors
+        couponIconBg: palette.couponIconBg,
+        couponSuccessBg: palette.couponSuccessBg,
     },
     spacing: {
         xs: 4,
