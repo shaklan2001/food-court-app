@@ -23,6 +23,9 @@ export default {
             "./assets/font/Poppins-SemiBold.ttf",
         ],
         ios: {
+            "infoPlist": {
+                "ITSAppUsesNonExemptEncryption": false
+            },
             supportsTablet: true,
             bundleIdentifier: "com.yuvan97.foodcourtapp",
             allowFontScaling: false,
