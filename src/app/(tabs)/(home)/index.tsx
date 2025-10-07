@@ -1,9 +1,11 @@
+import FoodSection from '@/src/components/HomePage/FoodSection';
 import Header from '@/src/components/HomePage/Header';
 import UserReviewsSection from '@/src/components/HomePage/UserReviewsSection';
 import { Carousel, Text, View } from '@/src/components/ui';
-import { betterwayApiCall } from '@/src/network/useApiPort';
+import { betterwayApiCall, useApiPort } from '@/src/network/useApiPort';
 import { fetchCart } from '@/src/store/slices/cartSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@/src/store/store';
+import { showToast } from '@/src/utils';
 import { SearchIcon, SortIcon } from '@/src/utils/Svgs';
 import { pageHorizantalPadding } from '@/src/utils/commomCompute';
 import { router } from 'expo-router';
@@ -235,24 +237,109 @@ const Home = () => {
     const { user, token } = useAppSelector((state: RootState) => state.auth);
     const [menuData, setMenuData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
     const isLoadingRef = useRef(false);
 
     const transformMenuData = useCallback((apiData: any[]) => {
-        return apiData.map((item) => ({
-            id: item.id,
-            title: item.name,
-            price: `₹${(item.pricePaise / 100).toFixed(0)}`,
-            pricePaise: item.pricePaise,
-            image: item.image || require('@/assets/images/bowl.png'),
-            description: item.description,
-            categoryId: item.categoryId,
-            payload: item.payload,
-        }));
-    }, []);
+        return apiData.map((item) => {
+            // Handle image - use URL if available, otherwise fallback to local image
+            let imageSource;
+            if (item.image && item.image.trim() !== '') {
+                imageSource = { uri: item.image };
+            } else {
+                imageSource = require('@/assets/images/bowl.png');
+            }
+
+            return {
+                id: item.id,
+                title: item.name,
+                price: `₹${(item.pricePaise / 100).toFixed(0)}`,
+                pricePaise: item.pricePaise,
+                image: imageSource,
+                description: item.description,
+                categoryId: item.categoryId,
+                payload: item.payload,
+                isFavourite: favouriteIds.has(item.id),
+            };
+        });
+    }, [favouriteIds]);
 
     const recommendationsData = transformMenuData(menuData);
     const bestSellersData = transformMenuData(menuData.slice(0, 5));
     const newArrivalsData = transformMenuData(menuData.slice(5, 10));
+
+    const fetchFavourites = useCallback(() => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useApiPort({
+            intent: "intent_get_favourites",
+            port: betterwayApiCall({
+                method: "GET",
+                url: "GET_FAVOURITES",
+                auth: token,
+            }),
+            success: (response: { items?: any[] }) => {
+                const favIds = new Set(
+                    response?.items?.map((item) => item.dishId || item.id) || [],
+                );
+                setFavouriteIds(favIds);
+            },
+            failure: () => {
+                console.log('Failed to fetch favourites');
+            },
+        })();
+    }, [token]);
+
+    const handleHeartPress = useCallback((itemId: string, isFavourite: boolean) => {
+        if (isFavourite) {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            useApiPort({
+                intent: "intent_remove_from_favourite",
+                port: betterwayApiCall({
+                    method: "DELETE",
+                    url: "REMOVE_FROM_FAVOURITE",
+                    auth: token,
+                    body: {
+                        dishId: itemId,
+                    },
+                }),
+                success: () => {
+                    setFavouriteIds((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.delete(itemId);
+                        return newSet;
+                    });
+                },
+                failure: () => {
+                    showToast({
+                        message: 'Failed to remove from favourites',
+                        type: 'error',
+                    });
+                },
+            })();
+        } else {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            useApiPort({
+                intent: "intent_add_to_favourite",
+                port: betterwayApiCall({
+                    method: "POST",
+                    url: "ADD_TO_FAVOURITE",
+                    auth: token,
+                    body: {
+                        dishId: itemId,
+                    },
+                }),
+                success: () => {
+                    setFavouriteIds((prev) => new Set([...prev, itemId]));
+                },
+                failure: () => {
+                    showToast({
+                        message: 'Failed to add to favourites',
+                        type: 'error',
+                    });
+                },
+            })();
+        }
+    }, [token]);
 
     const getMenu = useCallback(async () => {
         if (!token || isLoadingRef.current) return;
@@ -288,10 +375,11 @@ const Home = () => {
 
     useEffect(() => {
         getMenu();
+        fetchFavourites();
         if (token) {
             dispatch(fetchCart(token));
         }
-    }, [getMenu, token, dispatch]);
+    }, [getMenu, fetchFavourites, token, dispatch]);
 
     return (
         <SafeAreaView style={{ paddingTop: 10 }}>
@@ -301,9 +389,9 @@ const Home = () => {
                 <SearchBar />
                 <CuisineCarousel />
                 <CuisineSection />
-                <FoodSection title="Recommendations" data={recommendationsData} loading={loading} showHeartIcon={true} />
-                <FoodSection title="Best Sellers" data={bestSellersData} loading={loading} showHeartIcon={true} />
-                <FoodSection title="New Arrivals" data={newArrivalsData} loading={loading} showHeartIcon={true} />
+                <FoodSection title="Recommendations" data={recommendationsData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
+                <FoodSection title="Best Sellers" data={bestSellersData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
+                <FoodSection title="New Arrivals" data={newArrivalsData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
                 <UserReviewsSection />
             </ScrollView>
         </SafeAreaView>

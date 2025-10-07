@@ -1,17 +1,16 @@
 import { Text, View } from '@/src/components/ui';
-import React from 'react';
 
-const DineIn = () => {
+const OrderNow = () => {
     return (
         <View flex={1} bg="mainBackground" justifyContent="center" alignItems="center">
             <Text variant="header" color="primary">
-                Dine-In Tab
+                Order Now Tab
             </Text>
             <Text variant="body" color="textSecondary" marginTop="s">
-                Reserve your table for dining
+                Order your food now
             </Text>
         </View>
-    )
-}
+    );
+};
 
-export default DineIn;
+export default OrderNow;
