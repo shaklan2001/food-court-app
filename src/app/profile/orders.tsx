@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View } from "../../components/ui";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
 import { ScreenHeader } from '../cart';
 
 const Orders = () => {
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F88' }}>
     <View flex={1} backgroundColor="mainBackgroundLight">
         <ScreenHeader title="Your Orders" moreAction={false} />
 
@@ -32,7 +34,8 @@ const Orders = () => {
             Your order history will appear here once you place your first order
           </Text>
         </View>
-      </View>
+    </View>
+    </SafeAreaView>
   );
 };
 

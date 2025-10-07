@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
 import { Dimensions, Image, ImageBackground, Platform, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { Button, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
@@ -109,7 +108,7 @@ const Login = memo(() => {
             resizeMode="cover"
         >
             <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
-            <SafeAreaView style={{ flex: 1 }}>
+            <View style={{ flex: 1 }}>
                 <View
                     justifyContent="center"
                     alignItems="center"
@@ -119,7 +118,7 @@ const Login = memo(() => {
                         source={require('../../../assets/images/font-logo.png')}
                         style={{
                             height: 135,
-                            width: '100%',
+                            width: '90%',
                             resizeMode: 'contain',
                         }}
                     />
@@ -266,7 +265,7 @@ const Login = memo(() => {
                         </View>
                     </ScrollView>
                 </View>
-            </SafeAreaView>
+            </View>
         </ImageBackground>
     );
 });

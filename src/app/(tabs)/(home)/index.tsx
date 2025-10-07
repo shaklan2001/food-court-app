@@ -1,134 +1,17 @@
+import FoodSection from '@/src/components/HomePage/FoodSection';
+import Header from '@/src/components/HomePage/Header';
+import UserReviewsSection from '@/src/components/HomePage/UserReviewsSection';
 import { Carousel, Text, View } from '@/src/components/ui';
-import { betterwayApiCall } from '@/src/network/useApiPort';
-import { addToCart, fetchCart, updateCartItem } from '@/src/store/slices/cartSlice';
+import { betterwayApiCall, useApiPort } from '@/src/network/useApiPort';
+import { fetchCart } from '@/src/store/slices/cartSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@/src/store/store';
+import { showToast } from '@/src/utils';
+import { SearchIcon, SortIcon } from '@/src/utils/Svgs';
 import { pageHorizantalPadding } from '@/src/utils/commomCompute';
-import { NotificationIcon, SearchIcon, ShoppingCartIcon, SortIcon, WalletIcon } from '@/src/utils/Svgs';
-import Fontisto from '@expo/vector-icons/build/Fontisto';
-import Octicons from '@expo/vector-icons/Octicons';
 import { router } from 'expo-router';
-import { MotiView } from 'moti';
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-export const Card = memo(({ children, notification = false }: { children: React.ReactNode; notification?: boolean }) => {
-    return (
-        <View
-            width={52}
-            height={52}
-            backgroundColor="mainBackground"
-            borderRadius="m"
-            borderWidth={1}
-            justifyContent="center"
-            alignItems="center"
-            position="relative"
-            borderColor="cardSecondaryBackground"
-        >
-            {children}
-            {notification && (
-                <View
-                    position="absolute"
-                    top={12}
-                    right={12}
-                    width={12}
-                    height={12}
-                    borderRadius="xxl"
-                    backgroundColor="primary"
-                    borderWidth={2}
-                    borderColor="mainBackground"
-                />
-            )}
-        </View>
-    );
-});
-
-Card.displayName = 'Card';
-
-const QuantitySelector = memo(({ 
-    itemId, 
-    currentQuantity = 0, 
-    onQuantityChange, 
-}: { 
-    itemId: string; 
-    currentQuantity: number; 
-    onQuantityChange: (itemId: string, quantity: number) => void;
-}) => {
-    const handleIncrement = useCallback(() => {
-        onQuantityChange(itemId, currentQuantity + 1);
-    }, [itemId, currentQuantity, onQuantityChange]);
-
-    const handleDecrement = useCallback(() => {
-        if (currentQuantity > 0) {
-            onQuantityChange(itemId, currentQuantity - 1);
-        }
-    }, [itemId, currentQuantity, onQuantityChange]);
-
-    if (currentQuantity === 0) {
-        return (
-            <TouchableOpacity onPress={handleIncrement}>
-                <View
-                    width={80}
-                    backgroundColor="primary"
-                    borderRadius="m"
-                    justifyContent="center"
-                    alignItems="center"
-                >
-                    <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
-                        Add
-                    </Text>
-                </View>
-            </TouchableOpacity>
-        );
-    }
-
-    return (
-        <View
-            flexDirection="row"
-            alignItems="center"
-            backgroundColor="primary"
-            borderRadius="m"
-            minWidth={80}
-        >
-            <Pressable onPress={handleDecrement}>
-                <View
-                    width={25}
-                    justifyContent="center"
-                    alignItems="center"
-                >
-                    <Text color="textOnPrimary" fontSize={14} fontFamily="Poppins-Bold">
-                        -
-                    </Text>
-                </View>
-            </Pressable>
-            
-            <View
-                flex={1}
-                justifyContent="center"
-                alignItems="center"
-                minWidth={30}
-            >
-                <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
-                    {currentQuantity}
-                </Text>
-            </View>
-            
-            <Pressable onPress={handleIncrement}>
-                <View
-                    width={25}
-                    justifyContent="center"
-                    alignItems="center"
-                >
-                    <Text color="textOnPrimary" fontSize={14} fontFamily="Poppins-Bold">
-                        +
-                    </Text>
-                </View>
-            </Pressable>
-        </View>
-    );
-});
-
-QuantitySelector.displayName = 'QuantitySelector';
 
 const SearchBar = memo(() => {
     return (
@@ -176,54 +59,6 @@ const SearchBar = memo(() => {
     );
 });
 
-SearchBar.displayName = 'SearchBar';
-
-const ProfileIcon = memo(() => {
-    return (
-        <Pressable onPress={() => router.push('/profile/')}>
-            <View overflow="hidden" width={54} height={54} backgroundColor="mainBackground" borderRadius="m" borderWidth={1} borderColor="border" justifyContent="center" alignItems="center" position="relative" >
-                <Image source={require('@/assets/images/profile.jpg')} style={{ width: 54, height: 54 }} />
-            </View>
-        </Pressable>
-    );
-});
-
-ProfileIcon.displayName = 'ProfileIcon';
-
-const Header = memo(() => {
-    const cartItemCount = useAppSelector((state: RootState) => state.cart.itemCount);
-
-    return (
-        <View flexDirection="row" justifyContent="space-between" alignItems="center" paddingHorizontal={pageHorizantalPadding} mb='s'>
-            <View>
-                <View flexDirection="row" alignItems="center" gap="s">
-                    <ProfileIcon />
-                    <TouchableOpacity onPress={() => router.push('/wallet')}>
-                        <Card notification={false}>
-                            <WalletIcon />
-                        </Card>
-                    </TouchableOpacity>
-
-                </View>
-            </View>
-            <View flexDirection="row" alignItems="center" gap="s">
-                <TouchableOpacity onPress={() => router.push('/notifications')}>
-                    <Card notification={true}>
-                        <NotificationIcon />
-                    </Card>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => router.push('/cart')}>
-                    <Card notification={cartItemCount > 0}>
-                        <ShoppingCartIcon />
-                    </Card>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-});
-
-Header.displayName = 'Header';
-
 const Title = memo(({ user }: { user: any }) => {
     return (
         <View flexDirection="row" alignItems="center" paddingHorizontal={pageHorizantalPadding} mt='m'>
@@ -251,8 +86,6 @@ const Title = memo(({ user }: { user: any }) => {
         </View>
     );
 });
-
-Title.displayName = 'Title';
 
 const CuisineItem = memo(({ item }: { item: any }) => {
     const handleCuisinePress = (route: string) => {
@@ -285,8 +118,6 @@ const CuisineItem = memo(({ item }: { item: any }) => {
         </Pressable>
     );
 });
-
-CuisineItem.displayName = 'CuisineItem';
 
 const CuisineSection = memo(() => {
     const cuisineData = [
@@ -355,8 +186,6 @@ const CuisineSection = memo(() => {
     );
 });
 
-CuisineSection.displayName = 'CuisineSection';
-
 const CuisineCarousel = memo(() => {
     const cuisineData = [
         {
@@ -403,437 +232,114 @@ const CuisineCarousel = memo(() => {
     );
 });
 
-CuisineCarousel.displayName = 'CuisineCarousel';
-
-const FoodItem = memo(({ item }: { item: any }) => {
-    const dispatch = useAppDispatch();
-    const { token } = useAppSelector((state: RootState) => state.auth);
-    const cartItems = useAppSelector((state: RootState) => state.cart.items);
-
-    const handleItemPress = () => {
-        router.push('/product-detail');
-    };
-
-    const currentQuantity = cartItems.find(cartItem => cartItem.id === item.id)?.quantity || 0;
-
-    const handleQuantityChange = useCallback(async (itemId: string, quantity: number) => {
-        if (!token) return;
-
-        if (quantity === 0) {
-            dispatch(updateCartItem(itemId, 0, token));
-        } else if (currentQuantity === 0 && quantity === 1) {
-            dispatch(addToCart({
-                id: item.id,
-                name: item.title,
-                price: item.price,
-                pricePaise: item.pricePaise || 0,
-                image: item.image,
-                description: item.description,
-            }, token));
-        } else {
-            dispatch(updateCartItem(itemId, quantity, token));
-        }
-    }, [item, token, dispatch, currentQuantity]);
-
-    return (
-        <Pressable onPress={handleItemPress}>
-            <View
-                minHeight={220}
-                width={200}
-                backgroundColor="transparent"
-                borderRadius="m"
-                overflow="hidden"
-                marginRight="m"
-            >
-                <View>
-                    <Image
-                        source={item.image}
-                        style={{ width: '100%', height: 140, borderRadius: 8 }}
-                        resizeMode="cover"
-                    />
-                </View>
-                <View marginVertical='s'>
-                    <Text
-                        fontSize={14}
-                        fontWeight="600"
-                        lineHeight={16}
-                        color="textPrimary"
-                        fontFamily="Poppins-SemiBold"
-                        style={{ marginBottom: -10 }}
-                        minHeight={40}
-                    >
-                        {item.title}
-                    </Text>
-                </View>
-                <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'}>
-                    <View width={'60%'} alignItems="flex-start" justifyContent="center" >
-                        <Text
-                            fontSize={14}
-                            marginTop={'xs'}
-                            color="textSecondary"
-                            fontFamily="Poppins-SemiBold"
-                        >
-                            {item.price}
-                        </Text>
-                    </View>
-                    <View width={'40%'} alignItems="center" justifyContent="center">
-                        <QuantitySelector
-                            itemId={item.id}
-                            currentQuantity={currentQuantity}
-                            onQuantityChange={handleQuantityChange}
-                        />
-                    </View>
-                </View>
-            </View>
-        </Pressable>
-    );
-});
-
-FoodItem.displayName = 'FoodItem';
-
-const FoodSection = memo(({ title, data, loading = false }: { title: string; data: any[]; loading?: boolean }) => {
-    return (
-        <View marginTop="l" paddingHorizontal={pageHorizantalPadding}>
-            <View flexDirection="row" alignItems="center" marginBottom="m">
-                <View width={4} height={20} backgroundColor="primary" borderRadius="xs" marginRight="s" />
-                <Text
-                    fontSize={20}
-                    fontWeight="bold"
-                    color="textPrimary"
-                    fontFamily="Poppins-Bold"
-                >
-                    {title}
-                </Text>
-            </View>
-
-            {loading ? (
-                <FoodSectionSkeleton count={5} />
-            ) : (
-                <FlatList
-                    data={data}
-                    renderItem={({ item }) => <FoodItem item={item} />}
-                    keyExtractor={(item) => item.id}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingLeft: 0 }}
-                    decelerationRate="fast"
-                    snapToAlignment="start"
-                />
-            )}
-        </View>
-    );
-});
-
-FoodSection.displayName = 'FoodSection';
-
-const ReviewCard = memo(({ review }: { review: any }) => {
-    return (
-        <View
-            width={320}
-            backgroundColor="mainBackground"
-            borderRadius="m"
-            padding="m"
-            marginRight="m"
-            elevation={3}
-            shadowOffset={{ width: 0, height: 2 }}
-            shadowOpacity={0.1}
-            shadowRadius={4}
-            shadowColor="textPrimary"
-        >
-            <View flexDirection="row" alignItems="flex-start" marginBottom="s" justifyContent="space-between">
-                <Fontisto name="quote-a-right" size={18} color="black" />
-                <View flexDirection="row" alignItems="center">
-                    {[...Array(5)].map((_, index) => (
-                        <Text
-                            key={index}
-                            color={index < review.rating ? "warning" : "crousalDot"}
-                        >
-                            <Octicons name="star-fill" size={16} color=" #FFA500" />
-                        </Text>
-                    ))}
-                </View>
-            </View>
-
-            <Text
-                fontSize={11}
-                color="textSecondary"
-                lineHeight={16}
-                marginBottom="m"
-                numberOfLines={5}
-                fontFamily="Poppins-Regular"
-            >
-                {review.text}
-            </Text>
-
-            <View flexDirection="row" alignItems="center">
-                <Image
-                    source={review.avatar}
-                    style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 22,
-                        marginRight: 12,
-                    }}
-                />
-                <View>
-                    <Text
-                        fontSize={12}
-                        fontWeight="600"
-                        color="textPrimary"
-                        fontFamily="Poppins-SemiBold"
-                        lineHeight={16}
-                    >
-                        {review.name}
-                    </Text>
-                    <Text
-                        fontSize={10}
-                        color="textSecondary"
-                        fontFamily="Poppins-Regular"
-                        lineHeight={14}
-                    >
-                        {review.role}
-                    </Text>
-                </View>
-            </View>
-        </View>
-    );
-});
-
-ReviewCard.displayName = 'ReviewCard';
-
-const UserReviewsSection = memo(() => {
-    const reviewsData = [
-        {
-            id: '1',
-            rating: 5,
-            text: "Amazing food and great service! The dishes were fresh, tasty, and served on time. Loved the ambiance will definitely visit again. Perfect spot for both family and friends.",
-            name: "Anna Whale",
-            role: "Student",
-            avatar: require('@/assets/images/profile.jpg'),
-        },
-        {
-            id: '2',
-            rating: 4,
-            text: "Amazing food and great service! The dishes were fresh, tasty, and served on time. Loved the ambiance will definitely visit again. Perfect spot for both family and friends.",
-            name: "John Doe",
-            role: "Student",
-            avatar: require('@/assets/images/profile.jpg'),
-        },
-        {
-            id: '3',
-            rating: 5,
-            text: "Amazing food and great service! The dishes were fresh, tasty, and served on time. Loved the ambiance will definitely visit again. Perfect spot for both family and friends.",
-            name: "Sarah Smith",
-            role: "Student",
-            avatar: require('@/assets/images/profile.jpg'),
-        },
-    ];
-
-    return (
-        <View marginTop="l" paddingLeft={pageHorizantalPadding} paddingBottom='l'>
-            <View flexDirection="row" alignItems="center" marginBottom="m">
-                <View width={4} height={20} backgroundColor="primary" borderRadius="xs" marginRight="s" />
-                <Text
-                    fontSize={20}
-                    fontWeight="bold"
-                    color="textPrimary"
-                    fontFamily="Poppins-Bold"
-                >
-                    User Reviews
-                </Text>
-            </View>
-
-            <FlatList
-                data={reviewsData}
-                renderItem={({ item }) => <ReviewCard review={item} />}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingLeft: 2, paddingVertical: 10 }}
-                decelerationRate="fast"
-                snapToAlignment="start"
-            />
-        </View>
-    );
-});
-
-UserReviewsSection.displayName = 'UserReviewsSection';
-
-const FoodItemSkeleton = memo(() => {
-    return (
-        <MotiView
-            from={{ opacity: 0.4 }}
-            animate={{ opacity: 0.8 }}
-            transition={{
-                type: 'timing',
-                duration: 1000,
-                loop: true,
-                repeatReverse: true,
-            }}
-        >
-            <View
-                minHeight={220}
-                width={200}
-                backgroundColor="transparent"
-                borderRadius="m"
-                overflow="hidden"
-                marginRight="m"
-            >
-                <MotiView
-                    from={{ opacity: 0.4 }}
-                    animate={{ opacity: 0.8 }}
-                    transition={{
-                        type: 'timing',
-                        duration: 1000,
-                        delay: 200,
-                        loop: true,
-                        repeatReverse: true,
-                    }}
-                    style={{
-                        width: '100%',
-                        height: 140,
-                        borderRadius: 8,
-                        backgroundColor: '#c9c9c9',
-                    }}
-                />
-                <View marginVertical='s'>
-                    <MotiView
-                        from={{ opacity: 0.4 }}
-                        animate={{ opacity: 0.8 }}
-                        transition={{
-                            type: 'timing',
-                            duration: 1000,
-                            delay: 300,
-                            loop: true,
-                            repeatReverse: true,
-                        }}
-                        style={{
-                            width: '90%',
-                            height: 18,
-                            backgroundColor: '#c9c9c9',
-                            borderRadius: 4,
-                            marginBottom: 8,
-                        }}
-                    />
-                    <MotiView
-                        from={{ opacity: 0.4 }}
-                        animate={{ opacity: 0.8 }}
-                        transition={{
-                            type: 'timing',
-                            duration: 1000,
-                            delay: 400,
-                            loop: true,
-                            repeatReverse: true,
-                        }}
-                        style={{
-                            width: '70%',
-                            height: 16,
-                            backgroundColor: '#c9c9c9',
-                            borderRadius: 4,
-                        }}
-                    />
-                </View>
-                <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'}>
-                    <View width={'60%'} alignItems="flex-start" justifyContent="center">
-                        <MotiView
-                            from={{ opacity: 0.4 }}
-                            animate={{ opacity: 0.8 }}
-                            transition={{
-                                type: 'timing',
-                                duration: 1000,
-                                delay: 500,
-                                loop: true,
-                                repeatReverse: true,
-                            }}
-                            style={{
-                                width: 60,
-                                height: 16,
-                                backgroundColor: '#c9c9c9',
-                                borderRadius: 4,
-                            }}
-                        />
-                    </View>
-                    <View width={'40%'} alignItems="center" justifyContent="center">
-                        <MotiView
-                            from={{ opacity: 0.4 }}
-                            animate={{ opacity: 0.8 }}
-                            transition={{
-                                type: 'timing',
-                                duration: 1000,
-                                delay: 600,
-                                loop: true,
-                                repeatReverse: true,
-                            }}
-                            style={{
-                                width: 80,
-                                height: 32,
-                                backgroundColor: '#c9c9c9',
-                                borderRadius: 8,
-                            }}
-                        />
-                    </View>
-                </View>
-            </View>
-        </MotiView>
-    );
-});
-
-FoodItemSkeleton.displayName = 'FoodItemSkeleton';
-
-const FoodSectionSkeleton = memo(({ count = 5 }: { count?: number }) => {
-    return (
-        <FlatList
-            data={Array.from({ length: count }, (_, index) => index)}
-            renderItem={({ index }) => (
-                <MotiView
-                    from={{ opacity: 0.4 }}
-                    animate={{ opacity: 0.8 }}
-                    transition={{
-                        type: 'timing',
-                        duration: 1000,
-                        delay: index * 100,
-                        loop: true,
-                        repeatReverse: true,
-                    }}
-                >
-                    <FoodItemSkeleton />
-                </MotiView>
-            )}
-            keyExtractor={(item) => item.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingLeft: 0 }}
-            decelerationRate="fast"
-            snapToAlignment="start"
-        />
-    );
-});
-
-FoodSectionSkeleton.displayName = 'FoodSectionSkeleton';
-
 const Home = () => {
     const dispatch = useAppDispatch();
     const { user, token } = useAppSelector((state: RootState) => state.auth);
     const [menuData, setMenuData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
     const isLoadingRef = useRef(false);
 
     const transformMenuData = useCallback((apiData: any[]) => {
-        return apiData.map((item) => ({
-            id: item.id,
-            title: item.name,
-            price: `₹${(item.pricePaise / 100).toFixed(0)}`,
-            pricePaise: item.pricePaise,
-            image: item.image || require('@/assets/images/bowl.png'),
-            description: item.description,
-            categoryId: item.categoryId,
-            payload: item.payload,
-        }));
-    }, []);
+        return apiData.map((item) => {
+            // Handle image - use URL if available, otherwise fallback to local image
+            let imageSource;
+            if (item.image && item.image.trim() !== '') {
+                imageSource = { uri: item.image };
+            } else {
+                imageSource = require('@/assets/images/bowl.png');
+            }
+
+            return {
+                id: item.id,
+                title: item.name,
+                price: `₹${(item.pricePaise / 100).toFixed(0)}`,
+                pricePaise: item.pricePaise,
+                image: imageSource,
+                description: item.description,
+                categoryId: item.categoryId,
+                payload: item.payload,
+                isFavourite: favouriteIds.has(item.id),
+            };
+        });
+    }, [favouriteIds]);
 
     const recommendationsData = transformMenuData(menuData);
     const bestSellersData = transformMenuData(menuData.slice(0, 5));
     const newArrivalsData = transformMenuData(menuData.slice(5, 10));
+
+    const fetchFavourites = useCallback(() => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useApiPort({
+            intent: "intent_get_favourites",
+            port: betterwayApiCall({
+                method: "GET",
+                url: "GET_FAVOURITES",
+                auth: token,
+            }),
+            success: (response: { items?: any[] }) => {
+                const favIds = new Set(
+                    response?.items?.map((item) => item.dishId || item.id) || [],
+                );
+                setFavouriteIds(favIds);
+            },
+            failure: () => {
+                console.log('Failed to fetch favourites');
+            },
+        })();
+    }, [token]);
+
+    const handleHeartPress = useCallback((itemId: string, isFavourite: boolean) => {
+        if (isFavourite) {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            useApiPort({
+                intent: "intent_remove_from_favourite",
+                port: betterwayApiCall({
+                    method: "DELETE",
+                    url: "REMOVE_FROM_FAVOURITE",
+                    auth: token,
+                    body: {
+                        dishId: itemId,
+                    },
+                }),
+                success: () => {
+                    setFavouriteIds((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.delete(itemId);
+                        return newSet;
+                    });
+                },
+                failure: () => {
+                    showToast({
+                        message: 'Failed to remove from favourites',
+                        type: 'error',
+                    });
+                },
+            })();
+        } else {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            useApiPort({
+                intent: "intent_add_to_favourite",
+                port: betterwayApiCall({
+                    method: "POST",
+                    url: "ADD_TO_FAVOURITE",
+                    auth: token,
+                    body: {
+                        dishId: itemId,
+                    },
+                }),
+                success: () => {
+                    setFavouriteIds((prev) => new Set([...prev, itemId]));
+                },
+                failure: () => {
+                    showToast({
+                        message: 'Failed to add to favourites',
+                        type: 'error',
+                    });
+                },
+            })();
+        }
+    }, [token]);
 
     const getMenu = useCallback(async () => {
         if (!token || isLoadingRef.current) return;
@@ -869,10 +375,11 @@ const Home = () => {
 
     useEffect(() => {
         getMenu();
+        fetchFavourites();
         if (token) {
             dispatch(fetchCart(token));
         }
-    }, [getMenu, token, dispatch]);
+    }, [getMenu, fetchFavourites, token, dispatch]);
 
     return (
         <SafeAreaView style={{ paddingTop: 10 }}>
@@ -882,9 +389,9 @@ const Home = () => {
                 <SearchBar />
                 <CuisineCarousel />
                 <CuisineSection />
-                <FoodSection title="Recommendations" data={recommendationsData} loading={loading} />
-                <FoodSection title="Best Sellers" data={bestSellersData} loading={loading} />
-                <FoodSection title="New Arrivals" data={newArrivalsData} loading={loading} />
+                <FoodSection title="Recommendations" data={recommendationsData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
+                <FoodSection title="Best Sellers" data={bestSellersData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
+                <FoodSection title="New Arrivals" data={newArrivalsData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
                 <UserReviewsSection />
             </ScrollView>
         </SafeAreaView>
@@ -892,4 +399,11 @@ const Home = () => {
 };
 
 export default Home;
+
+SearchBar.displayName = 'SearchBar';
+Title.displayName = 'Title';
+CuisineItem.displayName = 'CuisineItem';
+CuisineCarousel.displayName = 'CuisineCarousel';
+CuisineSection.displayName = 'CuisineSection';
+
 

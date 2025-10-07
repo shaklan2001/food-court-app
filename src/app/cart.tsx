@@ -6,6 +6,7 @@ import { memo, useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  ImageSourcePropType,
   Platform,
   Pressable,
   ScrollView,
@@ -14,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CouponBottomSheet from "../components/CouponBottomSheet";
+import { Card } from "../components/HomePage/Card";
 import SuccessModal from "../components/SuccessModal";
 import { Text, View } from "../components/ui";
 import {
@@ -26,7 +28,6 @@ import {
 import { RootState, useAppDispatch, useAppSelector } from "../store/store";
 import { BackIcon, MoreIcon } from "../utils/Svgs";
 import { pageHorizantalPadding } from "../utils/commomCompute";
-import { Card } from "./(tabs)/(home)";
 import { Coupon } from "./all-coupons";
 
 const RadioButton = memo(
@@ -90,7 +91,7 @@ const CartItem = memo(
     quantity: number;
     onIncrease: () => void;
     onDecrease: () => void;
-    image?: string | number;
+    image?: ImageSourcePropType;
   }) => {
     return (
       <View width="100%">
@@ -668,7 +669,7 @@ const Cart = () => {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>
         <View flex={1} backgroundColor="mainBackgroundLight">
           <ScreenHeader title="Cart" />
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>

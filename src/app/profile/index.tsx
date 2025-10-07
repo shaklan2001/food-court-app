@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from "expo-router";
 import { memo, useCallback, useState } from "react";
 import { Image, Pressable, StyleSheet } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LogoutModal from "../../components/LogoutModal";
 import { Text, View } from "../../components/ui";
 import { logout } from "../../store/slices/authSlice";
@@ -15,7 +16,7 @@ const ProfileMenuItem = memo(({
   icon,
   title,
   onPress,
-  isLogout = false
+  isLogout = false,
 }: {
   icon: string;
   title: string;
@@ -71,7 +72,6 @@ const Profile = () => {
 
   const handleMenuPress = useCallback((menuItem: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    console.log(`Pressed: ${menuItem}`);
     
     switch (menuItem) {
       case 'Favourites':
@@ -88,6 +88,9 @@ const Profile = () => {
         break;
       case 'Support':
         router.push('/profile/support');
+        break;
+      case 'Privacy Policy':
+        router.push('/profile/privacy-policy');
         break;
       case 'Feedback':
         router.push('/profile/feedback');
@@ -115,116 +118,125 @@ const Profile = () => {
   }, []);
 
   return (
-    <View flex={1} backgroundColor="mainBackgroundLight">
-       <ScreenHeader title="Profile" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>
+      <View flex={1} backgroundColor="mainBackgroundLight">
+        <ScreenHeader title="Profile" />
 
-        <View paddingHorizontal={pageHorizantalPadding} marginBottom="l">
-          <View flexDirection="row" alignItems="center" marginBottom="l">
-            <Image
-              source={require('@/assets/images/profile.jpg')}
-              style={styles.profileImage}
-            />
-            <View flex={1} marginLeft="m">
-              <Text
-                fontSize={18}
-                fontWeight="600"
-                color="textPrimary"
-                fontFamily="Poppins-SemiBold"
-              >
-                Prince Narula
-              </Text>
-              <Text
-                fontSize={12}
-                fontWeight="400"
-                color="primary"
-                fontFamily="Poppins-Regular"
-                marginBottom="s"
-              >
-                Student
-              </Text>
-              <Pressable onPress={handleEditProfilePress} style={styles.editButton}>
-                <View
-                  flexDirection="row"
-                  alignItems="center"
-                  justifyContent="center"
-                  backgroundColor="primary"
-                  paddingVertical="s"
-                  paddingHorizontal="m"
-                  borderRadius="m"
+          <View paddingHorizontal={pageHorizantalPadding} marginBottom="l">
+            <View flexDirection="row" alignItems="center" marginBottom="l">
+              <Image
+                source={require('@/assets/images/profile.jpg')}
+                style={styles.profileImage}
+              />
+              <View flex={1} marginLeft="m">
+                <Text
+                  fontSize={18}
+                  fontWeight="600"
+                  color="textPrimary"
+                  fontFamily="Poppins-SemiBold"
                 >
-                  <Feather name="edit-3" size={20} color="white" />
-                  <Text
-                    fontSize={14}
-                    fontWeight="500"
-                    color="textOnPrimary"
-                    fontFamily="Poppins-Medium"
-                    marginLeft="xs"
+                  Prince Narula
+                </Text>
+                <Text
+                  fontSize={12}
+                  fontWeight="400"
+                  color="primary"
+                  fontFamily="Poppins-Regular"
+                  marginBottom="s"
+                >
+                  Student
+                </Text>
+                <Pressable onPress={handleEditProfilePress} style={styles.editButton}>
+                  <View
+                    flexDirection="row"
+                    alignItems="center"
+                    justifyContent="center"
+                    backgroundColor="primary"
+                    paddingVertical="s"
+                    paddingHorizontal="m"
+                    borderRadius="m"
                   >
-                    Edit Profile
-                  </Text>
-                </View>
-              </Pressable>
+                    <Feather name="edit-3" size={20} color="white" />
+                    <Text
+                      fontSize={14}
+                      fontWeight="500"
+                      color="textOnPrimary"
+                      fontFamily="Poppins-Medium"
+                      marginLeft="xs"
+                    >
+                      Edit Profile
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View backgroundColor="transparent" borderRadius="l" marginHorizontal={pageHorizantalPadding}>
-          <ProfileMenuItem
-            icon="heart-outline"
-            title="Favourites"
-            onPress={() => handleMenuPress('Favourites')}
-          />
-          <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
-          
-          <ProfileMenuItem
-            icon="bag-outline"
-            title="Your Orders"
-            onPress={() => handleMenuPress('Your Orders')}
-          />
-          <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
-          
-          <ProfileMenuItem
-            icon="information-circle-outline"
-            title="About Section"
-            onPress={() => handleMenuPress('About Section')}
-          />
-          <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
-          
-          <ProfileMenuItem
-            icon="lock-closed-outline"
-            title="Change Password"
-            onPress={() => handleMenuPress('Change Password')}
-          />
-          <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
-          
-          <ProfileMenuItem
-            icon="headset-outline"
-            title="Support"
-            onPress={() => handleMenuPress('Support')}
-          />
-          <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
-          
-          <ProfileMenuItem
-            icon="chatbubble-outline"
-            title="Feedback"
-            onPress={() => handleMenuPress('Feedback')}
-          />
-          <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
-          
-          <ProfileMenuItem
-            icon="log-out-outline"
-            title="Logout"
-            onPress={handleLogoutPress}
-            isLogout={true}
-          />
-        </View>
+          <View backgroundColor="transparent" borderRadius="l" marginHorizontal={pageHorizantalPadding}>
+            <ProfileMenuItem
+              icon="heart-outline"
+              title="Favourites"
+              onPress={() => handleMenuPress('Favourites')}
+            />
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+            
+            <ProfileMenuItem
+              icon="bag-outline"
+              title="Your Orders"
+              onPress={() => handleMenuPress('Your Orders')}
+            />
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+            
+            <ProfileMenuItem
+              icon="information-circle-outline"
+              title="About Section"
+              onPress={() => handleMenuPress('About Section')}
+            />
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+            
+            <ProfileMenuItem
+              icon="lock-closed-outline"
+              title="Change Password"
+              onPress={() => handleMenuPress('Change Password')}
+            />
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+            
+            <ProfileMenuItem
+              icon="headset-outline"
+              title="Help & Support"
+              onPress={() => handleMenuPress('Support')}
+            />
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+            
+            <ProfileMenuItem
+              icon="chatbubble-outline"
+              title="Feedback"
+              onPress={() => handleMenuPress('Feedback')}
+            />
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
 
-        <LogoutModal
-          visible={showLogoutModal}
-          onClose={handleLogoutCancel}
-          onConfirm={handleLogoutConfirm}
-        />
+            <ProfileMenuItem
+              icon="document-text-outline"
+              title="Privacy Policy"
+              onPress={() => handleMenuPress('Privacy Policy')}
+            />
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+            
+            <ProfileMenuItem
+              icon="log-out-outline"
+              title="Logout"
+              onPress={handleLogoutPress}
+              isLogout={true}
+            />
+          </View>
+
+          <LogoutModal
+            visible={showLogoutModal}
+            onClose={handleLogoutCancel}
+            onConfirm={handleLogoutConfirm}
+          />
       </View>
+    </SafeAreaView>
   );
 };
 

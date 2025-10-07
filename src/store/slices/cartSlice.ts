@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { ImageSourcePropType } from 'react-native';
 import { Coupon } from '../../app/all-coupons';
 import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
 import { convertToPaise, generateReceiptId, initiatePayment } from '../../services/paymentService';
@@ -9,7 +10,7 @@ export interface CartItem {
   price: string;
   pricePaise: number;
   quantity: number;
-  image?: any;
+  image?: ImageSourcePropType;
   description?: string;
 }
 
@@ -177,15 +178,29 @@ export const fetchCart = (token: string) => async (dispatch: any) => {
     }),
     success: (response: any) => {
       if (response && response.cartItems && Array.isArray(response.cartItems)) {
-        const cartItems: CartItem[] = response.cartItems.map((item: any) => ({
-          id: item.dishId || item.id,
-          name: item.dish?.name || item.name || item.itemName,
-          price: `₹${((item.dish?.pricePaise || item.pricePaise || item.price) / 100).toFixed(0)}`,
-          pricePaise: item.dish?.pricePaise || item.pricePaise || item.price || 0,
-          quantity: item.quantity || 1,
-          image: item.dish?.image || item.image || require('@/assets/images/bowl.png'),
-          description: item.dish?.description || item.description || '',
-        }));
+        const cartItems: CartItem[] = response.cartItems.map((item: any) => {
+          // Handle image - use URL if available, otherwise fallback to local image
+          const imageUrl = item.dish?.image || item.image;
+          let imageSource;
+          if (typeof imageUrl === 'string' && imageUrl.trim() !== '') {
+            imageSource = { uri: imageUrl };
+          } else if (typeof imageUrl === 'object') {
+            // Already an object (from addToCart), keep as is
+            imageSource = imageUrl;
+          } else {
+            imageSource = require('@/assets/images/bowl.png');
+          }
+
+          return {
+            id: item.dishId || item.id,
+            name: item.dish?.name || item.name || item.itemName,
+            price: `₹${((item.dish?.pricePaise || item.pricePaise || item.price) / 100).toFixed(0)}`,
+            pricePaise: item.dish?.pricePaise || item.pricePaise || item.price || 0,
+            quantity: item.quantity || 1,
+            image: imageSource,
+            description: item.dish?.description || item.description || '',
+          };
+        });
         const totalPaise = response.totalPaise || cartItems.reduce((sum, item) => sum + (item.pricePaise * item.quantity), 0);
         dispatch(setCart(cartItems));
         dispatch(setTotal(totalPaise));
