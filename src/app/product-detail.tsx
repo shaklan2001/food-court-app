@@ -1,17 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from "@shopify/restyle";
 import * as Haptics from 'expo-haptics';
 import { router, Stack } from "expo-router";
 import { useCallback, useState } from "react";
 import { Image, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, View } from "../components/ui";
-import { Theme } from "../theme/theme";
+import { RootState, useAppSelector } from "../store/store";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { CloseIcon, HeartFilledIcon, HeartIcon } from "../utils/Svgs";
 import { Card } from "./(tabs)/(home)";
 
 const ProductDetail = () => {
-  const theme = useTheme<Theme>();
+  const { token } = useAppSelector((state: RootState) => state.auth);
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
 
@@ -21,9 +20,12 @@ const ProductDetail = () => {
   }, []);
 
   const handleHeartPress = useCallback(() => {
+    if (!token) return;
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
     setIsLiked(!isLiked);
-  }, [isLiked]);
+  }, [token, isLiked]);
 
   const handleQuantityIncrease = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -38,10 +40,9 @@ const ProductDetail = () => {
   const handleConfirmPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // Add to cart logic here
-    console.log('Item added to cart:', { quantity });
     // You can navigate to cart or show success message
     // router.push('/cart');
-  }, [quantity]);
+  }, []);
 
   return (
     <>
@@ -49,7 +50,6 @@ const ProductDetail = () => {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <View flex={1} backgroundColor="mainBackgroundLight">
-        {/* Image Section */}
         <View position="relative" height={280}>
           <Image
             source={require('@/assets/images/bowl.png')}
@@ -57,7 +57,6 @@ const ProductDetail = () => {
             resizeMode="cover"
           />
           
-          {/* Close Button */}
           <View position="absolute" top={50} right={20}>
             <TouchableOpacity onPress={handleClosePress}>
               <Card>
@@ -67,7 +66,6 @@ const ProductDetail = () => {
           </View>
         </View>
 
-        {/* Content Section */}
         <View 
           flex={1} 
           backgroundColor="mainBackground" 
@@ -105,7 +103,6 @@ const ProductDetail = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Description */}
               <View marginBottom="l">
                 <Text
                   fontSize={16}
@@ -127,7 +124,6 @@ const ProductDetail = () => {
                 </Text>
               </View>
 
-              {/* Quantity Selector */}
               <View 
                 flexDirection="row" 
                 alignItems="center" 
