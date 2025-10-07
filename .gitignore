@@ -37,3 +37,10 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# Build files
+*.apk
+*.aab
+build-*.apk
+build-*.aab
+*.ipa
