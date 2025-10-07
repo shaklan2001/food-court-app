@@ -1,220 +1,400 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from "@shopify/restyle";
-import * as Haptics from 'expo-haptics';
-import { router, Stack } from "expo-router";
-import { useCallback, useState } from "react";
-import { Image, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  ImageSourcePropType,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Card } from "../components/HomePage/Card";
 import { Text, View } from "../components/ui";
-import { Theme } from "../theme/theme";
+import { betterwayApiCall } from "../network/useApiPort";
+import { addToCart, updateCartItem } from "../store/slices/cartSlice";
+import { RootState, useAppDispatch, useAppSelector } from "../store/store";
+import theme from "../theme/theme";
+import { showToast } from "../utils";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { CloseIcon, HeartFilledIcon, HeartIcon } from "../utils/Svgs";
-import { Card } from "./(tabs)/(home)";
 
 const ProductDetail = () => {
-  const theme = useTheme<Theme>();
+  const dispatch = useAppDispatch();
+  const params = useLocalSearchParams<{ 
+    itemId: string;
+    name: string;
+    price: string;
+    pricePaise: string;
+    description: string;
+    image: string;
+  }>();
+  const { token } = useAppSelector((state: RootState) => state.auth);
+  const cartItems = useAppSelector((state: RootState) => state.cart.items);
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const initializeProductDetails = async () => {
+      if (!token || !params.itemId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Check if item is already in cart and set quantity
+        const cartItem = cartItems.find(ci => String(ci.id) === String(params.itemId));
+        if (cartItem) {
+          setQuantity(cartItem.quantity);
+        }
+
+        // Fetch only favorites status
+        const favResponse = await betterwayApiCall({
+          method: "GET",
+          url: "GET_FAVOURITES",
+          auth: token,
+        });
+
+        if (favResponse && typeof favResponse === 'object' && 'items' in favResponse) {
+          const favItems = (favResponse as { items: { dishId?: string; id?: string }[] }).items;
+          const isFavorited = favItems.some(
+            (fav) => (fav.dishId || fav.id) === params.itemId,
+          );
+          setIsLiked(isFavorited);
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error fetching favorites:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeProductDetails();
+  }, [params.itemId, token, cartItems]);
 
   const handleClosePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   }, []);
 
-  const handleHeartPress = useCallback(() => {
+  const handleHeartPress = useCallback(async () => {
+    if (!token || !params.itemId) return;
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIsLiked(!isLiked);
-  }, [isLiked]);
+
+    try {
+      if (isLiked) {
+        // Remove from favorites
+        await betterwayApiCall({
+          method: "DELETE",
+          url: "REMOVE_FROM_FAVOURITE",
+          auth: token,
+          body: {
+            dishId: params.itemId,
+          },
+        });
+        
+        setIsLiked(false);
+        showToast({
+          message: 'Removed from favorites',
+          type: 'success',
+        });
+      } else {
+        // Add to favorites
+        await betterwayApiCall({
+          method: "POST",
+          url: "ADD_TO_FAVOURITE",
+          auth: token,
+          body: {
+            dishId: params.itemId,
+          },
+        });
+        
+        setIsLiked(true);
+        showToast({
+          message: 'Added to favorites',
+          type: 'success',
+        });
+      }
+    } catch {
+      showToast({
+        message: isLiked ? 'Failed to remove from favorites' : 'Failed to add to favorites',
+        type: 'error',
+      });
+    }
+  }, [token, params.itemId, isLiked]);
 
   const handleQuantityIncrease = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setQuantity(prev => prev + 1);
+    setQuantity((prev) => prev + 1);
   }, []);
 
   const handleQuantityDecrease = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setQuantity(prev => Math.max(1, prev - 1));
+    setQuantity((prev) => Math.max(1, prev - 1));
   }, []);
 
-  const handleConfirmPress = useCallback(() => {
+  const handleConfirmPress = useCallback(async () => {
+    if (!token || !params.itemId) return;
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Add to cart logic here
-    console.log('Item added to cart:', { quantity });
-    // You can navigate to cart or show success message
-    // router.push('/cart');
-  }, [quantity]);
+
+    const currentCartItem = cartItems.find(ci => String(ci.id) === String(params.itemId));
+    const currentQuantity = currentCartItem?.quantity || 0;
+
+    try {
+      // Handle image for cart
+      let imageSource: ImageSourcePropType;
+      if (params.image && params.image.trim() !== '') {
+        imageSource = { uri: params.image };
+      } else {
+        imageSource = require('@/assets/images/bowl.png');
+      }
+
+      if (currentQuantity === 0) {
+        // Add to cart for the first time
+        await dispatch(addToCart({
+          id: params.itemId,
+          name: params.name,
+          price: params.price,
+          pricePaise: parseInt(params.pricePaise),
+          image: imageSource,
+          description: params.description,
+        }, token));
+        
+        // If quantity is more than 1, update to the selected quantity
+        if (quantity > 1) {
+          await dispatch(updateCartItem(params.itemId, quantity, token));
+        }
+      } else {
+        // Update existing cart item quantity
+        await dispatch(updateCartItem(params.itemId, quantity, token));
+      }
+
+      showToast({
+        message: 'Added to cart successfully',
+        type: 'success',
+      });
+      
+      // Navigate back or to cart
+      router.back();
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error adding to cart:', error);
+      showToast({
+        message: 'Failed to add to cart',
+        type: 'error',
+      });
+    }
+  }, [token, params, quantity, cartItems, dispatch]);
+
+  if (loading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.mainBackgroundLight }}>
+          <View flex={1} backgroundColor="mainBackground" justifyContent="center" alignItems="center">
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text fontSize={16} color="textPrimary" marginTop="m" fontFamily="Poppins-Medium">
+              Loading...
+            </Text>
+          </View>
+        </SafeAreaView>
+      </>
+    );
+  }
+
+  // Prepare image source from params
+  const imageSource: ImageSourcePropType = params.image && params.image.trim() !== '' 
+    ? { uri: params.image }
+    : require('@/assets/images/bowl.png');
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      <View flex={1} backgroundColor="mainBackgroundLight">
-        {/* Image Section */}
-        <View position="relative" height={280}>
-          <Image
-            source={require('@/assets/images/bowl.png')}
-            style={styles.productImage}
-            resizeMode="cover"
-          />
-          
-          {/* Close Button */}
-          <View position="absolute" top={50} right={20}>
-            <TouchableOpacity onPress={handleClosePress}>
-              <Card>
-                <CloseIcon />
-              </Card>
-            </TouchableOpacity>
-          </View>
-        </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.mainBackgroundLight }}>
+        <View flex={1} backgroundColor="mainBackgroundLight">
+          <View position="relative" height={360}>
+            <Image
+              source={imageSource}
+              style={styles.productImage}
+              resizeMode="cover"
+            />
 
-        {/* Content Section */}
-        <View 
-          flex={1} 
-          backgroundColor="mainBackground" 
-          borderTopLeftRadius="l" 
-          borderTopRightRadius="l" 
-          paddingTop="l"
-        >
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <View paddingHorizontal={pageHorizantalPadding}>
-              <View flexDirection="row" justifyContent="space-between" alignItems="flex-start" marginBottom="s">
-                <View flex={1}>
-                  <Text
-                    fontSize={30}
-                    fontWeight="600"
-                    color="textPrimary"
-                    fontFamily="Poppins-SemiBold"
-                    marginBottom="xs"
-                  >
-                    Desi Bowl Meal
-                  </Text>
+            <View position="absolute" top={20} right={20}>
+              <TouchableOpacity onPress={handleClosePress}>
+                <Card>
+                  <View padding="xs" backgroundColor='textPrimary' borderRadius='xxl'>
+                    <CloseIcon color='#FFFFFF' />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View
+            flex={1}
+            backgroundColor="mainBackground"
+            borderTopLeftRadius="l"
+            borderTopRightRadius="l"
+            paddingTop="l"
+          >
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View paddingHorizontal={pageHorizantalPadding}>
+                <View
+                  flexDirection="row"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  marginBottom="m"
+                >
+                  <View flex={1} marginRight="m">
+                    <Text
+                      fontSize={32}
+                      fontWeight="bold"
+                      color="textPrimary"
+                      fontFamily="Poppins-Bold"
+                      lineHeight={40}
+                      marginBottom="xs"
+                    >
+                      {params.name}
+                    </Text>
+                    <Text
+                      fontSize={20}
+                      fontWeight="600"
+                      color="textPrimary"
+                      fontFamily="Poppins-SemiBold"
+                      lineHeight={28}
+                      marginTop="xs"
+                    >
+                      {params.price}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity onPress={handleHeartPress}>
+                    <Card>{isLiked ? <HeartFilledIcon /> : <HeartIcon />}</Card>
+                  </TouchableOpacity>
+                </View>
+
+                <View marginTop="l" marginBottom="l">
                   <Text
                     fontSize={18}
                     fontWeight="600"
                     color="textPrimary"
                     fontFamily="Poppins-SemiBold"
+                    lineHeight={24}
+                    marginBottom="m"
                   >
-                    $14
+                    Description
+                  </Text>
+                  <Text
+                    fontSize={15}
+                    fontWeight="400"
+                    color="textSecondary"
+                    fontFamily="Poppins-Regular"
+                    lineHeight={24}
+                  >
+                    {params.description || 'No description available.'}
                   </Text>
                 </View>
-                
-                <TouchableOpacity onPress={handleHeartPress}>
-                  <Card>
-                    {isLiked ? <HeartFilledIcon /> : <HeartIcon />}
-                  </Card>
-                </TouchableOpacity>
-              </View>
 
-              {/* Description */}
-              <View marginBottom="l">
-                <Text
-                  fontSize={16}
-                  fontWeight="500"
-                  color="textPrimary"
-                  fontFamily="Poppins-Medium"
-                  marginBottom="s"
+                <View
+                  flexDirection="row"
+                  alignItems="center"
+                  justifyContent="center"
+                  marginTop="xl"
+                  marginBottom="xl"
+                  paddingVertical="s"
                 >
-                  Description
-                </Text>
-                <Text
-                  fontSize={14}
-                  fontWeight="500"
-                  color="textPrimary"
-                  fontFamily="Poppins-Medium"
-                  lineHeight={21}
-                >
-                  A wholesome mix of grains, protein & greens — fluffy rice, roasted veggies, juicy chicken (or paneer), and a drizzle of zesty dressing. A perfect balance of health & taste in one bowl.
-                </Text>
-              </View>
+                  <TouchableOpacity
+                    onPress={handleQuantityDecrease}
+                    style={styles.quantityButton}
+                  >
+                    <Ionicons name="remove" size={20} color={theme.colors.textSecondary} />
+                  </TouchableOpacity>
 
-              {/* Quantity Selector */}
-              <View 
-                flexDirection="row" 
-                alignItems="center" 
-                justifyContent="center" 
-                marginBottom="xl"
-                paddingVertical="m"
+                  <Text
+                    fontSize={20}
+                    fontWeight="600"
+                    color="textPrimary"
+                    fontFamily="Poppins-SemiBold"
+                    marginHorizontal="xl"
+                    minWidth={50}
+                    textAlign="center"
+                  >
+                    {quantity}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={handleQuantityIncrease}
+                    style={styles.quantityButtonAdd}
+                  >
+                    <Ionicons name="add" size={20} color={theme.colors.textOnPrimary} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View
+              backgroundColor="primary"
+              paddingHorizontal={pageHorizantalPadding}
+              paddingVertical="m"
+            >
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={handleConfirmPress}
               >
-                <TouchableOpacity
-                  onPress={handleQuantityDecrease}
-                  style={styles.quantityButton}
-                >
-                  <Ionicons name="remove" size={18} color="#010101" />
-                </TouchableOpacity>
-                
                 <Text
                   fontSize={18}
                   fontWeight="600"
-                  color="textPrimary"
+                  color="textOnPrimary"
                   fontFamily="Poppins-SemiBold"
-                  marginHorizontal="l"
-                  minWidth={40}
-                  textAlign="center"
                 >
-                  {quantity}
+                  Confirm
                 </Text>
-                
-                <TouchableOpacity
-                  onPress={handleQuantityIncrease}
-                  style={styles.quantityButtonAdd}
-                >
-                  <Ionicons name="add" size={18} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             </View>
-          </ScrollView>
-
-          <View 
-            backgroundColor="primary" 
-            paddingHorizontal={pageHorizantalPadding} 
-            paddingVertical="m"
-          >
-            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmPress}>
-              <Text
-                fontSize={18}
-                fontWeight="600"
-                color="textOnPrimary"
-                fontFamily="Poppins-SemiBold"
-              >
-                Confirm
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </SafeAreaView>
     </>
   );
 };
 
 const styles = StyleSheet.create({
   productImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   quantityButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#010101',
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadii.m,
+    borderWidth: 1.5,
+    borderColor: theme.colors.buttonSecondary,
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
   },
   quantityButtonAdd: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#A20538',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadii.m,
+    backgroundColor: theme.colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
   },
   confirmButton: {
-    backgroundColor: '#A20538',
-    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadii.m,
     height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

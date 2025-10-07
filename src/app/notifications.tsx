@@ -49,6 +49,7 @@ const NotificationsHeader = memo(({ onClearAll }: { onClearAll: () => void }) =>
         fontWeight="bold"
         color="textPrimary"
         fontFamily="Poppins-Bold"
+        lineHeight={30}
       >
         Notifications
       </Text>
@@ -165,7 +166,7 @@ const Notifications = () => {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
         <NotificationsHeader onClearAll={handleClearAll} />
 

@@ -190,10 +190,10 @@ function TabsLayout() {
                     }}
                 />
                 <Tabs.Screen
-                    name="dine-in"
+                    name="order-now"
                     options={{
-                        tabBarLabel: "Dine-In",
-                        title: "Dine-In",
+                        tabBarLabel: "Order Now",
+                        title: "Order Now",
                         tabBarIcon: ({ focused }) => (
                             <DineInIcon isFocused={focused} />
                         ),

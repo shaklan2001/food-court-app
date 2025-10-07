@@ -16,7 +16,13 @@ export type ApiType =
   "REMOVE_CART_ITEM" |
   "ADD_TO_FAVOURITE" |
   "REMOVE_FROM_FAVOURITE" |
-  "GET_FAVOURITES";
+  "GET_FAVOURITES" |
+  "GET_RECOMMENDATIONS" |
+  "GET_BEST_SELLERS" |
+  "GET_NEW_ARRIVALS" |
+  "POST_RECOMMENDATIONS" |
+  "POST_BEST_SELLERS" |
+  "POST_NEW_ARRIVALS";
 
   
 
@@ -38,4 +44,10 @@ export type TransactionIntentType =
   "intent_remove_cart_item" |
   "intent_add_to_favourite" |
   "intent_remove_from_favourite" |
-  "intent_get_favourites";
+  "intent_get_favourites" |
+  "intent_get_recommendations" |
+  "intent_get_best_sellers" |
+  "intent_get_new_arrivals" |
+  "intent_post_recommendations" |
+  "intent_post_best_sellers" |
+  "intent_post_new_arrivals";
