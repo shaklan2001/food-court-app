@@ -5,7 +5,7 @@ import { View } from "../ui";
 
 
 
-const FoodItemSkeleton = memo(() => {
+const FoodItemSkeleton = memo(({ isGridLayout = false }: { isGridLayout?: boolean }) => {
     return (
         <MotiView
             from={{ opacity: 0.4 }}
@@ -19,11 +19,11 @@ const FoodItemSkeleton = memo(() => {
         >
             <View
                 minHeight={220}
-                width={200}
+                width={isGridLayout ? undefined : 200}
                 backgroundColor="transparent"
                 borderRadius="m"
                 overflow="hidden"
-                marginRight="m"
+                marginRight={isGridLayout ? undefined : "m"}
             >
                 <MotiView
                     from={{ opacity: 0.4 }}

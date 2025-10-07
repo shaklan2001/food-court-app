@@ -72,7 +72,6 @@ const Profile = () => {
 
   const handleMenuPress = useCallback((menuItem: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    console.log(`Pressed: ${menuItem}`);
     
     switch (menuItem) {
       case 'Favourites':
@@ -89,6 +88,9 @@ const Profile = () => {
         break;
       case 'Support':
         router.push('/profile/support');
+        break;
+      case 'Privacy Policy':
+        router.push('/profile/privacy-policy');
         break;
       case 'Feedback':
         router.push('/profile/feedback');
@@ -201,7 +203,7 @@ const Profile = () => {
             
             <ProfileMenuItem
               icon="headset-outline"
-              title="Support"
+              title="Help & Support"
               onPress={() => handleMenuPress('Support')}
             />
             <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
@@ -210,6 +212,13 @@ const Profile = () => {
               icon="chatbubble-outline"
               title="Feedback"
               onPress={() => handleMenuPress('Feedback')}
+            />
+            <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+
+            <ProfileMenuItem
+              icon="document-text-outline"
+              title="Privacy Policy"
+              onPress={() => handleMenuPress('Privacy Policy')}
             />
             <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
             

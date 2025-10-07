@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
 import { memo, useCallback } from "react";
-import { FlatList, Image, Pressable, TouchableOpacity } from "react-native";
+import { FlatList, Image, Pressable } from "react-native";
 import { Text, View } from "../ui";
 import { FoodSectionSkeleton } from "./FoodSectionSkeleton";
 import QuantitySelector from "./QuantitySelector";
@@ -13,30 +13,43 @@ import QuantitySelector from "./QuantitySelector";
 export const FoodItem = memo(({ 
     item, 
     showHeartIcon = false, 
-    onHeartPress,
     marginBottom = 0,
     isGridLayout = false,
+    isFavouriteItem = false,
+    onHeartPress,
 }: { 
     item: any; 
     showHeartIcon?: boolean;
-    onHeartPress?: () => void;
     marginBottom?: number;
     isGridLayout?: boolean;
+    isFavouriteItem?: boolean;
+    onHeartPress?: (itemId: string) => void;
 }) => {
     const dispatch = useAppDispatch();
     const { token } = useAppSelector((state: RootState) => state.auth);
     const cartItems = useAppSelector((state: RootState) => state.cart.items);
 
     const handleItemPress = () => {
-        router.push('/product-detail');
+        router.push({
+            pathname: '/product-detail',
+            params: {
+                itemId: String(item.id),
+                name: item.title,
+                price: item.price,
+                pricePaise: String(item.pricePaise),
+                description: item.description || '',
+                image: typeof item.image === 'object' && item.image.uri ? item.image.uri : '',
+            },
+        });
     };
 
     const currentQuantity = cartItems.find(cartItem => cartItem.id === item.id)?.quantity || 0;
 
     const handleHeartPress = useCallback(async () => {
-        if (!token) return;
-        onHeartPress?.();
-    }, [token, onHeartPress]);
+        if (onHeartPress) {
+            onHeartPress(item.id);
+        }
+    }, [onHeartPress, item.id]);
 
     const handleQuantityChange = useCallback(async (itemId: string, quantity: number) => {
         if (!token) return;
@@ -76,7 +89,7 @@ export const FoodItem = memo(({
                     />
                     
                     {showHeartIcon && (
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleHeartPress}
                             style={{
                                 position: 'absolute',
@@ -89,23 +102,23 @@ export const FoodItem = memo(({
                                 style={{
                                     width: 32,
                                     height: 32,
-                                    borderRadius: 16,
+                                    borderRadius: 12,
                                     justifyContent: 'center',
                                     alignItems: 'center',
                                     backgroundColor: 'rgba(255, 255, 255, 0.3)',
                                 }}
                             >
                                 <Ionicons 
-                                    name="heart-outline" 
-                                    size={16} 
-                                    color="#FFFFFF" 
+                                    name={isFavouriteItem ? "heart-sharp" : "heart-outline"} 
+                                    size={22} 
+                                    color={isFavouriteItem ? "#A20538" : "#FFFFFF"} 
                                 />
                             </BlurView>
-                        </TouchableOpacity>
-                    )}
-                </View>
+                            </Pressable>
+                        )}
+                    </View>
                 
-                <View marginVertical='s'>
+                    <View marginVertical='s'>
                     <Text
                         fontSize={14}
                         fontWeight="600"
@@ -149,18 +162,22 @@ const FoodSection = memo(({
     data, 
     loading = false, 
     showHeartIcon = false,
+    onHeartPress,
 }: { 
     title: string; 
     data: any[]; 
     loading?: boolean;
     showHeartIcon?: boolean;
+    onHeartPress?: (itemId: string, isFavourite: boolean) => void;
 }) => {
     const renderFoodItem = useCallback(({ item }: { item: any }) => (
         <FoodItem 
             item={item} 
             showHeartIcon={showHeartIcon}
+            isFavouriteItem={item.isFavourite}
+            onHeartPress={onHeartPress ? () => onHeartPress(item.id, item.isFavourite) : undefined}
         />
-    ), [showHeartIcon]);
+    ), [showHeartIcon, onHeartPress]);
 
     return (
         <View marginTop="l" paddingHorizontal={pageHorizantalPadding}>

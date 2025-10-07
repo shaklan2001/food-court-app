@@ -18,5 +18,11 @@ export const API_ROUTES = {
   ADD_TO_FAVOURITE: "/api/favourite/add",
   REMOVE_FROM_FAVOURITE: "/api/favourite/remove",
   GET_FAVOURITES: "/api/favourite",
+  GET_RECOMMENDATIONS: "/api/home/recommendations",
+  GET_BEST_SELLERS: "/api/home/best-sellers",
+  GET_NEW_ARRIVALS: "/api/home/new-arrivals",
+  POST_RECOMMENDATIONS: "/api/admin/recommendations",
+  POST_BEST_SELLERS: "/api/admin/best-sellers",
+  POST_NEW_ARRIVALS: "/api/admin/new-arrivals",
 };
   

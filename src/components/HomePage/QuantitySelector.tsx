@@ -30,6 +30,7 @@ const QuantitySelector = memo(({
                     borderRadius="m"
                     justifyContent="center"
                     alignItems="center"
+                    paddingVertical='xs'
                 >
                     <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
                         Add
@@ -46,6 +47,7 @@ const QuantitySelector = memo(({
             backgroundColor="primary"
             borderRadius="m"
             minWidth={80}
+            paddingVertical='xs'
         >
             <Pressable onPress={handleDecrement}>
                 <View
