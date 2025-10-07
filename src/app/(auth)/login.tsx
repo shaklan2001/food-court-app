@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
-import { Dimensions, Image, ImageBackground, Platform, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
+import { Dimensions, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
 import { useDispatch } from 'react-redux';
-import { Button, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
+import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
 import { setToken, setUser } from '../../store/slices/authSlice';
 import { showToast } from '../../utils';
@@ -13,6 +13,8 @@ const Login = memo(() => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isPhoneLogin, setIsPhoneLogin] = useState(false);
+    const [mobileNumber, setMobileNumber] = useState('');
 
     const loginUser = () =>
         useApiPort({
@@ -101,6 +103,41 @@ const Login = memo(() => {
         router.push('/sign-up');
     };
 
+    const handlePhoneNumberLogin = () => {
+        setIsPhoneLogin(true);
+    };
+
+    const handleEmailLogin = () => {
+        setIsPhoneLogin(false);
+    };
+
+    const handleSendOTP = useCallback(() => {
+        if (!mobileNumber.trim()) {
+            showToast({
+                message: 'Please enter your mobile number',
+                type: 'error',
+            });
+            return;
+        }
+        if (mobileNumber.length < 10) {
+            showToast({
+                message: 'Please enter a valid mobile number',
+                type: 'error',
+            });
+            return;
+        }
+        
+        console.log('Sending OTP to:', mobileNumber);
+        showToast({
+            message: 'OTP sent successfully!',
+            type: 'success',
+        });
+        
+        setTimeout(() => {
+            router.push('/otp-verify');
+        }, 1000);
+    }, [mobileNumber]);
+
     return (
         <ImageBackground
             source={require('../../../assets/images/primary_bg.webp')}
@@ -159,82 +196,137 @@ const Login = memo(() => {
                         }}
                         style={{ flex: 1 }}
                     >
-                        <View marginBottom="l">
-                            <Text
-                                fontSize={14}
-                                fontWeight="400"
-                                color="textSecondary"
-                                marginBottom="s"
-                                fontFamily="Poppins-Regular"
-                            >
-                                Email <Text color="primary">*</Text>
-                            </Text>
-                            <FormField
-                                label=""
-                                placeholder="Enter your email"
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                marginBottom="xs"
-                            />
-                        </View>
+                        {!isPhoneLogin ? (
+                            <>
+                                <View marginBottom="l">
+                                    <Text
+                                        fontSize={14}
+                                        fontWeight="400"
+                                        color="textSecondary"
+                                        marginBottom="s"
+                                        fontFamily="Poppins-Regular"
+                                    >
+                                        Email <Text color="primary">*</Text>
+                                    </Text>
+                                    <FormField
+                                        label=""
+                                        placeholder="Enter your email"
+                                        value={email}
+                                        onChangeText={setEmail}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        marginBottom="xs"
+                                    />
+                                </View>
 
-                        <View marginBottom="l">
-                            <Text
-                                fontSize={14}
-                                fontWeight="400"
-                                color="textSecondary"
-                                marginBottom="s"
-                                fontFamily="Poppins-Regular"
-                            >
-                                Password <Text color="primary">*</Text>
-                            </Text>
-                            <PasswordInput
-                                value={password}
-                                onChangeText={setPassword}
-                                backgroundColor="inputBackground"
-                            />
-                        </View>
+                                <View marginBottom="l">
+                                    <Text
+                                        fontSize={14}
+                                        fontWeight="400"
+                                        color="textSecondary"
+                                        marginBottom="s"
+                                        fontFamily="Poppins-Regular"
+                                    >
+                                        Password <Text color="primary">*</Text>
+                                    </Text>
+                                    <PasswordInput
+                                        value={password}
+                                        onChangeText={setPassword}
+                                        backgroundColor="inputBackground"
+                                    />
+                                </View>
 
-                        <View marginTop="s" marginBottom="m">
-                            <Button
-                                title={"LOGIN"}
-                                variant="primary"
-                                onPress={handleLogin}
-                                disabled={isLoading}
-                                loading={isLoading}
-                            />
-                        </View>
+                                <View marginTop="s" marginBottom="m">
+                                    <Button
+                                        title={"LOGIN"}
+                                        variant="primary"
+                                        onPress={handleLogin}
+                                        disabled={isLoading}
+                                        loading={isLoading}
+                                    />
+                                </View>
 
-                        <TouchableOpacity onPress={handleForgotPassword}>
-                            <View alignItems="center" marginBottom="l">
+                                <TouchableOpacity onPress={handleForgotPassword}>
+                                    <View alignItems="center" marginBottom="l">
+                                        <Text
+                                            fontSize={16}
+                                            fontWeight="400"
+                                            color="loginBackground"
+                                            fontFamily="Poppins-Regular"
+                                        >
+                                            Forgot password?
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <View marginBottom="l">
+                                    <Text
+                                        fontSize={14}
+                                        fontWeight="400"
+                                        color="textSecondary"
+                                        marginBottom="s"
+                                        fontFamily="Poppins-Regular"
+                                    >
+                                        Mobile number <Text color="primary">*</Text>
+                                    </Text>
+                                    <View flexDirection="row" gap="s">
+                                        <CountryCodeSelector />
+                                        <View flex={1}>
+                                            <FormField
+                                                label=""
+                                                placeholder="Mobile number"
+                                                value={mobileNumber}
+                                                onChangeText={setMobileNumber}
+                                                keyboardType="phone-pad"
+                                                marginBottom="xs"
+                                            />
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View marginTop="s" marginBottom="m">
+                                    <Button
+                                        title={"SEND OTP"}
+                                        variant="primary"
+                                        onPress={handleSendOTP}
+                                        disabled={isLoading}
+                                        loading={isLoading}
+                                    />
+                                </View>
+                            </>
+                        )}
+
+                        <View alignItems="center" marginBottom="l">
+                            <View flexDirection="row" alignItems="center" gap="s">
                                 <Text
                                     fontSize={16}
                                     fontWeight="400"
-                                    color="loginBackground"
+                                    color="textSecondary"
+                                    marginBottom="m"
                                     fontFamily="Poppins-Regular"
                                 >
-                                    Forgot password?
+                                    Login with 
                                 </Text>
+                                <Pressable onPress={isPhoneLogin ? handleEmailLogin : handlePhoneNumberLogin}>
+                                    <Text
+                                        fontSize={16}
+                                        fontWeight="bold"
+                                        color="primary"
+                                        marginBottom="m"
+                                        fontFamily="Poppins-SemiBold"
+                                    >
+                                        {isPhoneLogin ? 'Email' : 'Phone Number'}
+                                    </Text>
+                                </Pressable>
                             </View>
-                        </TouchableOpacity>
 
-                        <View alignItems="center" marginBottom="l">
-                            <Text
-                                fontSize={16}
-                                fontWeight="400"
-                                color="textSecondary"
-                                marginBottom="m"
-                                fontFamily="Poppins-Regular"
-                            >
-                                Login with
-                            </Text>
                             <View flexDirection="row" gap="m">
-                                {Platform.OS === 'android' && <SocialLoginButton
+                                <SocialLoginButton
                                     onPress={handleGoogleLogin}
                                     imageSource={require('../../../assets/images/google-logo.png')}
-                                />}
+                                />
                                 {Platform.OS === 'ios' && <SocialLoginButton
                                     onPress={handleAppleLogin}
                                     imageSource={require('../../../assets/images/apple-logo.png')}

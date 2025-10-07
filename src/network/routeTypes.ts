@@ -22,7 +22,9 @@ export type ApiType =
   "GET_NEW_ARRIVALS" |
   "POST_RECOMMENDATIONS" |
   "POST_BEST_SELLERS" |
-  "POST_NEW_ARRIVALS";
+  "POST_NEW_ARRIVALS" |
+  "SEND_OTP_TO_PHONE" |
+  "VERIFY_OTP_TO_PHONE";
 
   
 
@@ -50,4 +52,6 @@ export type TransactionIntentType =
   "intent_get_new_arrivals" |
   "intent_post_recommendations" |
   "intent_post_best_sellers" |
-  "intent_post_new_arrivals";
+  "intent_post_new_arrivals" |
+  "intent_send_otp_to_phone" |
+  "intent_verify_otp_to_phone";

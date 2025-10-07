@@ -1,7 +1,5 @@
-import { useTheme } from '@shopify/restyle';
 import { memo } from 'react';
 import { TouchableOpacity } from 'react-native';
-import { Theme } from '../../theme/theme';
 import Text from './Text';
 import View from './View';
 
@@ -17,11 +15,9 @@ const CountryCodeSelector = memo(({
     onPress,
     countryCode = '+91',
     flag = '🇮🇳',
-    width = 85,
+    width = 65,
     height = 48,
 }: CountryCodeSelectorProps) => {
-    const theme = useTheme<Theme>();
-
     return (
         <TouchableOpacity onPress={onPress}>
             <View
@@ -46,6 +42,7 @@ const CountryCodeSelector = memo(({
                         justifyContent="center"
                         alignItems="center"
                         backgroundColor="transparent"
+                        marginBottom="xs"
                     >
                         <Text fontSize={14}>{flag}</Text>
                     </View>
@@ -58,7 +55,6 @@ const CountryCodeSelector = memo(({
                         {countryCode}
                     </Text>
                 </View>
-                {/* <AntDesign name="down" size={12} color={theme.colors.textSecondary} /> */}
             </View>
         </TouchableOpacity>
     );

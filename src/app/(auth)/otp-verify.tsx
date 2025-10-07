@@ -1,11 +1,10 @@
 import { AntDesign } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@shopify/restyle';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack } from 'expo-router';
-import * as SMS from 'expo-sms';
 import { memo, useEffect, useRef, useState } from 'react';
 import {
-    Alert,
     Dimensions,
     ImageBackground,
     Keyboard,
@@ -18,8 +17,12 @@ import {
     TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
 import { Button, Text, View } from '../../components/ui';
+import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { setToken, setUser } from '../../store/slices/authSlice';
 import { Theme } from '../../theme/theme';
+import { showToast } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,10 +30,28 @@ interface OTPVerifyProps { }
 
 const OTPVerify = memo(({ }: OTPVerifyProps) => {
     const theme = useTheme<Theme>();
+    const dispatch = useDispatch();
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [timer, setTimer] = useState(30);
     const [isResendDisabled, setIsResendDisabled] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
+    const [signupData, setSignupData] = useState<any>(null);
     const inputRefs = useRef<TextInput[]>([]);
+
+    // Load signup data from AsyncStorage
+    useEffect(() => {
+        const loadSignupData = async () => {
+            try {
+                const data = await AsyncStorage.getItem('pending_signup_data');
+                if (data) {
+                    setSignupData(JSON.parse(data));
+                }
+            } catch (error) {
+                console.error('Error loading signup data:', error);
+            }
+        };
+        loadSignupData();
+    }, []);
 
     // Timer countdown effect
     useEffect(() => {
@@ -90,86 +111,192 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
         }
     };
 
-    const handleVerifyOTP = () => {
+    const uploadStudentId = async (studentIdFile: any) => {
+        try {
+            if (!studentIdFile) return null;
+
+            const formData = new FormData();
+            formData.append('file', {
+                uri: studentIdFile.uri,
+                type: studentIdFile.type || 'image/jpeg',
+                name: studentIdFile.name,
+            } as any);
+
+            const response = await betterwayApiCall({
+                method: "POST",
+                url: "UPLOAD_STUDENT_ID",
+                body: formData,
+                auth: null,
+            });
+
+            if (response?.data?.success && response?.data?.url) {
+                return response.data.url;
+            } else {
+                throw new Error('Failed to upload student ID');
+            }
+        } catch (error: any) {
+            showToast({
+                message: error?.message || 'Failed to upload student ID',
+                type: 'error',
+            });
+        }
+    };
+
+    const handleVerifyOTP = async () => {
         const otpString = otp.join('');
         if (otpString.length !== 6) {
-            Alert.alert('Error', 'Please enter a valid 6-digit OTP');
+            showToast({
+                message: 'Please enter a valid 6-digit OTP',
+                type: 'error',
+            });
             return;
         }
 
-        console.log('Verifying OTP:', otpString);
-        Alert.alert('Success', 'OTP verified successfully!');
+        if (!signupData) {
+            showToast({
+                message: 'Signup data not found. Please try again.',
+                type: 'error',
+            });
+            router.push('/sign-up');
+            return;
+        }
 
-        setTimeout(() => {
-            router.push('/(tabs)/(home)');
-        }, 1000);
+        setIsLoading(true);
+
+        try {
+            const verifyResponse = await betterwayApiCall({
+                method: "POST",
+                url: "VERIFY_OTP_TO_PHONE",
+                body: {
+                    phone: signupData.phone,
+                    otp: otpString,
+                },
+                auth: null,
+            });
+
+
+            if (!verifyResponse?.data?.success) {
+                setIsLoading(false);
+                showToast({
+                    message: verifyResponse?.data?.message || 'Invalid OTP',
+                    type: 'error',
+                });
+                return;
+            }
+
+            showToast({
+                message: 'OTP verified successfully!',
+                type: 'success',
+            });
+
+            let studentIdImageUrl = null;
+            if (signupData.isStudent && signupData.studentIdFile) {
+                studentIdImageUrl = await uploadStudentId(signupData.studentIdFile);
+                
+                if (!studentIdImageUrl) {
+                    throw new Error('Failed to upload student ID');
+                }
+            }
+
+            const body: any = {
+                name: signupData.name,
+                email: signupData.email,
+                phone: signupData.phone,
+                dob: signupData.dob,
+                password: signupData.password,
+                isStudent: signupData.isStudent,
+            };
+
+            if (signupData.isStudent) {
+                body.collegeName = signupData.collegeName;
+                body.course = signupData.courseName;
+                body.branch = signupData.branch;
+                body.currentSemester = parseInt(signupData.currentSemester);
+                body.studentIdImage = studentIdImageUrl;
+            }
+
+            const createUserResponse = await betterwayApiCall({
+                method: "POST",
+                url: "CREATE_USER",
+                body,
+                auth: null,
+            });
+
+
+            if (createUserResponse?.data?.success && createUserResponse?.data?.user) {
+                const userData = createUserResponse.data.user;
+                const token = createUserResponse.data.token;
+
+                dispatch(setUser({
+                    id: userData.id,
+                    email: userData.email,
+                    name: userData.name,
+                    phone: userData.phone,
+                    dob: userData.dob,
+                    isStudent: userData.isStudent,
+                    image: userData.image,
+                }));
+
+                if (token) {
+                    dispatch(setToken(token));
+                }
+
+                await AsyncStorage.removeItem('pending_signup_data');
+
+                showToast({
+                    message: 'Account created successfully!',
+                    type: 'success',
+                });
+
+                setTimeout(() => {
+                    setIsLoading(false);
+                    router.push('/(tabs)');
+                }, 1500);
+            } else {
+                setIsLoading(false);
+                showToast({
+                    message: createUserResponse?.data?.message || 'Failed to create account',
+                    type: 'error',
+                });
+            }
+        } catch (error: any) {
+            setIsLoading(false);
+            showToast({
+                message: error?.message || 'Failed to verify OTP',
+                type: 'error',
+            });
+        }
     };
 
     const handleResendOTP = () => {
-        if (isResendDisabled) return;
+        if (isResendDisabled || !signupData) return;
 
-        console.log('Resending OTP...');
-        setTimer(30);
-        setIsResendDisabled(true);
-        Alert.alert('Success', 'OTP resent successfully!');
-    };
-
-    // Auto-fill from SMS
-    const handleAutoFillFromSMS = async () => {
-        try {
-            // Check if SMS is available
-            const isAvailable = await SMS.isAvailableAsync();
-            if (!isAvailable) {
-                Alert.alert('Error', 'SMS is not available on this device');
-                return;
-            }
-
-            // Try to read from clipboard first (common way to get OTP)
-            const clipboardContent = await Clipboard.getStringAsync();
-            if (clipboardContent && /^\d{6}$/.test(clipboardContent)) {
-                const otpArray = clipboardContent.split('');
-                setOtp(otpArray);
-                Alert.alert('Success', 'OTP auto-filled from clipboard!');
-                return;
-            }
-
-            // If no OTP in clipboard, show manual option
-            Alert.alert(
-                'Auto-fill OTP',
-                'No OTP found in clipboard. You can:\n1. Copy the OTP from SMS and try again\n2. Enter manually',
-                [
-                    { text: 'Copy from Clipboard', onPress: handleClipboardPaste },
-                    { text: 'Enter Manually', style: 'cancel' },
-                ],
-            );
-        } catch (error) {
-            console.error('Error accessing SMS:', error);
-            Alert.alert('Error', 'Unable to access SMS. Please enter OTP manually.');
-        }
-    };
-
-    // Handle clipboard paste
-    const handleClipboardPaste = async () => {
-        try {
-            const clipboardContent = await Clipboard.getStringAsync();
-            if (clipboardContent && /^\d{6}$/.test(clipboardContent)) {
-                const otpArray = clipboardContent.split('');
-                setOtp(otpArray);
-                Alert.alert('Success', 'OTP auto-filled from clipboard!');
-                // Focus last input after auto-fill
-                inputRefs.current[5]?.focus();
-            } else {
-                Alert.alert('Error', 'No valid 6-digit OTP found in clipboard');
-            }
-        } catch (error) {
-            console.error('Error reading clipboard:', error);
-            Alert.alert('Error', 'Unable to read clipboard');
-        }
-    };
-
-    // Go back
-    const handleBack = () => {
-        router.back();
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useApiPort({
+            intent: "intent_send_otp_to_phone",
+            port: betterwayApiCall({
+                method: "POST",
+                url: "SEND_OTP_TO_PHONE",
+                body: {
+                    phone: signupData.phone,
+                },
+                auth: null,
+            }),
+            success: () => {
+                setTimer(30);
+                setIsResendDisabled(true);
+                showToast({
+                    message: 'OTP resent successfully!',
+                    type: 'success',
+                });
+            },
+            failure: (error) => {
+                showToast({
+                    message: error?.response?.data?.message || 'Failed to resend OTP',
+                    type: 'error',
+                });
+            },
+        })();
     };
 
     return (
@@ -293,6 +420,8 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                                 title="Verify OTP"
                                                 variant="primary"
                                                 onPress={handleVerifyOTP}
+                                                loading={isLoading}
+                                                disabled={isLoading}
                                             />
                                         </View>
                                         <View alignItems="center">

@@ -3,6 +3,7 @@ import { Tabs } from "expo-router";
 import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Path, Svg } from 'react-native-svg';
+import { AuthGuard } from '../../components/AuthGuard';
 
 const HomeIcon = (props: any) => {
     const fill = props.isFocused ? "#A20538" : "#808080";
@@ -128,7 +129,7 @@ const CustomTabButton = (props: any) => {
 function TabsLayout() {
     const insets = useSafeAreaInsets();
     return (
-        <>
+        <AuthGuard>
             <Tabs
                 initialRouteName="(home)"
                 screenOptions={{
@@ -201,7 +202,7 @@ function TabsLayout() {
                     }}
                 />
             </Tabs>
-        </>
+        </AuthGuard>
     );
 }
 

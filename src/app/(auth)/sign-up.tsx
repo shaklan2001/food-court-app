@@ -1,23 +1,22 @@
 import { AntDesign } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@shopify/restyle';
+import * as DocumentPicker from 'expo-document-picker';
 import { router, Stack } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
-import { Dimensions, ImageBackground, Modal, Platform, Pressable, StatusBar } from 'react-native';
+import { Alert, Dimensions, ImageBackground, Modal, Platform, Pressable, StatusBar } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch } from 'react-redux';
 import { Checkbox, FormContainer } from '../../components/shared';
-import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
-import { betterwayApiCall } from '../../network/useApiPort';
-import { setUser } from '../../store/slices/authSlice';
+import { Button, CountryCodeSelector, FileUpload, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
+import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
 import { Theme } from '../../theme/theme';
 import { showToast } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
+const countryCode = '+91';
 
 const SignUp = memo(() => {
     const theme = useTheme<Theme>();
-    const dispatch = useDispatch();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
@@ -27,6 +26,13 @@ const SignUp = memo(() => {
     const [isStudentUser, setIsStudentUser] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
+    // Student-specific fields
+    const [collegeName, setCollegeName] = useState('');
+    const [courseName, setCourseName] = useState('');
+    const [branch, setBranch] = useState('');
+    const [currentSemester, setCurrentSemester] = useState('');
+    const [studentIdFile, setStudentIdFile] = useState<any>(null);
+    const [studentIdFileName, setStudentIdFileName] = useState<string | null>(null);
 
     const formatDateForAPI = useCallback((dateString: string) => {
         if (!dateString) return '';
@@ -65,65 +71,25 @@ const SignUp = memo(() => {
         setShowCalendar(true);
     }, []);
 
-    const createUser = useCallback(async () => {
+    const handleFileUpload = useCallback(async () => {
         try {
-            const response = await betterwayApiCall({
-                method: "POST",
-                url: "CREATE_USER",
-                body: {
-                    name,
-                    email,
-                    phone: mobileNumber,
-                    dob: formatDateForAPI(dob),
-                    password,
-                    isStudent: isStudentUser,
-                },
-                auth: null,
+            const result = await DocumentPicker.getDocumentAsync({
+                type: ['image/*', 'application/pdf'],
+                copyToCacheDirectory: true,
+                multiple: false,
             });
-            
-            console.log('API Response:', response);
-            
-            if (response?.data?.success && response?.data?.user) {
-                const userData = response.data.user;
-                
-                dispatch(setUser({
-                    id: userData.id,
-                    email: userData.email,
-                    name: userData.name,
-                    phone: userData.phone,
-                    dob: userData.dob,
-                    isStudent: userData.isStudent,
-                    image: userData.image,
-                }));
-                
-                showToast({
-                    message: 'Account created successfully!',
-                    type: 'success',
-                });
 
-                setTimeout(() => {
-                    setIsLoading(false);
-                    if (isStudentUser) {
-                        router.push('/student-sign-up');
-                    } else {
-                        router.push('/(tabs)');
-                    }
-                }, 1500);
-            } else {
-                setIsLoading(false);
-                showToast({
-                    message: response?.data?.message || 'Failed to create account',
-                    type: 'error',
-                });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const file = result.assets[0];
+                setStudentIdFile(file);
+                setStudentIdFileName(file.name);
+                console.log('File selected:', file);
             }
-        } catch (error: any) {
-            setIsLoading(false);
-            showToast({
-                message: error?.message || 'Failed to create account',
-                type: 'error',
-            });
+        } catch (error) {
+            console.error('Error picking document:', error);
+            Alert.alert('Error', 'Failed to pick document. Please try again.');
         }
-    }, [name, email, mobileNumber, dob, password, isStudentUser, dispatch, formatDateForAPI]);
+    }, []);
 
     const validateForm = useCallback(() => {
         if (!name.trim()) {
@@ -150,6 +116,13 @@ const SignUp = memo(() => {
         if (!mobileNumber.trim()) {
             showToast({
                 message: 'Please enter your mobile number',
+                type: 'error',
+            });
+            return false;
+        }
+        if (mobileNumber.length < 10) {
+            showToast({
+                message: 'Please enter a valid 10-digit mobile number',
                 type: 'error',
             });
             return false;
@@ -182,16 +155,115 @@ const SignUp = memo(() => {
             });
             return false;
         }
-        return true;
-    }, [name, email, mobileNumber, dob, password, confirmPassword]);
 
-    const handleSignUp = useCallback(() => {
+        // Validate student-specific fields
+        if (isStudentUser) {
+            if (!collegeName.trim()) {
+                showToast({
+                    message: 'Please enter your college name',
+                    type: 'error',
+                });
+                return false;
+            }
+            if (!courseName.trim()) {
+                showToast({
+                    message: 'Please enter your course name',
+                    type: 'error',
+                });
+                return false;
+            }
+            if (!branch.trim()) {
+                showToast({
+                    message: 'Please enter your branch',
+                    type: 'error',
+                });
+                return false;
+            }
+            if (!currentSemester.trim()) {
+                showToast({
+                    message: 'Please enter your current semester',
+                    type: 'error',
+                });
+                return false;
+            }
+            if (!studentIdFile || !studentIdFileName) {
+                showToast({
+                    message: 'Please upload your student ID',
+                    type: 'error',
+                });
+                return false;
+            }
+        }
+
+        return true;
+    }, [name, email, mobileNumber, dob, password, confirmPassword, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, studentIdFileName]);
+
+    const sendOTP = useCallback(() => {
+        return useApiPort({
+            intent: "intent_send_otp_to_phone",
+            port: betterwayApiCall({
+                method: "POST",
+                url: "SEND_OTP_TO_PHONE",
+                body: {
+                    phoneNumber: mobileNumber,
+                },
+                auth: null,
+            }),
+            success: (response) => {
+                setIsLoading(false);
+                showToast({
+                    message: response?.message || 'OTP sent to your phone!',
+                    type: 'success',
+                });
+                router.push('/otp-verify');
+            },
+            failure: (error) => {
+                showToast({
+                    message: error?.message || 'Failed to send OTP',
+                    type: 'error',
+                });
+            },
+        })();
+    }, [countryCode, mobileNumber]);
+
+    const handleSignUp = useCallback(async () => {
         if (!validateForm()) {
             return;
         }
         setIsLoading(true);
-        createUser();
-    }, [validateForm, createUser]);
+        
+        try {
+            const fullPhoneNumber = `${countryCode}${mobileNumber}`;
+            const signupData = {
+                phone: fullPhoneNumber,
+                name,
+                email,
+                dob: formatDateForAPI(dob),
+                password,
+                isStudent: isStudentUser,
+                collegeName,
+                courseName,
+                branch,
+                currentSemester,
+                studentIdFile: studentIdFile ? {
+                    uri: studentIdFile.uri,
+                    type: studentIdFile.mimeType,
+                    name: studentIdFile.name,
+                } : null,
+            };
+            
+            await AsyncStorage.setItem('pending_signup_data', JSON.stringify(signupData));
+
+            // Send OTP
+            sendOTP();
+        } catch (error: any) {
+            setIsLoading(false);
+            showToast({
+                message: error?.message || 'Failed to send OTP',
+                type: 'error',
+            });
+        }
+    }, [validateForm, countryCode, mobileNumber, name, email, dob, password, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, formatDateForAPI, sendOTP]);
 
     const handleGoogleSignUp = useCallback(() => {
         console.log('Google sign up pressed');
@@ -220,7 +292,7 @@ const SignUp = memo(() => {
                 resizeMode="cover"
             >
                 <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
-                <SafeAreaView style={{ flex: 1 }}>
+                <View style={{ flex: 1 }}>
                     <View
                         justifyContent="center"
                         alignItems="center"
@@ -230,7 +302,7 @@ const SignUp = memo(() => {
                     >
                         <View
                             position="absolute"
-                            top={70}
+                            top={75}
                             left={24}
                             zIndex={1}
                         >
@@ -238,7 +310,7 @@ const SignUp = memo(() => {
                                 <AntDesign name="arrow-left" size={28} color="white" />
                             </Pressable>
                         </View>
-                        <View alignItems="center">
+                        <View alignItems="center" marginTop="l">
                             <Text
                                 fontSize={42}
                                 fontWeight="medium"
@@ -375,6 +447,53 @@ const SignUp = memo(() => {
                             />
                         </View>
 
+                        {/* Student-specific fields - shown only when isStudentUser is true */}
+                        {isStudentUser && (
+                            <>
+                                <FormField
+                                    label="College Name"
+                                    required
+                                    placeholder="Your college name"
+                                    value={collegeName}
+                                    onChangeText={setCollegeName}
+                                />
+
+                                <FormField
+                                    label="Course Name"
+                                    required
+                                    placeholder="Your course name"
+                                    value={courseName}
+                                    onChangeText={setCourseName}
+                                />
+
+                                <FormField
+                                    label="Branch"
+                                    required
+                                    placeholder="Your branch name"
+                                    value={branch}
+                                    onChangeText={setBranch}
+                                />
+
+                                <FormField
+                                    label="Current Semester"
+                                    required
+                                    placeholder="Semester year"
+                                    value={currentSemester}
+                                    onChangeText={setCurrentSemester}
+                                    keyboardType="numeric"
+                                />
+
+                                <View marginBottom="l">
+                                    <FileUpload
+                                        label="Student I'd"
+                                        required
+                                        onPress={handleFileUpload}
+                                        fileName={studentIdFileName || undefined}
+                                    />
+                                </View>
+                            </>
+                        )}
+
                         <View marginTop="s" marginBottom="l">
                             <Button
                                 title="Signup"
@@ -396,10 +515,10 @@ const SignUp = memo(() => {
                                 Sign up with
                             </Text>
                             <View flexDirection="row" gap="m">
-                              {Platform.OS === 'android' && <SocialLoginButton
+                                <SocialLoginButton
                                     onPress={handleGoogleSignUp}
                                     imageSource={require('../../../assets/images/google-logo.png')}
-                                />}
+                                />
                                 {Platform.OS === 'ios' && <SocialLoginButton
                                     onPress={handleAppleSignUp}
                                     imageSource={require('../../../assets/images/apple-logo.png')}
@@ -429,7 +548,7 @@ const SignUp = memo(() => {
                             </Text>
                         </View>
                     </FormContainer>
-                </SafeAreaView>
+                </View>
             </ImageBackground>
 
             <Modal

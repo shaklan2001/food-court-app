@@ -26,16 +26,24 @@ export const betterwayApiCall = ({
 }: BetterwayApiCall) => {
   const endpoint = API_ROUTES[url as keyof typeof API_ROUTES] || url;
 
+  // Check if body is FormData
+  const isFormData = body instanceof FormData;
+  const headers: Record<string, string> = {};
+  
+  if (auth) {
+    headers.Authorization = `Bearer ${auth}`;
+  }
+  
+  if (isFormData) {
+    headers['Content-Type'] = 'multipart/form-data';
+  }
+
   return apiClient.request({
     method,
     url: endpoint,
     params: query,
     data: body,
-    headers: auth
-      ? {
-        Authorization: `Bearer ${auth}`,
-      }
-      : {},
+    headers,
   });
 };
 
