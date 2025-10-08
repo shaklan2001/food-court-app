@@ -48,8 +48,10 @@ const CountryCodeSelector = memo(({
                     </View>
                     <Text
                         fontSize={14}
+                        fontSize={14}
                         fontWeight="400"
                         color="textPrimary"
+                        fontFamily="Poppins-Regular"
                         fontFamily="Poppins-Regular"
                     >
                         {countryCode}
