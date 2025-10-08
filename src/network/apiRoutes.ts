@@ -24,5 +24,8 @@ export const API_ROUTES = {
   POST_RECOMMENDATIONS: "/api/admin/recommendations",
   POST_BEST_SELLERS: "/api/admin/best-sellers",
   POST_NEW_ARRIVALS: "/api/admin/new-arrivals",
+  SEND_OTP_TO_PHONE: "/api/auth/phone-number/send-otp",
+  VERIFY_OTP_TO_PHONE: "/api/auth/phone-number/verify-otp",
 };
+
   
