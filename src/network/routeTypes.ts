@@ -25,7 +25,10 @@ export type ApiType =
   "POST_NEW_ARRIVALS" |
   "SEND_OTP_TO_PHONE" |
   "VERIFY_OTP_TO_PHONE" |
-  "EDIT_PROFILE";
+  "EDIT_PROFILE" |
+  "GET_PROFILE" |
+  "PASSWORD_RESET_OTP" |
+  "RESET_PASSWORD";
 
   
 
@@ -56,4 +59,7 @@ export type TransactionIntentType =
   "intent_post_new_arrivals" |
   "intent_send_otp_to_phone" |
   "intent_verify_otp_to_phone" |
-  "intent_edit_profile";
+  "intent_edit_profile" |
+  "intent_get_profile" |
+  "intent_password_reset_otp" |
+  "intent_reset_password";

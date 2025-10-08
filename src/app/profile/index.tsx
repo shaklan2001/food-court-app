@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LogoutModal from "../../components/LogoutModal";
 import { Text, View } from "../../components/ui";
 import { logout } from "../../store/slices/authSlice";
-import { useAppDispatch } from "../../store/store";
+import { RootState, useAppDispatch, useAppSelector } from "../../store/store";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
 import { ScreenHeader } from '../cart';
 
@@ -64,6 +64,7 @@ ProfileMenuItem.displayName = 'ProfileMenuItem';
 const Profile = () => {
   const dispatch = useAppDispatch();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { user } = useAppSelector((state: RootState) => state.auth);
 
   const handleEditProfilePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -117,6 +118,8 @@ const Profile = () => {
     setShowLogoutModal(false);
   }, []);
 
+  console.log(user?.image);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
@@ -125,7 +128,7 @@ const Profile = () => {
           <View paddingHorizontal={pageHorizantalPadding} marginBottom="l">
             <View flexDirection="row" alignItems="center" marginBottom="l">
               <Image
-                source={require('@/assets/images/profile.jpg')}
+                source={{ uri: user?.image || require('@/assets/images/profile.jpg') }}
                 style={styles.profileImage}
               />
               <View flex={1} marginLeft="m">
@@ -135,16 +138,16 @@ const Profile = () => {
                   color="textPrimary"
                   fontFamily="Poppins-SemiBold"
                 >
-                  Prince Narula
+                  {user?.name}
                 </Text>
                 <Text
-                  fontSize={12}
+                  fontSize={14}
                   fontWeight="400"
                   color="primary"
                   fontFamily="Poppins-Regular"
                   marginBottom="s"
                 >
-                  Student
+                  {user?.isStudent ? 'Student' : 'Non-Student'}
                 </Text>
                 <Pressable onPress={handleEditProfilePress} style={styles.editButton}>
                   <View

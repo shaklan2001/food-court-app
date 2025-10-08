@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@shopify/restyle";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import { memo, useCallback, useState } from "react";
 import { Alert, Dimensions, Image, Modal, Pressable, StyleSheet } from "react-native";
 import { Calendar } from "react-native-calendars";
@@ -69,39 +70,10 @@ const EditProfile = () => {
   const [showCalendar, setShowCalendar] = useState(false);
 
 
-  const uploadImage = useCallback(async (imageUri: string) => {
-    const formData = new FormData();
-    formData.append('image', {
-      uri: imageUri,
-      type: 'image/jpeg',
-      name: 'profile.jpg',
-    } as any);
-
-    const uploadApiCall = betterwayApiCall({
-      method: "POST",
-      url: "UPLOAD_STUDENT_ID", // Using the same upload endpoint
-      body: formData,
-      auth: token,
-    });
-
-    try {
-      const response = await uploadApiCall;
-      setUploadingImage(false);
-      if (response.data?.imageUrl) {
-        setProfileImage(response.data.imageUrl);
-        showToast({
-          message: 'Image uploaded successfully',
-          type: 'success',
-        });
-      }
-    } catch (error: any) {
-      setUploadingImage(false);
-      showToast({
-        message: error?.response?.data?.message || 'Failed to upload image',
-        type: 'error',
-      });
-    }
-  }, [token]);
+  const handleImageSelect = useCallback((imageUri: string) => {
+    setProfileImage(imageUri);
+    setUploadingImage(false);
+  }, []);
 
   const handleImagePicker = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -125,7 +97,7 @@ const EditProfile = () => {
               
               if (!result.canceled && result.assets[0]) {
                 setUploadingImage(true);
-                await uploadImage(result.assets[0].uri);
+                handleImageSelect(result.assets[0].uri);
               }
             } else {
               showToast({
@@ -149,7 +121,7 @@ const EditProfile = () => {
               
               if (!result.canceled && result.assets[0]) {
                 setUploadingImage(true);
-                await uploadImage(result.assets[0].uri);
+                handleImageSelect(result.assets[0].uri);
               }
             } else {
               showToast({
@@ -161,7 +133,7 @@ const EditProfile = () => {
         },
       ],
     );
-  }, [uploadImage]);
+  }, [handleImageSelect]);
 
   const formatDateForDisplay = useCallback((dateString: string) => {
     if (!dateString) return '';
@@ -195,6 +167,32 @@ const EditProfile = () => {
     setShowCalendar(true);
   }, []);
 
+  const uploadImageToServer = useCallback(async (imageUri: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'profile.jpg',
+      } as any);
+
+      const uploadResponse = await betterwayApiCall({
+        method: "POST",
+        url: "UPLOAD_STUDENT_ID",
+        body: formData,
+        auth: token,
+      });
+
+      if (uploadResponse?.data?.success && uploadResponse?.data?.url) {
+        return uploadResponse.data.url;
+      } else {
+        throw new Error('Failed to upload image');
+      }
+    } catch (error: any) {
+      throw new Error(error?.message || 'Failed to upload image');
+    }
+  }, [token]);
+
   const handleSaveProfile = useCallback(async () => {
     if (!token) {
       showToast({
@@ -215,47 +213,68 @@ const EditProfile = () => {
     setIsLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const updateData = {
-      name: name.trim(),
-      image: profileImage,
-      dob: formatDateForAPI(dob), 
-    };
-
     try {
+      let imageUrl = profileImage;
+      
+      if (profileImage && profileImage.startsWith('file://')) {
+        imageUrl = await uploadImageToServer(profileImage);
+      }
+
+      const body = {
+        name: name.trim(),
+        dob: formatDateForAPI(dob),
+        ...(imageUrl && { image: imageUrl }),
+      };
+
       const editProfileApiCall = betterwayApiCall({
         method: "PATCH",
         url: "EDIT_PROFILE",
-        body: updateData,
+        body,
         auth: token,
       });
 
       const response = await editProfileApiCall;
       setIsLoading(false);
       
-      // Update user data in Redux store
-      dispatch(setUser({
-        ...user,
-        ...updateData,
-        image: profileImage || undefined,
-        id: user?.id || response.data.user?.id,
-        email: user?.email || response.data.user?.email,
-        emailVerified: user?.emailVerified || response.data.user?.emailVerified,
-        createdAt: user?.createdAt || response.data.user?.createdAt,
-        updatedAt: user?.updatedAt || response.data.user?.updatedAt,
-      }));
+      // Preserve all user fields, especially phoneNumber
+      const updatedUser = {
+        id: user?.id || response.data?.id,
+        name: name.trim(),
+        email: user?.email || response.data?.email,
+        phoneNumber: user?.phoneNumber || response.data?.phoneNumber || response.data?.phone,
+        phoneNumberVerified: user?.phoneNumberVerified || response.data?.phoneNumberVerified,
+        emailVerified: user?.emailVerified || response.data?.emailVerified,
+        image: imageUrl,
+        dob: formatDateForAPI(dob),
+        role: user?.role || response.data?.role,
+        banned: user?.banned || response.data?.banned,
+        banReason: user?.banReason || response.data?.banReason,
+        banExpires: user?.banExpires || response.data?.banExpires,
+        points: user?.points || response.data?.points,
+        isStudent: user?.isStudent || response.data?.isStudent,
+        collegeName: user?.collegeName || response.data?.collegeName,
+        course: user?.course || response.data?.course,
+        branch: user?.branch || response.data?.branch,
+        currentSemester: user?.currentSemester || response.data?.currentSemester,
+        createdAt: user?.createdAt || response.data?.createdAt,
+        updatedAt: response.data?.updatedAt || user?.updatedAt,
+      };
+      
+      dispatch(setUser(updatedUser));
       
       showToast({
         message: 'Profile updated successfully',
         type: 'success',
       });
+      router.back();
     } catch (error: any) {
       setIsLoading(false);
       showToast({
-        message: error?.response?.data?.message || 'Failed to update profile',
+        message: error?.response?.data?.message || error?.message || 'Failed to update profile',
         type: 'error',
       });
     }
-  }, [token, name, profileImage, dob, user, dispatch, formatDateForAPI]);
+  }, [token, name, profileImage, dob, user, dispatch, formatDateForAPI, uploadImageToServer]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
@@ -358,7 +377,7 @@ const EditProfile = () => {
             paddingHorizontal={"l"}
           >
             <Button
-              title={isLoading ? "Saving..." : "Save"}
+              title={isLoading ? "Updating..." : "Update Profile"}
               onPress={handleSaveProfile}
               variant="primary"
               disabled={isLoading}
@@ -436,7 +455,7 @@ const EditProfile = () => {
                 textDayHeaderFontSize: 14,
               }}
               maxDate={new Date().toISOString().split('T')[0]}
-              initialDate={dob || new Date().toISOString().split('T')[0]}
+              initialDate={dob ? formatDateForAPI(dob) : new Date().toISOString().split('T')[0]}
             />
           </View>
         </View>

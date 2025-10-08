@@ -37,6 +37,7 @@ const Login = memo(() => {
                         id: response.user.id,
                         email: response.user.email,
                         name: response.user.name,
+                        phoneNumber: response.user.phoneNumber || response.user.phone,
                         image: response.user.image,
                         emailVerified: response.user.emailVerified,
                         createdAt: response.user.createdAt,

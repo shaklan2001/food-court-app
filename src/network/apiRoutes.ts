@@ -26,7 +26,10 @@ export const API_ROUTES = {
   POST_NEW_ARRIVALS: "/api/admin/new-arrivals",
   SEND_OTP_TO_PHONE: "/api/auth/phone-number/send-otp",
   VERIFY_OTP_TO_PHONE: "/api/auth/phone-number/verify-otp",
-  EDIT_PROFILE: "/api/me",
+  EDIT_PROFILE: "/api/user/me",
+  GET_PROFILE: "/api/user/me",
+  PASSWORD_RESET_OTP: "/api/auth/phone-number/request-password-reset",
+  RESET_PASSWORD: "/api/auth/phone-number/reset-password",
 };
 
   

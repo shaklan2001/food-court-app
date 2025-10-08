@@ -1,9 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Animated,
-  Dimensions,
   Image,
   ImageBackground,
   StatusBar,
@@ -11,10 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
-import { setToken, setUser } from "../store/slices/authSlice";
+import { betterwayApiCall } from "../network/useApiPort";
+import { logout, setToken, setUser } from "../store/slices/authSlice";
+import { showToast } from "../utils";
 import { View } from "./ui";
-
-const { width, height } = Dimensions.get("window");
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -30,12 +29,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     new Animated.Value(0.3),
   ]);
 
-  useEffect(() => {
-    checkAuthStatus();
-    startDotAnimation();
-  }, []);
-
-  const startDotAnimation = () => {
+  const startDotAnimation = useCallback(() => {
     const animateDot = (index: number) => {
       Animated.sequence([
         Animated.timing(dotAnimations[index], {
@@ -58,30 +52,83 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     dotAnimations.forEach((_, index) => {
       setTimeout(() => animateDot(index), index * 200);
     });
-  };
+  }, [dotAnimations, isCheckingAuth]);
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       const storedToken = await AsyncStorage.getItem("auth_token");
-      const storedUser = await AsyncStorage.getItem("user_data");
 
-      if (storedToken && storedUser) {
-        const userData = JSON.parse(storedUser);
-        dispatch(setToken(storedToken));
-        dispatch(setUser(userData));
+      if (storedToken) {
+        try {
+          const profileApiCall = betterwayApiCall({
+            method: "GET",
+            url: "GET_PROFILE",
+            auth: storedToken,
+          });
 
-        setTimeout(() => {
-          router.replace("/(tabs)");
-          onFinish();
-        }, 2000);
+          const response = await profileApiCall;
+          
+          if (response?.data) {
+            const userData = {
+              id: response?.data?.id,
+              name: response?.data?.name,
+              email: response?.data?.email,
+              phoneNumber: response?.data?.phoneNumber || response?.data?.phone,
+              phoneNumberVerified: response?.data?.phoneNumberVerified,
+              emailVerified: response?.data?.emailVerified,
+              image: response?.data?.image,
+              dob: response?.data?.dob,
+              role: response?.data?.role,
+              banned: response?.data?.banned,
+              banReason: response?.data?.banReason,
+              banExpires: response?.data?.banExpires,
+              points: response.data.points,
+              isStudent: response?.data?.isStudent,
+              collegeName: response?.data?.collegeName,
+              course: response?.data?.course,
+              branch: response?.data?.branch,
+              currentSemester: response?.data?.currentSemester,
+              createdAt: response?.data?.createdAt,
+              updatedAt: response?.data?.updatedAt,
+            };
+            
+            dispatch(setToken(storedToken));
+            dispatch(setUser(userData));
+
+            setTimeout(() => {
+              router.replace("/(tabs)");
+              onFinish();
+            }, 2000);
+          } else {
+            dispatch(logout());
+            setTimeout(() => {
+              router.replace("/(auth)");
+              onFinish();
+            }, 2000);
+          }
+        } catch (apiError: any) {
+          dispatch(logout());
+          setTimeout(() => {
+            router.replace("/(auth)");
+            onFinish();
+          }, 2000);
+          showToast({
+            message: apiError?.message || 'Token validation failed',
+            type: 'error',
+          });
+        }
       } else {
         setTimeout(() => {
           router.replace("/(auth)");
           onFinish();
         }, 2000);
       }
-    } catch (error) {
-      console.log("error", error);
+    } catch (error: any) {
+      showToast({
+        message: error?.message || 'Auth check error',
+        type: 'error',
+      });
+      dispatch(logout());
       setTimeout(() => {
         router.replace("/(auth)");
         onFinish();
@@ -89,7 +136,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     } finally {
       setIsCheckingAuth(false);
     }
-  };
+  }, [dispatch, router, onFinish]);
+
+  useEffect(() => {
+    checkAuthStatus();
+    startDotAnimation();
+  }, [checkAuthStatus, startDotAnimation]);
 
   return (
     <View style={styles.container}>

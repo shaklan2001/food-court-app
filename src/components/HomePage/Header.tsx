@@ -8,11 +8,11 @@ import { View } from "../ui";
 import { Card } from "./Card";
 
 
-const ProfileIcon = memo(() => {
+const ProfileIcon = memo((user: any) => {
     return (
         <Pressable onPress={() => router.push('/profile/')}>
             <View overflow="hidden" width={54} height={54} backgroundColor="mainBackground" borderRadius="m" borderWidth={1} borderColor="border" justifyContent="center" alignItems="center" position="relative" >
-                <Image source={require('@/assets/images/profile.jpg')} style={{ width: 54, height: 54 }} />
+                <Image source={user?.user?.image ? { uri: user?.user?.image } : require('@/assets/images/profile.jpg')} style={{ width: 54, height: 54 }} />
             </View>
         </Pressable>
     );
@@ -22,18 +22,18 @@ ProfileIcon.displayName = 'ProfileIcon';
 
 const Header = memo(() => {
     const cartItemCount = useAppSelector((state: RootState) => state.cart.itemCount);
+    const { user } = useAppSelector((state: RootState) => state.auth);
 
     return (
         <View flexDirection="row" justifyContent="space-between" alignItems="center" paddingHorizontal={pageHorizantalPadding} mb='s'>
             <View>
                 <View flexDirection="row" alignItems="center" gap="s">
-                    <ProfileIcon />
+                    <ProfileIcon user={user} />
                     <TouchableOpacity onPress={() => router.push('/wallet')}>
                         <Card notification={false}>
                             <WalletIcon />
                         </Card>
                     </TouchableOpacity>
-
                 </View>
             </View>
             <View flexDirection="row" alignItems="center" gap="s">

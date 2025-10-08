@@ -156,7 +156,6 @@ const SignUp = memo(() => {
             return false;
         }
 
-        // Validate student-specific fields
         if (isStudentUser) {
             if (!collegeName.trim()) {
                 showToast({
@@ -253,8 +252,6 @@ const SignUp = memo(() => {
             };
             
             await AsyncStorage.setItem('pending_signup_data', JSON.stringify(signupData));
-
-            // Send OTP
             sendOTP();
         } catch (error: any) {
             setIsLoading(false);
@@ -447,7 +444,6 @@ const SignUp = memo(() => {
                             />
                         </View>
 
-                        {/* Student-specific fields - shown only when isStudentUser is true */}
                         {isStudentUser && (
                             <>
                                 <FormField
