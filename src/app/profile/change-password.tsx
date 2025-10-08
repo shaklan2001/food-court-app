@@ -59,7 +59,6 @@ const ChangePassword = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendOTPAndChangePassword = useCallback(async () => {
-    // Validation
     if (!user?.phoneNumber) {
       showToast({
         message: 'Phone number not found',
@@ -92,7 +91,6 @@ const ChangePassword = () => {
       return;
     }
 
-    // If OTP not sent yet, send it first
     if (!otpSent) {
       setIsLoading(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -131,7 +129,6 @@ const ChangePassword = () => {
       return;
     }
 
-    // If OTP is sent, verify and change password
     if (!otp.trim()) {
       showToast({
         message: 'Please enter OTP',

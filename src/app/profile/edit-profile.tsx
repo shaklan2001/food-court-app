@@ -69,7 +69,6 @@ const EditProfile = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
 
-
   const handleImageSelect = useCallback((imageUri: string) => {
     setProfileImage(imageUri);
     setUploadingImage(false);
@@ -236,7 +235,6 @@ const EditProfile = () => {
       const response = await editProfileApiCall;
       setIsLoading(false);
       
-      // Preserve all user fields, especially phoneNumber
       const updatedUser = {
         id: user?.id || response.data?.id,
         name: name.trim(),
