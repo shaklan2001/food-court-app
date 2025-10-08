@@ -24,7 +24,8 @@ export type ApiType =
   "POST_BEST_SELLERS" |
   "POST_NEW_ARRIVALS" |
   "SEND_OTP_TO_PHONE" |
-  "VERIFY_OTP_TO_PHONE";
+  "VERIFY_OTP_TO_PHONE" |
+  "EDIT_PROFILE";
 
   
 
@@ -54,4 +55,5 @@ export type TransactionIntentType =
   "intent_post_best_sellers" |
   "intent_post_new_arrivals" |
   "intent_send_otp_to_phone" |
-  "intent_verify_otp_to_phone";
+  "intent_verify_otp_to_phone" |
+  "intent_edit_profile";

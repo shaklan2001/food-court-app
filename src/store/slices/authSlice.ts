@@ -9,6 +9,10 @@ interface User {
     dob?: string;
     isStudent?: boolean;
     image?: string;
+    collegeName?: string;
+    course?: string;
+    branch?: string;
+    currentSemester?: string;
     emailVerified?: boolean;
     createdAt?: string;
     updatedAt?: string;

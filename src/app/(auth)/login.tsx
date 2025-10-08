@@ -146,8 +146,6 @@ const Login = memo(() => {
         >
             <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
             <View style={{ flex: 1 }}>
-            <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
-            <View style={{ flex: 1 }}>
                 <View
                     justifyContent="center"
                     alignItems="center"
@@ -155,11 +153,6 @@ const Login = memo(() => {
                 >
                     <Image
                         source={require('../../../assets/images/font-logo.png')}
-                        style={{
-                            height: 135,
-                            width: '90%',
-                            resizeMode: 'contain',
-                        }}
                         style={{
                             height: 135,
                             width: '90%',
@@ -185,12 +178,9 @@ const Login = memo(() => {
                         <Text
                             fontSize={24}
                             fontWeight="500"
-                            fontSize={24}
-                            fontWeight="500"
                             color="textPrimary"
                             textAlign="left"
                             marginBottom="l"
-                            fontFamily="Poppins-SemiBold"
                             fontFamily="Poppins-SemiBold"
                             lineHeight={28}
                         >
@@ -333,7 +323,7 @@ const Login = memo(() => {
                             </View>
 
                             <View flexDirection="row" gap="m">
-                                {Platform.OS === 'android' && <SocialLoginButton
+                                <SocialLoginButton
                                     onPress={handleGoogleLogin}
                                     imageSource={require('../../../assets/images/google-logo.png')}
                                 />
@@ -341,28 +331,23 @@ const Login = memo(() => {
                                     onPress={handleAppleLogin}
                                     imageSource={require('../../../assets/images/apple-logo.png')}
                                 />}
-                                />}
                             </View>
                         </View>
 
                         <View alignItems="center">
                             <Text
                                 fontSize={16}
-                                fontSize={16}
                                 fontWeight="400"
                                 color="textSecondary"
                                 textAlign="center"
-                                fontFamily="Poppins-Regular"
                                 fontFamily="Poppins-Regular"
                             >
                                 Don't have an account?{' '}
                                 <Text
                                     fontSize={16}
-                                    fontSize={16}
                                     fontWeight="700"
                                     color="textPrimary"
                                     textDecorationLine="underline"
-                                    fontFamily="Poppins-Bold"
                                     fontFamily="Poppins-Bold"
                                     onPress={handleSignUp}
                                 >
@@ -372,7 +357,6 @@ const Login = memo(() => {
                         </View>
                     </ScrollView>
                 </View>
-            </View>
             </View>
         </ImageBackground>
     );

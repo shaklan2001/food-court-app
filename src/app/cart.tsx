@@ -13,7 +13,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CouponBottomSheet from "../components/CouponBottomSheet";
 import { Card } from "../components/HomePage/Card";
 import SuccessModal from "../components/SuccessModal";
@@ -101,6 +101,7 @@ const CartItem = memo(
           borderRadius="s"
           alignItems="center"
           width="100%"
+          minHeight={100}
         >
           <Image
             source={image || require("@/assets/images/bowl.png")}
@@ -110,7 +111,7 @@ const CartItem = memo(
             marginLeft="m"
             justifyContent="space-between"
             height={100}
-            width="70%"
+            flex={1}
           >
             <Text
               fontSize={Platform.OS === "ios" ? 16 : 14}
@@ -119,6 +120,8 @@ const CartItem = memo(
               fontFamily="Poppins-SemiBold"
               marginBottom="xs"
               lineHeight={Platform.OS === "ios" ? 18 : 16}
+              numberOfLines={2}
+              ellipsizeMode="tail"
             >
               {name}
             </Text>
@@ -128,7 +131,7 @@ const CartItem = memo(
               alignItems="center"
               width="100%"
             >
-              <View>
+              <View flex={1}>
                 <Text
                   fontSize={Platform.OS === "ios" ? 16 : 14}
                   fontWeight="600"
@@ -138,7 +141,7 @@ const CartItem = memo(
                   {price}
                 </Text>
               </View>
-              <View flexDirection="row">
+              <View flexDirection="row" alignItems="center">
                 <TouchableOpacity
                   onPress={onDecrease}
                   style={styles.quantityButton}
@@ -152,6 +155,7 @@ const CartItem = memo(
                   fontFamily="Poppins-SemiBold"
                   textAlign="center"
                   paddingHorizontal="m"
+                  minWidth={40}
                 >
                   {quantity}
                 </Text>
@@ -446,7 +450,7 @@ const DiscountCoupon = memo(
             marginBottom="s"
             paddingVertical="xs"
           >
-            <View flexDirection="row" alignItems="center" gap="s">
+            <View flexDirection="row" alignItems="center" flex={1}>
               {appliedCoupon && <View
                 width={22}
                 height={22}
@@ -454,7 +458,7 @@ const DiscountCoupon = memo(
                 backgroundColor={"couponIconBg"}
                 justifyContent="center"
                 alignItems="center"
-                marginLeft="s"
+                marginRight="s"
               >
                 <FontAwesome name="check" size={14} color="white" />
               </View>}
@@ -463,14 +467,17 @@ const DiscountCoupon = memo(
                 fontWeight="600"
                 color="couponIconBg"
                 fontFamily="Poppins-SemiBold"
-                textAlign="center"
+                textAlign="left"
+                flex={1}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
                 {appliedCoupon
                   ? `Upto ${appliedCoupon.discountPercent}% OFF applied`
                   : "No coupon applied"}
               </Text>
             </View>
-            <Pressable onPress={onRemoveCoupon}>
+            <Pressable onPress={onRemoveCoupon} style={{ marginLeft: 8 }}>
             <View
               width={22}
               height={22}
@@ -480,7 +487,6 @@ const DiscountCoupon = memo(
               }
               justifyContent="center"
               alignItems="center"
-              marginLeft="s"
               borderWidth={1}
               borderColor={appliedCoupon ? "couponSuccessBg" : "textSecondary"}
             >
@@ -494,13 +500,12 @@ const DiscountCoupon = memo(
           <View height={1} backgroundColor="border" marginVertical="xs" />
 
           <Pressable onPress={onViewAllCoupons}>
-            <View flexDirection="row" alignItems="center" justifyContent="space-between" gap="s">
+            <View flexDirection="row" alignItems="center" justifyContent="space-between" paddingVertical="xs">
             <View
               flexDirection="row"
               alignItems="center"
               justifyContent="center"
-              paddingVertical="xs"
-              gap="s"
+              flex={1}
             >
               <MaterialCommunityIcons name="brightness-percent" size={24} color="black" />
               <Text
@@ -508,7 +513,9 @@ const DiscountCoupon = memo(
                 fontWeight="600"
                 color="couponIconBg"
                 fontFamily="Poppins-SemiBold"
-                textAlign="center"
+                textAlign="left"
+                marginLeft="s"
+                flex={1}
               >
                 View all coupons
               </Text>
@@ -587,6 +594,8 @@ const Cart = () => {
   const deliveryFee = 0;
   const couponDiscount = discountAmount / 100;
   const total = subtotal - walletCoins + deliveryFee - couponDiscount;
+
+  const inset = useSafeAreaInsets();
 
   useEffect(() => {
     if (token) {
@@ -669,7 +678,7 @@ const Cart = () => {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>
+      <View style={{ flex: 1, backgroundColor: '#F8F8F8', paddingTop: inset.top, paddingBottom: Platform.OS === 'ios' ? 0 : inset.bottom }}>
         <View flex={1} backgroundColor="mainBackgroundLight">
           <ScreenHeader title="Cart" />
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
@@ -684,7 +693,7 @@ const Cart = () => {
                 >
                   Choose your preferred option below
                 </Text>
-                <View flexDirection="row">
+                <View flexDirection="row" flexWrap="wrap">
                   <RadioButton
                     selected={selectedOption === "orderNow"}
                     onPress={handleOrderNowPress}
@@ -882,7 +891,7 @@ const Cart = () => {
             />
           )}
         </View>
-      </SafeAreaView>
+      </View>
     </>
   );
 };
@@ -927,19 +936,19 @@ const styles = StyleSheet.create({
     width: 120,
     height: 100,
     borderRadius: 8,
-    backgroundColor: "#E5E5E5", // Using gray200 from theme
+    backgroundColor: "#E5E5E5",
   },
   skeletonText: {
     width: "80%",
     height: 18,
-    backgroundColor: "#E5E5E5", // Using gray200 from theme
+    backgroundColor: "#E5E5E5",
     borderRadius: 4,
     marginBottom: 4,
   },
   skeletonPrice: {
     width: 70,
     height: 16,
-    backgroundColor: "#E5E5E5", // Using gray200 from theme
+    backgroundColor: "#E5E5E5",
     borderRadius: 4,
   },
   skeletonButton: {

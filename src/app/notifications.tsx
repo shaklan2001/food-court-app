@@ -4,10 +4,10 @@ import { memo } from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { Card } from "../components/HomePage/Card";
 import { Text, View } from "../components/ui";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { BackIcon } from "../utils/Svgs";
-import { Card } from "./(tabs)/(home)";
 
 const BagIcon = ({ size = 24, color = "#2DCA15" }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
