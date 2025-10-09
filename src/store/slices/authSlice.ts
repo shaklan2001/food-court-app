@@ -1,15 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface User {
+export interface User {
     id: string;
-    email: string;
     name: string;
-    phone?: string;
-    dob?: string;
-    isStudent?: boolean;
-    image?: string;
+    email: string;
+    phoneNumber?: string;
+    phoneNumberVerified?: boolean | null;
     emailVerified?: boolean;
+    image?: string | null;
+    dob?: string;
+    role?: string;
+    banned?: boolean;
+    banReason?: string | null;
+    banExpires?: string | null;
+    points?: number;
+    isStudent?: boolean;
+    collegeName?: string;
+    course?: string;
+    branch?: string;
+    currentSemester?: string;
     createdAt?: string;
     updatedAt?: string;
 }

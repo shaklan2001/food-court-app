@@ -16,9 +16,7 @@ const { width, height } = Dimensions.get('window');
 const countryCode = '+91';
 
 const SignUp = memo(() => {
-const SignUp = memo(() => {
     const theme = useTheme<Theme>();
-    const dispatch = useDispatch();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
@@ -37,7 +35,6 @@ const SignUp = memo(() => {
     const [studentIdFileName, setStudentIdFileName] = useState<string | null>(null);
 
     const formatDateForAPI = useCallback((dateString: string) => {
-    const formatDateForAPI = useCallback((dateString: string) => {
         if (!dateString) return '';
 
         if (dateString.includes('-') && dateString.length === 10) {
@@ -51,7 +48,6 @@ const SignUp = memo(() => {
         }
 
         return dateString;
-    }, []);
     }, []);
 
     const formatDateForDisplay = useCallback((dateString: string) => {
@@ -95,7 +91,6 @@ const SignUp = memo(() => {
         }
     }, []);
 
-    const validateForm = useCallback(() => {
     const validateForm = useCallback(() => {
         if (!name.trim()) {
             showToast({
@@ -161,7 +156,6 @@ const SignUp = memo(() => {
             return false;
         }
 
-        // Validate student-specific fields
         if (isStudentUser) {
             if (!collegeName.trim()) {
                 showToast({
@@ -258,8 +252,6 @@ const SignUp = memo(() => {
             };
             
             await AsyncStorage.setItem('pending_signup_data', JSON.stringify(signupData));
-
-            // Send OTP
             sendOTP();
         } catch (error: any) {
             setIsLoading(false);
@@ -271,26 +263,17 @@ const SignUp = memo(() => {
     }, [validateForm, countryCode, mobileNumber, name, email, dob, password, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, formatDateForAPI, sendOTP]);
 
     const handleGoogleSignUp = useCallback(() => {
-    const handleGoogleSignUp = useCallback(() => {
         console.log('Google sign up pressed');
     }, []);
-    }, []);
 
-    const handleAppleSignUp = useCallback(() => {
     const handleAppleSignUp = useCallback(() => {
         console.log('Apple sign up pressed');
     }, []);
-    }, []);
 
-    const handleLogin = useCallback(() => {
     const handleLogin = useCallback(() => {
         router.push('/login');
     }, []);
-    }, []);
 
-    const handleBack = useCallback(() => {
-        router.back();
-    }, []);
     const handleBack = useCallback(() => {
         router.back();
     }, []);
@@ -323,20 +306,13 @@ const SignUp = memo(() => {
                             <Pressable onPress={handleBack}>
                                 <AntDesign name="arrow-left" size={28} color="white" />
                             </Pressable>
-                            <Pressable onPress={handleBack}>
-                                <AntDesign name="arrow-left" size={28} color="white" />
-                            </Pressable>
                         </View>
                         <View alignItems="center" marginTop="l">
                             <Text
                                 fontSize={42}
                                 fontWeight="medium"
-                                fontSize={42}
-                                fontWeight="medium"
                                 color="textOnPrimary"
                                 textAlign="center"
-                                fontFamily="Poppins-Medium"
-                                lineHeight={54}
                                 fontFamily="Poppins-Medium"
                                 lineHeight={54}
                             >
@@ -367,11 +343,9 @@ const SignUp = memo(() => {
                         <View marginBottom="l">
                             <Text
                                 fontSize={12}
-                                fontSize={12}
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Poppins-Regular"
                                 fontFamily="Poppins-Regular"
                             >
                                 Mobile number <Text color="primary">*</Text>
@@ -394,29 +368,14 @@ const SignUp = memo(() => {
                         <View marginBottom="l">
                             <Text
                                 fontSize={12}
-                                fontSize={12}
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Poppins-Regular"
                                 fontFamily="Poppins-Regular"
                             >
                                 DOB <Text color="primary">*</Text>
                             </Text>
                             <View position="relative">
-                                <Pressable onPress={handleCalendarPress}>
-                                    <FormField
-                                        label=""
-                                        placeholder="DD/MM/YYYY"
-                                        value={dob}
-                                        onChangeText={setDob}
-                                        marginBottom="xs"
-                                        paddingRight={50}
-                                        editable={false}
-                                    />
-                                </Pressable>
-                                <Pressable
-                                    onPress={handleCalendarPress}
                                 <Pressable onPress={handleCalendarPress}>
                                     <FormField
                                         label=""
@@ -442,18 +401,15 @@ const SignUp = memo(() => {
                                 >
                                     <AntDesign name="calendar" size={20} color={theme.colors.textSecondary} />
                                 </Pressable>
-                                </Pressable>
                             </View>
                         </View>
 
                         <View marginBottom="l">
                             <Text
                                 fontSize={12}
-                                fontSize={12}
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Poppins-Regular"
                                 fontFamily="Poppins-Regular"
                             >
                                 Password <Text color="primary">*</Text>
@@ -467,11 +423,9 @@ const SignUp = memo(() => {
                         <View marginBottom="l">
                             <Text
                                 fontSize={12}
-                                fontSize={12}
                                 fontWeight="400"
                                 color="textSecondary"
                                 marginBottom="s"
-                                fontFamily="Poppins-Regular"
                                 fontFamily="Poppins-Regular"
                             >
                                 Confirm Password <Text color="primary">*</Text>
@@ -490,7 +444,6 @@ const SignUp = memo(() => {
                             />
                         </View>
 
-                        {/* Student-specific fields - shown only when isStudentUser is true */}
                         {isStudentUser && (
                             <>
                                 <FormField
@@ -540,10 +493,8 @@ const SignUp = memo(() => {
                         <View marginTop="s" marginBottom="l">
                             <Button
                                 title="Signup"
-                                title="Signup"
                                 variant="primary"
                                 onPress={handleSignUp}
-                                loading={isLoading}
                                 loading={isLoading}
                                 disabled={isLoading}
                             />
@@ -556,19 +507,17 @@ const SignUp = memo(() => {
                                 color="textSecondary"
                                 marginBottom="m"
                                 fontFamily="Poppins-Regular"
-                                fontFamily="Poppins-Regular"
                             >
                                 Sign up with
                             </Text>
                             <View flexDirection="row" gap="m">
-                              {Platform.OS === 'android' && <SocialLoginButton
+                                {Platform.OS === 'android' && <SocialLoginButton
                                     onPress={handleGoogleSignUp}
                                     imageSource={require('../../../assets/images/google-logo.png')}
-                                />
+                                />}
                                 {Platform.OS === 'ios' && <SocialLoginButton
                                     onPress={handleAppleSignUp}
                                     imageSource={require('../../../assets/images/apple-logo.png')}
-                                />}
                                 />}
                             </View>
                         </View>
@@ -576,21 +525,17 @@ const SignUp = memo(() => {
                         <View alignItems="center">
                             <Text
                                 fontSize={16}
-                                fontSize={16}
                                 fontWeight="400"
                                 color="textSecondary"
                                 textAlign="center"
-                                fontFamily="Poppins-Regular"
                                 fontFamily="Poppins-Regular"
                             >
                                 Already have an account?{' '}
                                 <Text
                                     fontSize={16}
-                                    fontSize={16}
                                     fontWeight="700"
                                     color="textPrimary"
                                     textDecorationLine="underline"
-                                    fontFamily="Poppins-Bold"
                                     fontFamily="Poppins-Bold"
                                     onPress={handleLogin}
                                 >
@@ -601,80 +546,6 @@ const SignUp = memo(() => {
                     </FormContainer>
                 </View>
             </ImageBackground>
-
-            <Modal
-                visible={showCalendar}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setShowCalendar(false)}
-            >
-                <View
-                    style={{
-                        flex: 1,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                    }}
-                >
-                    <View
-                        style={{
-                            backgroundColor: 'white',
-                            borderRadius: 20,
-                            padding: 20,
-                            margin: 20,
-                            width: width * 0.9,
-                            maxHeight: height * 0.7,
-                        }}
-                    >
-                        <View
-                            flexDirection="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                            marginBottom="l"
-                        >
-                            <Text
-                                fontSize={18}
-                                fontWeight="600"
-                                color="textPrimary"
-                                fontFamily="Poppins-SemiBold"
-                            >
-                                Select Date of Birth
-                            </Text>
-                            <Pressable onPress={() => setShowCalendar(false)}>
-                                <AntDesign name="close" size={24} color={theme.colors.textSecondary} />
-                            </Pressable>
-                        </View>
-                        
-                        <Calendar
-                            onDayPress={handleDateSelect}
-                            theme={{
-                                backgroundColor: 'white',
-                                calendarBackground: 'white',
-                                textSectionTitleColor: theme.colors.textPrimary,
-                                selectedDayBackgroundColor: theme.colors.primary,
-                                selectedDayTextColor: 'white',
-                                todayTextColor: theme.colors.primary,
-                                dayTextColor: theme.colors.textPrimary,
-                                textDisabledColor: theme.colors.textSecondary,
-                                dotColor: theme.colors.primary,
-                                selectedDotColor: 'white',
-                                arrowColor: theme.colors.primary,
-                                disabledArrowColor: theme.colors.textSecondary,
-                                monthTextColor: theme.colors.textPrimary,
-                                indicatorColor: theme.colors.primary,
-                                textDayFontFamily: 'Poppins-Regular',
-                                textMonthFontFamily: 'Poppins-SemiBold',
-                                textDayHeaderFontFamily: 'Poppins-Medium',
-                                textDayFontSize: 16,
-                                textMonthFontSize: 18,
-                                textDayHeaderFontSize: 14,
-                            }}
-                            maxDate={new Date().toISOString().split('T')[0]}
-                            initialDate={dob ? formatDateForAPI(dob) : new Date().toISOString().split('T')[0]}
-                        />
-                    </View>
-                </View>
-            </Modal>
 
             <Modal
                 visible={showCalendar}

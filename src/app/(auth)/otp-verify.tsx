@@ -14,7 +14,7 @@ import {
     StatusBar,
     TextInput,
     TouchableOpacity,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
@@ -231,7 +231,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                     id: userData.id,
                     email: userData.email,
                     name: userData.name,
-                    phone: userData.phone,
+                    phoneNumber: userData.phoneNumber || userData.phone,
                     dob: userData.dob,
                     isStudent: userData.isStudent,
                     image: userData.image,
