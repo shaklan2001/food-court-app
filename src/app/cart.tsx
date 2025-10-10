@@ -785,92 +785,92 @@ const Cart = () => {
                     </>
                   )}
                 </View>
+                
+                {/* Checkout Button - Now inside ScrollView */}
+                <View
+                  marginHorizontal={pageHorizantalPadding}
+                  marginBottom="xl"
+                  marginTop="m"
+                >
+                  <Pressable
+                    style={[
+                      styles.checkoutButton,
+                      {
+                        opacity: paymentLoading || cartItems.length === 0 ? 0.6 : 1,
+                      },
+                    ]}
+                    onPress={handlePlaceOrder}
+                    disabled={paymentLoading || cartItems.length === 0}
+                  >
+                    <View
+                      flex={1}
+                      justifyContent="center"
+                      alignItems="center"
+                      borderRightWidth={1}
+                      borderRightColor="border"
+                      height="100%"
+                    >
+                      <Text
+                        fontSize={18}
+                        fontWeight="600"
+                        color="textOnPrimary"
+                        fontFamily="Poppins-SemiBold"
+                      >
+                        ₹{total.toFixed(0)}
+                      </Text>
+                    </View>
+                    <View
+                      flex={2}
+                      flexDirection="row"
+                      justifyContent="center"
+                      alignItems="center"
+                      height="100%"
+                      gap="m"
+                    >
+                      <Text
+                        fontSize={18}
+                        fontWeight="600"
+                        color="textOnPrimary"
+                        fontFamily="Poppins-SemiBold"
+                      >
+                        {paymentLoading ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : paymentSuccess ? (
+                          "Success!"
+                        ) : (
+                          "Place Order"
+                        )}
+                      </Text>
+                      {!paymentLoading && !paymentSuccess && (
+                        <Ionicons
+                          style={{ marginTop: 4 }}
+                          name="chevron-forward"
+                          size={20}
+                          color="#FFFFFF"
+                        />
+                      )}
+                      {paymentLoading && (
+                        <Ionicons
+                          style={{ marginTop: 4 }}
+                          name="hourglass-outline"
+                          size={20}
+                          color="#FFFFFF"
+                        />
+                      )}
+                      {paymentSuccess && (
+                        <Ionicons
+                          style={{ marginTop: 4 }}
+                          name="checkmark"
+                          size={20}
+                          color="#FFFFFF"
+                        />
+                      )}
+                    </View>
+                  </Pressable>
+                </View>
               </>
             )}
           </ScrollView>
-
-          {cartItems.length > 0 && (
-            <View
-              backgroundColor="primary"
-              paddingHorizontal={pageHorizantalPadding}
-              paddingVertical="m"
-            >
-              <Pressable
-                style={[
-                  styles.checkoutButton,
-                  {
-                    opacity: paymentLoading || cartItems.length === 0 ? 0.6 : 1,
-                  },
-                ]}
-                onPress={handlePlaceOrder}
-                disabled={paymentLoading || cartItems.length === 0}
-              >
-                <View
-                  flex={1}
-                  justifyContent="center"
-                  alignItems="center"
-                  borderRightWidth={1}
-                  borderRightColor="border"
-                  height="100%"
-                >
-                  <Text
-                    fontSize={18}
-                    fontWeight="600"
-                    color="textOnPrimary"
-                    fontFamily="Poppins-SemiBold"
-                  >
-                    ₹{total.toFixed(0)}
-                  </Text>
-                </View>
-                <View
-                  flex={2}
-                  flexDirection="row"
-                  justifyContent="center"
-                  alignItems="center"
-                  height="100%"
-                >
-                  <Text
-                    fontSize={18}
-                    fontWeight="600"
-                    color="textOnPrimary"
-                    fontFamily="Poppins-SemiBold"
-                  >
-                    {paymentLoading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : paymentSuccess ? (
-                      "Success!"
-                    ) : (
-                      "Place Order"
-                    )}
-                  </Text>
-                  {!paymentLoading && !paymentSuccess && (
-                    <Ionicons
-                      style={{ marginTop: 4 }}
-                      name="chevron-forward"
-                      size={20}
-                      color="#FFFFFF"
-                    />
-                  )}
-                  {paymentLoading && (
-                    <Ionicons
-                      style={{ marginTop: 4 }}
-                      name="hourglass-outline"
-                      size={20}
-                      color="#FFFFFF"
-                    />
-                  )}
-                  {paymentSuccess && (
-                    <Ionicons
-                      style={{ marginTop: 4 }}
-                      name="checkmark"
-                      size={20}
-                      color="#FFFFFF"
-                    />
-                  )}
-                </View>
-              </Pressable>
-            </View>
-          )}
 
           {showSuccessModal && (
             <SuccessModal
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
   checkoutButton: {
     backgroundColor: "#A20538",
     borderRadius: 12,
-    height: 45,
+    height: 60,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 0,

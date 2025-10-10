@@ -239,7 +239,6 @@ const Menu = () => {
         })();
     }, [token]);
 
-    // Optimized search filtering with useMemo
     const filteredData = useMemo(() => {
         if (!debouncedSearchQuery.trim()) {
             return menuData;
