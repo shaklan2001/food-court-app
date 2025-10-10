@@ -4,8 +4,9 @@ import { useTheme } from '@shopify/restyle';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, Stack } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
-import { Alert, Dimensions, ImageBackground, Modal, Platform, Pressable, StatusBar } from 'react-native';
+import { Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StatusBar, TouchableWithoutFeedback } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Checkbox, FormContainer } from '../../components/shared';
 import { Button, CountryCodeSelector, FileUpload, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
@@ -289,39 +290,45 @@ const SignUp = memo(() => {
                 resizeMode="cover"
             >
                 <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
-                <View style={{ flex: 1 }}>
-                    <View
-                        justifyContent="center"
-                        alignItems="center"
-                        paddingTop="xl"
-                        paddingBottom="l"
-                        minHeight={height * 0.15}
+                <SafeAreaView style={{ flex: 1 }}>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={{ flex: 1 }}
                     >
-                        <View
-                            position="absolute"
-                            top={75}
-                            left={24}
-                            zIndex={1}
-                        >
-                            <Pressable onPress={handleBack}>
-                                <AntDesign name="arrow-left" size={28} color="white" />
-                            </Pressable>
-                        </View>
-                        <View alignItems="center" marginTop="l">
-                            <Text
-                                fontSize={42}
-                                fontWeight="medium"
-                                color="textOnPrimary"
-                                textAlign="center"
-                                fontFamily="Poppins-Medium"
-                                lineHeight={54}
-                            >
-                                Signup
-                            </Text>
-                        </View>
-                    </View>
+                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                            <View style={{ flex: 1 }}>
+                                <View
+                                    justifyContent="center"
+                                    alignItems="center"
+                                    paddingTop="xl"
+                                    paddingBottom="l"
+                                    minHeight={height * 0.15}
+                                >
+                                    <View
+                                        position="absolute"
+                                        top={70}
+                                        left={24}
+                                        zIndex={1}
+                                    >
+                                        <Pressable onPress={handleBack}>
+                                            <AntDesign name="arrow-left" size={28} color="white" />
+                                        </Pressable>
+                                    </View>
+                                    <View alignItems="center">
+                                        <Text
+                                            fontSize={42}
+                                            fontWeight="medium"
+                                            color="textOnPrimary"
+                                            textAlign="center"
+                                            fontFamily="Poppins-Medium"
+                                            lineHeight={54}
+                                        >
+                                            Signup
+                                        </Text>
+                                    </View>
+                                </View>
 
-                    <FormContainer>
+                                <FormContainer>
                         <FormField
                             label="Name"
                             required
@@ -544,7 +551,10 @@ const SignUp = memo(() => {
                             </Text>
                         </View>
                     </FormContainer>
-                </View>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
             </ImageBackground>
 
             <Modal

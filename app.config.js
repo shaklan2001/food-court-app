@@ -2,7 +2,7 @@ export default {
     expo: {
         name: "Food Court App",
         slug: "food-court-app",
-        version: "1.0.0",
+        version: "1.0.1",
         sdkVersion: "54.0.0",
         orientation: "portrait",
         owner: "team-csk",
@@ -33,6 +33,7 @@ export default {
         },
         android: {
             package: "com.yuvan97.foodcourtapp",
+            versionCode: 2,
             adaptiveIcon: {
                 foregroundImage: "./assets/images/adaptive-icon.png",
                 backgroundColor: "#ffffff"

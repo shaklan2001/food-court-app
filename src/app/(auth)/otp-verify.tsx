@@ -111,6 +111,10 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
         }
     };
 
+    const handleBack = () => {
+        router.back();
+    };
+
     const uploadStudentId = async (studentIdFile: any) => {
         try {
             if (!studentIdFile) return null;
@@ -310,7 +314,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                 resizeMode="cover"
             >
                 <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
-                <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
                 <SafeAreaView style={{ flex: 1 }}>
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -333,21 +336,16 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                     >
                                         <TouchableOpacity onPress={handleBack}>
                                             <AntDesign name="arrow-left" size={24} color="white" />
-                                            <AntDesign name="arrow-left" size={24} color="white" />
                                         </TouchableOpacity>
                                     </View>
                                     <View alignItems="center">
                                         <Text
                                             fontSize={42}
                                             fontWeight="medium"
-                                            fontSize={42}
-                                            fontWeight="medium"
                                             color="textOnPrimary"
                                             textAlign="center"
                                             fontFamily="Poppins-Medium"
-                                            fontFamily="Poppins-Medium"
                                             lineHeight={43}
-                                            marginLeft="l"
                                             marginLeft="l"
                                         >
                                             OTP Verify
@@ -369,7 +367,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                             fontWeight="400"
                                             color="textSecondary"
                                             marginBottom="m"
-                                            fontFamily="Poppins-Regular"
                                             fontFamily="Poppins-Regular"
                                         >
                                             Submit OTP
@@ -410,14 +407,12 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                                 fontWeight="400"
                                                 color="textSecondary"
                                                 fontFamily="Poppins-Regular"
-                                                fontFamily="Poppins-Regular"
                                             >
                                                 Resend OTP in:{' '}
                                                 <Text
                                                     fontSize={14}
                                                     fontWeight="600"
                                                     color="danger"
-                                                    fontFamily="Poppins-Bold"
                                                     fontFamily="Poppins-Bold"
                                                 >
                                                     {timer} Sec
@@ -440,7 +435,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                                 color="textSecondary"
                                                 textAlign="center"
                                                 fontFamily="Poppins-Regular"
-                                                fontFamily="Poppins-Regular"
                                             >
                                                 Didn't receive the code yet?{' '}
                                                 <Text
@@ -448,7 +442,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                                     fontWeight="700"
                                                     color="textPrimary"
                                                     textDecorationLine="underline"
-                                                    fontFamily="Poppins-Bold"
                                                     fontFamily="Poppins-Bold"
                                                     onPress={handleResendOTP}
                                                 >
