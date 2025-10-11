@@ -24,7 +24,15 @@ export default {
         ],
         ios: {
             "infoPlist": {
-                "ITSAppUsesNonExemptEncryption": false
+                "ITSAppUsesNonExemptEncryption": false,
+                NSAppTransportSecurity: {
+                    NSAllowsArbitraryLoads: true,
+                    NSExceptionDomains: {
+                      "backend.smartcsk.in": {
+                        NSExceptionAllowsInsecureHTTPLoads: true
+                      }
+                    }
+                  }
             },
             supportsTablet: true,
             bundleIdentifier: "com.yuvan97.foodcourtapp",

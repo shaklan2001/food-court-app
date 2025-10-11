@@ -25,7 +25,7 @@ export const API_ROUTES = {
   POST_BEST_SELLERS: "/api/admin/best-sellers",
   POST_NEW_ARRIVALS: "/api/admin/new-arrivals",
   SEND_OTP_TO_PHONE: "/api/auth/phone-number/send-otp",
-  VERIFY_OTP_TO_PHONE: "/api/auth/phone-number/verify-otp",
+  VERIFY_OTP_TO_PHONE: "/api/auth/phone-number/verify",
   EDIT_PROFILE: "/api/user/me",
   GET_PROFILE: "/api/user/me",
   PASSWORD_RESET_OTP: "/api/auth/phone-number/request-password-reset",

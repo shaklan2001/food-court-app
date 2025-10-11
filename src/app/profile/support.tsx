@@ -141,7 +141,7 @@ const Support = () => {
               </Text>
             </View>
           </View>
-        </View>
+      </View>
     </SafeAreaView>
   );
 };

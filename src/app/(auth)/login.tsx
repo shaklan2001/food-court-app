@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { memo, useCallback, useState } from 'react';
-import { Dimensions, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { Dimensions, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall } from '../../network/useApiPort';
@@ -17,7 +17,32 @@ const Login = memo(() => {
     const [isPhoneLogin, setIsPhoneLogin] = useState(false);
     const [mobileNumber, setMobileNumber] = useState('');
 
-    const loginUser = async () => {
+    const isEmailValid = useMemo(() => {
+        return /\S+@\S+\.\S+/.test(email);
+    }, [email]);
+
+    const isEmailEmpty = useMemo(() => {
+        return !email.trim();
+    }, [email]);
+
+    const isPasswordEmpty = useMemo(() => {
+        return !password.trim();
+    }, [password]);
+
+    const isMobileNumberValid = useMemo(() => {
+        return mobileNumber.length >= 10;
+    }, [mobileNumber]);
+
+    const isMobileNumberEmpty = useMemo(() => {
+        return !mobileNumber.trim();
+    }, [mobileNumber]);
+
+    const loginData = useMemo(() => ({
+        phone: mobileNumber,
+        flow: 'login',
+    }), [mobileNumber]);
+
+    const loginUser = useCallback(async () => {
         try {
             const response = await betterwayApiCall({
                 method: "POST",
@@ -54,24 +79,24 @@ const Login = memo(() => {
                 type: 'error',
             });
         }
-    };
+    }, [email, password, dispatch]);
 
     const handleLogin = useCallback(() => {
-        if (!email.trim()) {
+        if (isEmailEmpty) {
             showToast({
                 message: 'Please enter your email',
                 type: 'error',
             });
             return;
         }
-        if (!password.trim()) {
+        if (isPasswordEmpty) {
             showToast({
                 message: 'Please enter your password',
                 type: 'error',
             });
             return;
         }
-        if (!/\S+@\S+\.\S+/.test(email)) {
+        if (!isEmailValid) {
             showToast({
                 message: 'Please enter a valid email address',
                 type: 'error',
@@ -81,35 +106,35 @@ const Login = memo(() => {
         
         setIsLoading(true);
         loginUser().finally(() => setIsLoading(false));
-    }, [email, password]);
+    }, [isEmailEmpty, isPasswordEmpty, isEmailValid, loginUser]);
 
-    const handleForgotPassword = () => {
+    const handleForgotPassword = useCallback(() => {
         console.log('Forgot password pressed');
-    };
+    }, []);
 
-    const handleGoogleLogin = () => {
+    const handleGoogleLogin = useCallback(() => {
         console.log('Google login pressed');
-    };
+    }, []);
 
-    const handleAppleLogin = () => {
+    const handleAppleLogin = useCallback(() => {
         console.log('Apple login pressed');
-    };
+    }, []);
 
-    const handleSignUp = () => {
+    const handleSignUp = useCallback(() => {
         router.push('/sign-up');
-    };
+    }, []);
 
-    const handlePhoneNumberLogin = () => {
+    const handlePhoneNumberLogin = useCallback(() => {
         setIsPhoneLogin(true);
-    };
+    }, []);
 
-    const handleEmailLogin = () => {
+    const handleEmailLogin = useCallback(() => {
         setIsPhoneLogin(false);
-    };
+    }, []);
 
     const handleSendOTP = useCallback(async () => {
         setIsLoading(true);
-        if (!mobileNumber.trim()) {
+        if (isMobileNumberEmpty) {
             showToast({
                 message: 'Please enter your mobile number',
                 type: 'error',
@@ -117,7 +142,7 @@ const Login = memo(() => {
             setIsLoading(false);
             return;
         }
-        if (mobileNumber.length < 10) {
+        if (!isMobileNumberValid) {
             showToast({
                 message: 'Please enter a valid mobile number',
                 type: 'error',
@@ -128,10 +153,6 @@ const Login = memo(() => {
 
         try {
             // Store login phone number for OTP verification
-            const loginData = {
-                phone: mobileNumber,
-                flow: 'login',
-            };
             await AsyncStorage.setItem('pending_otp_data', JSON.stringify(loginData));
 
             const response = await betterwayApiCall({
@@ -144,13 +165,9 @@ const Login = memo(() => {
             });
 
             if (response?.data?.message === 'code sent' || response?.status === 200) {
-                showToast({
-                    message: 'OTP sent to your phone!',
-                    type: 'success',
-                });
                 setTimeout(() => {
                     router.push('/otp-verify');
-                }, 1000);
+                }, 100);
             } else {
                 showToast({
                     message: response?.data?.message || 'Failed to send OTP',
@@ -165,12 +182,12 @@ const Login = memo(() => {
         } finally {
             setIsLoading(false);
         }
-    }, [mobileNumber]);
+    }, [mobileNumber, isMobileNumberEmpty, isMobileNumberValid, loginData]);
 
     return (
         <ImageBackground
             source={require('../../../assets/images/primary_bg.webp')}
-            style={{ flex: 1, width, height }}
+            style={styles.background}
             resizeMode="cover"
         >
             <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
@@ -182,27 +199,19 @@ const Login = memo(() => {
                 >
                     <Image
                         source={require('../../../assets/images/font-logo.png')}
-                        style={{
-                            height: 135,
-                            width: '90%',
-                            resizeMode: 'contain',
-                        }}
+                        style={styles.image}
                     />
                 </View>
 
                 <View
                     backgroundColor="mainBackgroundLight"
-                    style={{
-                        borderTopLeftRadius: 60,
-                    }}
+                    style={styles.container}
                     flex={1}
                 >
                     <View
                         padding="l"
                         paddingTop="xl"
-                        style={{
-                            marginBottom: -20,
-                        }}
+                        style={styles.header}
                     >
                         <Text
                             fontSize={24}
@@ -218,12 +227,8 @@ const Login = memo(() => {
                     </View>
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{
-                            paddingHorizontal: 24,
-                            paddingBottom: 40,
-                            flexGrow: 1,
-                        }}
-                        style={{ flex: 1 }}
+                        contentContainerStyle={styles.scrollContent}
+                        style={styles.scrollView}
                     >
                         {!isPhoneLogin ? (
                             <>
@@ -392,5 +397,32 @@ const Login = memo(() => {
 });
 
 Login.displayName = 'Login';
+
+const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        width,
+        height,
+    },
+    image: {
+        height: 135,
+        width: '90%',
+        resizeMode: 'contain',
+    },
+    container: {
+        borderTopLeftRadius: 60,
+    },
+    header: {
+        marginBottom: -20,
+    },
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingBottom: 40,
+        flexGrow: 1,
+    },
+    scrollView: {
+        flex: 1,
+    },
+});
 
 export default Login;

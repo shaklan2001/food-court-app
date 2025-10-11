@@ -107,6 +107,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               }, 100);
             }, 1500);
           } else {
+            // Clear invalid token
+            await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
             dispatch(logout());
             setTimeout(() => {
               setIsCheckingAuth(false);
@@ -116,7 +118,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               }, 100);
             }, 1500);
           }
-        } catch (apiError) {
+        } catch (apiError: any) {
+          console.error('Token validation failed:', apiError?.message);
+          // Clear invalid token
+          await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
           dispatch(logout());
           setTimeout(() => {
             setIsCheckingAuth(false);
@@ -125,10 +130,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               onFinish();
             }, 100);
           }, 1500);
-          showToast({
-            message: apiError?.message || 'Token validation failed',
-            type: 'error',
-          });
+          // Only show toast if it's not a network error or auth error
+          if (!apiError?.message?.includes('Authentication failed')) {
+            showToast({
+              message: 'Session expired. Please login again.',
+              type: 'error',
+            });
+          }
         }
       } else {
         setTimeout(() => {
@@ -139,10 +147,11 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           }, 100);
         }, 1500);
       }
-    } catch (error) {
-      showToast({
-        message: error?.message || 'Auth check error',
-        type: 'error',
+    } catch (error: any) {
+      console.error('Auth check error:', error);
+      // Clear any stored tokens
+      await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']).catch((err) => {
+        console.error('Error clearing storage:', err);
       });
       dispatch(logout());
       setTimeout(() => {

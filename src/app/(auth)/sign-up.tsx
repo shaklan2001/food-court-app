@@ -3,13 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@shopify/restyle';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, Stack } from 'expo-router';
-import { memo, useCallback, useState } from 'react';
-import { Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, StatusBar, TouchableWithoutFeedback } from 'react-native';
-import { Calendar } from 'react-native-calendars';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Checkbox, FormContainer } from '../../components/shared';
+import { Calendar, Checkbox, FormContainer } from '../../components/shared';
 import { Button, CountryCodeSelector, FileUpload, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
-import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { betterwayApiCall } from '../../network/useApiPort';
 import { Theme } from '../../theme/theme';
 import { showToast } from '../../utils';
 
@@ -35,6 +34,7 @@ const SignUp = memo(() => {
     const [studentIdFile, setStudentIdFile] = useState<any>(null);
     const [studentIdFileName, setStudentIdFileName] = useState<string | null>(null);
 
+
     const formatDateForAPI = useCallback((dateString: string) => {
         if (!dateString) return '';
 
@@ -51,6 +51,43 @@ const SignUp = memo(() => {
         return dateString;
     }, []);
 
+    const fullPhoneNumber = useMemo(() => `${countryCode}${mobileNumber}`, [mobileNumber]);
+    
+    const signupData = useMemo(() => ({
+        phone: fullPhoneNumber,
+        name,
+        email,
+        dob: formatDateForAPI(dob),
+        password,
+        isStudent: isStudentUser,
+        collegeName,
+        courseName,
+        branch,
+        currentSemester,
+        studentIdFile: studentIdFile ? {
+            uri: studentIdFile.uri,
+            type: studentIdFile.mimeType,
+            name: studentIdFile.name,
+        } : null,
+        flow: 'signup',
+    }), [fullPhoneNumber, name, email, dob, password, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, formatDateForAPI]);
+
+    const isNameEmpty = useMemo(() => !name.trim(), [name]);
+    const isEmailEmpty = useMemo(() => !email.trim(), [email]);
+    const isEmailValid = useMemo(() => /\S+@\S+\.\S+/.test(email), [email]);
+    const isMobileNumberEmpty = useMemo(() => !mobileNumber.trim(), [mobileNumber]);
+    const isMobileNumberValid = useMemo(() => mobileNumber.length >= 10, [mobileNumber]);
+    const isDobEmpty = useMemo(() => !dob.trim(), [dob]);
+    const isPasswordEmpty = useMemo(() => !password.trim(), [password]);
+    const isPasswordValid = useMemo(() => password.length >= 6, [password]);
+    const isConfirmPasswordValid = useMemo(() => password === confirmPassword, [password, confirmPassword]);
+    
+    const isCollegeNameEmpty = useMemo(() => !collegeName.trim(), [collegeName]);
+    const isCourseNameEmpty = useMemo(() => !courseName.trim(), [courseName]);
+    const isBranchEmpty = useMemo(() => !branch.trim(), [branch]);
+    const isCurrentSemesterEmpty = useMemo(() => !currentSemester.trim(), [currentSemester]);
+    const isStudentIdFileValid = useMemo(() => !!(studentIdFile && studentIdFileName), [studentIdFile, studentIdFileName]);
+
     const formatDateForDisplay = useCallback((dateString: string) => {
         if (!dateString) return '';
 
@@ -62,11 +99,6 @@ const SignUp = memo(() => {
         return dateString;
     }, []);
 
-    const handleDateSelect = useCallback((day: any) => {
-        const selectedDate = day.dateString;
-        setDob(formatDateForDisplay(selectedDate));
-        setShowCalendar(false);
-    }, [formatDateForDisplay]);
 
     const handleCalendarPress = useCallback(() => {
         setShowCalendar(true);
@@ -93,63 +125,63 @@ const SignUp = memo(() => {
     }, []);
 
     const validateForm = useCallback(() => {
-        if (!name.trim()) {
+        if (isNameEmpty) {
             showToast({
                 message: 'Please enter your name',
                 type: 'error',
             });
             return false;
         }
-        if (!email.trim()) {
+        if (isEmailEmpty) {
             showToast({
                 message: 'Please enter your email',
                 type: 'error',
             });
             return false;
         }
-        if (!/\S+@\S+\.\S+/.test(email)) {
+        if (!isEmailValid) {
             showToast({
                 message: 'Please enter a valid email address',
                 type: 'error',
             });
             return false;
         }
-        if (!mobileNumber.trim()) {
+        if (isMobileNumberEmpty) {
             showToast({
                 message: 'Please enter your mobile number',
                 type: 'error',
             });
             return false;
         }
-        if (mobileNumber.length < 10) {
+        if (!isMobileNumberValid) {
             showToast({
                 message: 'Please enter a valid 10-digit mobile number',
                 type: 'error',
             });
             return false;
         }
-        if (!dob.trim()) {
+        if (isDobEmpty) {
             showToast({
                 message: 'Please enter your date of birth',
                 type: 'error',
             });
             return false;
         }
-        if (!password.trim()) {
+        if (isPasswordEmpty) {
             showToast({
                 message: 'Please enter a password',
                 type: 'error',
             });
             return false;
         }
-        if (password.length < 6) {
+        if (!isPasswordValid) {
             showToast({
                 message: 'Password must be at least 6 characters long',
                 type: 'error',
             });
             return false;
         }
-        if (password !== confirmPassword) {
+        if (!isConfirmPasswordValid) {
             showToast({
                 message: 'Passwords do not match',
                 type: 'error',
@@ -158,35 +190,35 @@ const SignUp = memo(() => {
         }
 
         if (isStudentUser) {
-            if (!collegeName.trim()) {
+            if (isCollegeNameEmpty) {
                 showToast({
                     message: 'Please enter your college name',
                     type: 'error',
                 });
                 return false;
             }
-            if (!courseName.trim()) {
+            if (isCourseNameEmpty) {
                 showToast({
                     message: 'Please enter your course name',
                     type: 'error',
                 });
                 return false;
             }
-            if (!branch.trim()) {
+            if (isBranchEmpty) {
                 showToast({
                     message: 'Please enter your branch',
                     type: 'error',
                 });
                 return false;
             }
-            if (!currentSemester.trim()) {
+            if (isCurrentSemesterEmpty) {
                 showToast({
                     message: 'Please enter your current semester',
                     type: 'error',
                 });
                 return false;
             }
-            if (!studentIdFile || !studentIdFileName) {
+            if (!isStudentIdFileValid) {
                 showToast({
                     message: 'Please upload your student ID',
                     type: 'error',
@@ -196,35 +228,41 @@ const SignUp = memo(() => {
         }
 
         return true;
-    }, [name, email, mobileNumber, dob, password, confirmPassword, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, studentIdFileName]);
+    }, [isNameEmpty, isEmailEmpty, isEmailValid, isMobileNumberEmpty, isMobileNumberValid, isDobEmpty, isPasswordEmpty, isPasswordValid, isConfirmPasswordValid, isStudentUser, isCollegeNameEmpty, isCourseNameEmpty, isBranchEmpty, isCurrentSemesterEmpty, isStudentIdFileValid]);
 
-    const sendOTP = useCallback(() => {
-        return useApiPort({
-            intent: "intent_send_otp_to_phone",
-            port: betterwayApiCall({
+    const sendOTP = useCallback(async () => {
+        try {
+            const response = await betterwayApiCall({
                 method: "POST",
                 url: "SEND_OTP_TO_PHONE",
                 body: {
                     phoneNumber: mobileNumber,
                 },
                 auth: null,
-            }),
-            success: (response) => {
+            });
+
+            if (response?.data?.message === 'code sent' || response?.status === 200) {
                 setIsLoading(false);
                 showToast({
-                    message: response?.message || 'OTP sent to your phone!',
+                    message: response?.data?.message || 'OTP sent to your phone!',
                     type: 'success',
                 });
                 router.push('/otp-verify');
-            },
-            failure: (error) => {
+            } else {
+                setIsLoading(false);
                 showToast({
-                    message: error?.message || 'Failed to send OTP',
+                    message: response?.data?.message || 'Failed to send OTP',
                     type: 'error',
                 });
-            },
-        })();
-    }, [countryCode, mobileNumber]);
+            }
+        } catch (error: any) {
+            setIsLoading(false);
+            showToast({
+                message: error?.message || 'Failed to send OTP',
+                type: 'error',
+            });
+        }
+    }, [mobileNumber]);
 
     const handleSignUp = useCallback(async () => {
         if (!validateForm()) {
@@ -233,26 +271,6 @@ const SignUp = memo(() => {
         setIsLoading(true);
         
         try {
-            const fullPhoneNumber = `${countryCode}${mobileNumber}`;
-            const signupData = {
-                phone: fullPhoneNumber,
-                name,
-                email,
-                dob: formatDateForAPI(dob),
-                password,
-                isStudent: isStudentUser,
-                collegeName,
-                courseName,
-                branch,
-                currentSemester,
-                studentIdFile: studentIdFile ? {
-                    uri: studentIdFile.uri,
-                    type: studentIdFile.mimeType,
-                    name: studentIdFile.name,
-                } : null,
-                flow: 'signup',
-            };
-            
             await AsyncStorage.setItem('pending_signup_data', JSON.stringify(signupData));
             sendOTP();
         } catch (error: any) {
@@ -262,7 +280,7 @@ const SignUp = memo(() => {
                 type: 'error',
             });
         }
-    }, [validateForm, countryCode, mobileNumber, name, email, dob, password, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, formatDateForAPI, sendOTP]);
+    }, [validateForm, signupData, sendOTP]);
 
     const handleGoogleSignUp = useCallback(() => {
         console.log('Google sign up pressed');
@@ -287,7 +305,7 @@ const SignUp = memo(() => {
             }} />
             <ImageBackground
                 source={require('../../../assets/images/primary_bg.webp')}
-                style={{ flex: 1, width, height }}
+                style={styles.background}
                 resizeMode="cover"
             >
                 <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
@@ -397,15 +415,7 @@ const SignUp = memo(() => {
                                 </Pressable>
                                 <Pressable
                                     onPress={handleCalendarPress}
-                                    style={{
-                                        position: 'absolute',
-                                        right: 16,
-                                        top: 12,
-                                        height: 24,
-                                        width: 24,
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                    }}
+                                    style={styles.calendarIcon}
                                 >
                                     <AntDesign name="calendar" size={20} color={theme.colors.textSecondary} />
                                 </Pressable>
@@ -558,83 +568,37 @@ const SignUp = memo(() => {
                 </SafeAreaView>
             </ImageBackground>
 
-            <Modal
+            <Calendar
                 visible={showCalendar}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setShowCalendar(false)}
-            >
-                <View
-                    style={{
-                        flex: 1,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                    }}
-                >
-                    <View
-                        style={{
-                            backgroundColor: 'white',
-                            borderRadius: 20,
-                            padding: 20,
-                            margin: 20,
-                            width: width * 0.9,
-                            maxHeight: height * 0.7,
-                        }}
-                    >
-                        <View
-                            flexDirection="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                            marginBottom="l"
-                        >
-                            <Text
-                                fontSize={18}
-                                fontWeight="600"
-                                color="textPrimary"
-                                fontFamily="Poppins-SemiBold"
-                            >
-                                Select Date of Birth
-                            </Text>
-                            <Pressable onPress={() => setShowCalendar(false)}>
-                                <AntDesign name="close" size={24} color={theme.colors.textSecondary} />
-                            </Pressable>
-                        </View>
-                        
-                        <Calendar
-                            onDayPress={handleDateSelect}
-                            theme={{
-                                backgroundColor: 'white',
-                                calendarBackground: 'white',
-                                textSectionTitleColor: theme.colors.textPrimary,
-                                selectedDayBackgroundColor: theme.colors.primary,
-                                selectedDayTextColor: 'white',
-                                todayTextColor: theme.colors.primary,
-                                dayTextColor: theme.colors.textPrimary,
-                                textDisabledColor: theme.colors.textSecondary,
-                                dotColor: theme.colors.primary,
-                                selectedDotColor: 'white',
-                                arrowColor: theme.colors.primary,
-                                disabledArrowColor: theme.colors.textSecondary,
-                                monthTextColor: theme.colors.textPrimary,
-                                indicatorColor: theme.colors.primary,
-                                textDayFontFamily: 'Poppins-Regular',
-                                textMonthFontFamily: 'Poppins-SemiBold',
-                                textDayHeaderFontFamily: 'Poppins-Medium',
-                                textDayFontSize: 16,
-                                textMonthFontSize: 18,
-                                textDayHeaderFontSize: 14,
-                            }}
-                            maxDate={new Date().toISOString().split('T')[0]}
-                            initialDate={dob ? formatDateForAPI(dob) : new Date().toISOString().split('T')[0]}
-                        />
-                    </View>
-                </View>
-            </Modal>
+                onClose={() => setShowCalendar(false)}
+                onDateSelect={(dateString) => {
+                    setDob(formatDateForDisplay(dateString));
+                }}
+                title="Select Date of Birth"
+                maxDate={new Date().toISOString().split('T')[0]}
+                initialDate={dob ? formatDateForAPI(dob) : new Date().toISOString().split('T')[0]}
+            />
         </>
     );
 });
 
 SignUp.displayName = 'SignUp';
+
+const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        width,
+        height,
+    },
+    calendarIcon: {
+        position: 'absolute',
+        right: 16,
+        top: 12,
+        height: 24,
+        width: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+});
 
 export default SignUp;

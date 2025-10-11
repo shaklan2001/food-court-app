@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from "expo-router";
 import { memo, useCallback, useState } from "react";
@@ -7,6 +8,7 @@ import { Image, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LogoutModal from "../../components/LogoutModal";
 import { Text, View } from "../../components/ui";
+import { setLoggingOut } from "../../network";
 import { logout } from "../../store/slices/authSlice";
 import { RootState, useAppDispatch, useAppSelector } from "../../store/store";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
@@ -106,11 +108,38 @@ const Profile = () => {
     setShowLogoutModal(true);
   }, []);
 
-  const handleLogoutConfirm = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    dispatch(logout());
-    setShowLogoutModal(false);
-    router.replace('/(auth)/');
+  const handleLogoutConfirm = useCallback(async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Set global flag to prevent API calls during logout
+      setLoggingOut(true);
+      
+      // Close the modal first
+      setShowLogoutModal(false);
+      
+      // Clear AsyncStorage first
+      await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
+      
+      // Then dispatch logout to clear Redux state
+      dispatch(logout());
+      
+      // Small delay to ensure state is cleared before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to auth screen
+      router.replace('/(auth)/');
+      
+      // Reset the logging out flag after navigation
+      setTimeout(() => {
+        setLoggingOut(false);
+      }, 500);
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still try to navigate even if there's an error
+      setLoggingOut(false);
+      router.replace('/(auth)/');
+    }
   }, [dispatch]);
 
   const handleLogoutCancel = useCallback(() => {

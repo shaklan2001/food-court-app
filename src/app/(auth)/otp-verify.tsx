@@ -26,9 +26,7 @@ import { showToast } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
 
-interface OTPVerifyProps { }
-
-const OTPVerify = memo(({ }: OTPVerifyProps) => {
+const OTPVerify = memo(() => {
     const theme = useTheme<Theme>();
     const dispatch = useDispatch();
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -58,7 +56,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                // Try to load signup data first
                 const signupData = await AsyncStorage.getItem('pending_signup_data');
                 if (signupData) {
                     const parsedData = JSON.parse(signupData);
@@ -67,7 +64,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                     return;
                 }
 
-                // If no signup data, try to load login data
                 const loginData = await AsyncStorage.getItem('pending_otp_data');
                 if (loginData) {
                     const parsedData = JSON.parse(loginData);
@@ -76,21 +72,22 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                     return;
                 }
 
-                // If neither exists, redirect back to login
                 showToast({
                     message: 'Session expired. Please try again.',
                     type: 'error',
                 });
                 router.push('/login');
-            } catch (error) {
-                console.error('Error loading data:', error);
+            } catch (error: any) {
+                showToast({
+                    message: error?.message || 'Session expired. Please try again.',
+                    type: 'error',
+                });
                 router.push('/login');
             }
         };
         loadData();
     }, []);
 
-    // Timer countdown effect
     useEffect(() => {
         let interval: NodeJS.Timeout;
         if (timer > 0 && isResendDisabled && !maxAttemptsReached) {
@@ -103,7 +100,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
         return () => clearInterval(interval);
     }, [timer, isResendDisabled, maxAttemptsReached]);
 
-    // Check clipboard for OTP when app becomes active
     useEffect(() => {
         const checkClipboardForOTP = async () => {
             try {
@@ -117,12 +113,8 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
             }
         };
 
-        // Check clipboard when component mounts
         checkClipboardForOTP();
-
-        // Set up interval to check clipboard every few seconds
         const clipboardInterval = setInterval(checkClipboardForOTP, 3000);
-
         return () => clearInterval(clipboardInterval);
     }, []);
 
@@ -211,16 +203,16 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                 method: "POST",
                 url: "VERIFY_OTP_TO_PHONE",
                 body: {
-                    phone: currentData.phone,
+                    phoneNumber: currentData.phone,
                     code: otpString,
                     disableSession: false,
-                    updatePhoneNumber: true,
+                    updatePhoneNumber: false,
                 },
                 auth: null,
             });
 
 
-            if (!verifyResponse?.data?.success) {
+            if (!verifyResponse?.data?.status) {
                 setIsLoading(false);
                 showToast({
                     message: verifyResponse?.data?.message || 'Invalid OTP',
@@ -235,7 +227,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
             });
 
             if (currentFlow === 'signup') {
-                // Handle signup flow
                 let studentIdImageUrl = null;
                 if (signupData.isStudent && signupData.studentIdFile) {
                     studentIdImageUrl = await uploadStudentId(signupData.studentIdFile);
@@ -306,18 +297,50 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                     });
                 }
             } else {
-                // Handle login flow - redirect to login with email/password
-                await AsyncStorage.removeItem('pending_otp_data');
-                setIsLoading(false);
-                
-                showToast({
-                    message: 'Phone number verified! Please login with your email and password.',
-                    type: 'success',
-                });
-                
-                setTimeout(() => {
-                    router.push('/login');
-                }, 1500);
+                // Login flow - OTP verified, user gets logged in automatically
+                if (verifyResponse?.data?.token && verifyResponse?.data?.user) {
+                    const userData = verifyResponse.data.user;
+                    const token = verifyResponse.data.token;
+
+                    dispatch(setUser({
+                        id: userData.id,
+                        email: userData.email,
+                        name: userData.name,
+                        phoneNumber: userData.phoneNumber || userData.phone,
+                        phoneNumberVerified: userData.phoneNumberVerified,
+                        emailVerified: userData.emailVerified,
+                        image: userData.image,
+                        createdAt: userData.createdAt,
+                        updatedAt: userData.updatedAt,
+                    }));
+
+                    dispatch(setToken(token));
+                    
+                    await AsyncStorage.removeItem('pending_otp_data');
+                    
+                    showToast({
+                        message: 'Login successful!',
+                        type: 'success',
+                    });
+                    
+                    setTimeout(() => {
+                        setIsLoading(false);
+                        router.push('/(tabs)');
+                    }, 1500);
+                } else {
+                    // Fallback to login screen if no token/user data
+                    await AsyncStorage.removeItem('pending_otp_data');
+                    setIsLoading(false);
+                    
+                    showToast({
+                        message: 'Phone number verified! Please login with your email and password.',
+                        type: 'success',
+                    });
+                    
+                    setTimeout(() => {
+                        router.push('/login');
+                    }, 1500);
+                }
             }
         } catch (error: any) {
             setIsLoading(false);
@@ -330,9 +353,7 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
 
     const handleResendOTP = async () => {
         const currentData = currentFlow === 'signup' ? signupData : loginData;
-        
         if (isResendDisabled || !currentData || maxAttemptsReached) return;
-
         const newAttemptNumber = resendAttempts + 1;
         
         if (newAttemptNumber > 3) {
@@ -343,6 +364,8 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
             });
             return;
         }
+
+        console.log('currentDataaaaa', currentData);
 
         try {
             const response = await betterwayApiCall({

@@ -65,9 +65,13 @@ const authSlice = createSlice({
         logout: (state) => {
             state.user = null;
             state.token = null;
+            state.refreshToken = null;
             state.error = null;
-            // Clear persisted data
-            AsyncStorage.multiRemove(['auth_token', 'user_data']);
+            state.isLoading = false;
+            state.isTokenValidating = false;
+            AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']).catch(err => {
+                console.error('Error clearing AsyncStorage:', err);
+            });
         },
     },
 });
