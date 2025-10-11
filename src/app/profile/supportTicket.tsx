@@ -15,7 +15,6 @@ const SupportTicket = () => {
   const [showIssueDropdown, setShowIssueDropdown] = useState(false);
 
   const handleSubmit = useCallback(() => {
-    // Handle form submission
     console.log('Support ticket submitted:', {
       category,
       issue,
@@ -72,7 +71,6 @@ const SupportTicket = () => {
               </Text>
 
               <View gap="l">
-                {/* Category Field */}
                 <View>
                   <Text
                     fontSize={14}
@@ -148,7 +146,6 @@ const SupportTicket = () => {
                   )}
                 </View>
 
-                {/* Issue Field */}
                 <View>
                   <Text
                     fontSize={14}
@@ -223,8 +220,6 @@ const SupportTicket = () => {
                     </View>
                   )}
                 </View>
-
-                {/* Description Field */}
                 <View>
                   <Text
                     fontSize={14}
@@ -246,8 +241,6 @@ const SupportTicket = () => {
                     textAlignVertical="top"
                   />
                 </View>
-
-                {/* Submit Button */}
                 <View marginTop="l" marginBottom="xl">
                   <Button
                     title="Submit Support Ticket"
