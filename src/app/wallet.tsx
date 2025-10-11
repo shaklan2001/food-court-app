@@ -1,11 +1,14 @@
 import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
-import React, { memo } from 'react';
-import { Image, ScrollView, TouchableOpacity } from 'react-native';
+import React, { memo, useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { ClipPath, Defs, G, Path, Rect } from 'react-native-svg';
 import Text from '../components/ui/Text';
 import View from '../components/ui/View';
+import { betterwayApiCall } from '../network/useApiPort';
+import { useAppSelector } from '../store/store';
+import { showToast } from '../utils';
 import { ScreenHeader } from './cart';
 
 const StarIconSVG = memo(({ width = 24, height = 24 }: { width?: number; height?: number }) => (
@@ -134,7 +137,7 @@ const TransactionItem = memo(({
 
 TransactionItem.displayName = 'TransactionItem';
 
-const BalanceCard = memo(() => (
+const BalanceCard = memo(({ balance, isLoading }: { balance: number; isLoading: boolean }) => (
   <View 
     marginTop="l"
     marginBottom="xl"
@@ -159,7 +162,13 @@ const BalanceCard = memo(() => (
       </View>
       <View flexDirection="row" alignItems="center">
         <StarIconSVG width={32} height={32} />
-        <Text fontSize={36} lineHeight={42.5} fontWeight="bold" color="textOnPrimary" fontFamily="Poppins-Bold" marginLeft="s">5,000</Text>
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#FFFFFF" style={{ marginLeft: 8 }} />
+        ) : (
+          <Text fontSize={36} lineHeight={42.5} fontWeight="bold" color="textOnPrimary" fontFamily="Poppins-Bold" marginLeft="s">
+            {balance.toLocaleString()}
+          </Text>
+        )}
       </View>
     </View>
     <View
@@ -244,6 +253,39 @@ const TransactionsSection = memo(({ transactions }: {
 TransactionsSection.displayName = 'TransactionsSection';
 
 export default function WalletScreen() {
+  const token = useAppSelector((state) => state.auth.token);
+  const [balance, setBalance] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchWalletBalance = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await betterwayApiCall({
+        method: 'GET',
+        url: 'GET_WALLET_BALANCE',
+        body: null,
+        auth: token,
+      });
+
+      if (response?.data?.balance !== undefined) {
+        setBalance(response.data.balance);
+      } else if (response?.data?.data?.balance !== undefined) {
+        setBalance(response.data.data.balance);
+      }
+    } catch (error: any) {
+      showToast({
+        message: error?.message || 'Failed to fetch wallet balance',
+        type: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+      fetchWalletBalance();
+  }, []);
+
   const transactions = [
     {
       icon: <ShoppingBagIcon />,
@@ -315,7 +357,7 @@ export default function WalletScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20 }}
         >
-          <BalanceCard />
+          <BalanceCard balance={balance} isLoading={isLoading} />
           <TransactionsSection transactions={transactions} />
         </ScrollView>
       </View>

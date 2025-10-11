@@ -28,10 +28,10 @@ export type ApiType =
   "EDIT_PROFILE" |
   "GET_PROFILE" |
   "PASSWORD_RESET_OTP" |
-  "RESET_PASSWORD";
-
+  "RESET_PASSWORD" |
+  "GET_WALLET_BALANCE" |
+  "GET_WALLET_TRANSACTIONS";
   
-
 export type TransactionIntentType =
   "intent_create_user" |
   "intent_upload_student_id" |
@@ -62,4 +62,6 @@ export type TransactionIntentType =
   "intent_edit_profile" |
   "intent_get_profile" |
   "intent_password_reset_otp" |
-  "intent_reset_password";
+  "intent_reset_password" |
+  "intent_get_wallet_balance" |
+  "intent_get_wallet_transactions";

@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View } from "../../components/ui";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
@@ -38,7 +37,5 @@ const Orders = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({});
 
 export default Orders;

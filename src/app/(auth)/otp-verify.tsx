@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { Button, Text, View } from '../../components/ui';
-import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { betterwayApiCall } from '../../network/useApiPort';
 import { setToken, setUser } from '../../store/slices/authSlice';
 import { Theme } from '../../theme/theme';
 import { showToast } from '../../utils';
@@ -36,35 +36,72 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
     const [isResendDisabled, setIsResendDisabled] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [signupData, setSignupData] = useState<any>(null);
+    const [loginData, setLoginData] = useState<any>(null);
+    const [currentFlow, setCurrentFlow] = useState<'signup' | 'login' | null>(null);
+    const [resendAttempts, setResendAttempts] = useState(0);
+    const [maxAttemptsReached, setMaxAttemptsReached] = useState(false);
     const inputRefs = useRef<TextInput[]>([]);
 
-    // Load signup data from AsyncStorage
+    const getTimerDuration = (attemptNumber: number): number => {
+        switch (attemptNumber) {
+            case 1:
+                return 30;
+            case 2:
+                return 120;
+            case 3:
+                return 300;
+            default:
+                return 30;
+        }
+    };
+
     useEffect(() => {
-        const loadSignupData = async () => {
+        const loadData = async () => {
             try {
-                const data = await AsyncStorage.getItem('pending_signup_data');
-                if (data) {
-                    setSignupData(JSON.parse(data));
+                // Try to load signup data first
+                const signupData = await AsyncStorage.getItem('pending_signup_data');
+                if (signupData) {
+                    const parsedData = JSON.parse(signupData);
+                    setSignupData(parsedData);
+                    setCurrentFlow('signup');
+                    return;
                 }
+
+                // If no signup data, try to load login data
+                const loginData = await AsyncStorage.getItem('pending_otp_data');
+                if (loginData) {
+                    const parsedData = JSON.parse(loginData);
+                    setLoginData(parsedData);
+                    setCurrentFlow('login');
+                    return;
+                }
+
+                // If neither exists, redirect back to login
+                showToast({
+                    message: 'Session expired. Please try again.',
+                    type: 'error',
+                });
+                router.push('/login');
             } catch (error) {
-                console.error('Error loading signup data:', error);
+                console.error('Error loading data:', error);
+                router.push('/login');
             }
         };
-        loadSignupData();
+        loadData();
     }, []);
 
     // Timer countdown effect
     useEffect(() => {
         let interval: NodeJS.Timeout;
-        if (timer > 0 && isResendDisabled) {
+        if (timer > 0 && isResendDisabled && !maxAttemptsReached) {
             interval = setInterval(() => {
                 setTimer(prev => prev - 1);
             }, 1000);
-        } else if (timer === 0) {
+        } else if (timer === 0 && !maxAttemptsReached) {
             setIsResendDisabled(false);
         }
         return () => clearInterval(interval);
-    }, [timer, isResendDisabled]);
+    }, [timer, isResendDisabled, maxAttemptsReached]);
 
     // Check clipboard for OTP when app becomes active
     useEffect(() => {
@@ -156,12 +193,14 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
             return;
         }
 
-        if (!signupData) {
+        const currentData = currentFlow === 'signup' ? signupData : loginData;
+        
+        if (!currentData) {
             showToast({
-                message: 'Signup data not found. Please try again.',
+                message: 'Session expired. Please try again.',
                 type: 'error',
             });
-            router.push('/sign-up');
+            router.push('/login');
             return;
         }
 
@@ -172,8 +211,10 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                 method: "POST",
                 url: "VERIFY_OTP_TO_PHONE",
                 body: {
-                    phone: signupData.phone,
-                    otp: otpString,
+                    phone: currentData.phone,
+                    code: otpString,
+                    disableSession: false,
+                    updatePhoneNumber: true,
                 },
                 auth: null,
             });
@@ -193,75 +234,90 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                 type: 'success',
             });
 
-            let studentIdImageUrl = null;
-            if (signupData.isStudent && signupData.studentIdFile) {
-                studentIdImageUrl = await uploadStudentId(signupData.studentIdFile);
+            if (currentFlow === 'signup') {
+                // Handle signup flow
+                let studentIdImageUrl = null;
+                if (signupData.isStudent && signupData.studentIdFile) {
+                    studentIdImageUrl = await uploadStudentId(signupData.studentIdFile);
+                    
+                    if (!studentIdImageUrl) {
+                        throw new Error('Failed to upload student ID');
+                    }
+                }
+
+                const body: any = {
+                    name: signupData.name,
+                    email: signupData.email,
+                    phone: signupData.phone,
+                    dob: signupData.dob,
+                    password: signupData.password,
+                    isStudent: signupData.isStudent,
+                };
+
+                if (signupData.isStudent) {
+                    body.collegeName = signupData.collegeName;
+                    body.course = signupData.courseName;
+                    body.branch = signupData.branch;
+                    body.currentSemester = parseInt(signupData.currentSemester);
+                    body.studentIdImage = studentIdImageUrl;
+                }
+
+                const createUserResponse = await betterwayApiCall({
+                    method: "POST",
+                    url: "CREATE_USER",
+                    body,
+                    auth: null,
+                });
+
+                if (createUserResponse?.data?.success && createUserResponse?.data?.user) {
+                    const userData = createUserResponse.data.user;
+                    const token = createUserResponse.data.token;
+
+                    dispatch(setUser({
+                        id: userData.id,
+                        email: userData.email,
+                        name: userData.name,
+                        phoneNumber: userData.phoneNumber || userData.phone,
+                        dob: userData.dob,
+                        isStudent: userData.isStudent,
+                        image: userData.image,
+                    }));
+
+                    if (token) {
+                        dispatch(setToken(token));
+                    }
+
+                    await AsyncStorage.removeItem('pending_signup_data');
+
+                    showToast({
+                        message: 'Account created successfully!',
+                        type: 'success',
+                    });
+
+                    setTimeout(() => {
+                        setIsLoading(false);
+                        router.push('/(tabs)');
+                    }, 1500);
+                } else {
+                    setIsLoading(false);
+                    showToast({
+                        message: createUserResponse?.data?.message || 'Failed to create account',
+                        type: 'error',
+                    });
+                }
+            } else {
+                // Handle login flow - redirect to login with email/password
+                await AsyncStorage.removeItem('pending_otp_data');
+                setIsLoading(false);
                 
-                if (!studentIdImageUrl) {
-                    throw new Error('Failed to upload student ID');
-                }
-            }
-
-            const body: any = {
-                name: signupData.name,
-                email: signupData.email,
-                phone: signupData.phone,
-                dob: signupData.dob,
-                password: signupData.password,
-                isStudent: signupData.isStudent,
-            };
-
-            if (signupData.isStudent) {
-                body.collegeName = signupData.collegeName;
-                body.course = signupData.courseName;
-                body.branch = signupData.branch;
-                body.currentSemester = parseInt(signupData.currentSemester);
-                body.studentIdImage = studentIdImageUrl;
-            }
-
-            const createUserResponse = await betterwayApiCall({
-                method: "POST",
-                url: "CREATE_USER",
-                body,
-                auth: null,
-            });
-
-
-            if (createUserResponse?.data?.success && createUserResponse?.data?.user) {
-                const userData = createUserResponse.data.user;
-                const token = createUserResponse.data.token;
-
-                dispatch(setUser({
-                    id: userData.id,
-                    email: userData.email,
-                    name: userData.name,
-                    phoneNumber: userData.phoneNumber || userData.phone,
-                    dob: userData.dob,
-                    isStudent: userData.isStudent,
-                    image: userData.image,
-                }));
-
-                if (token) {
-                    dispatch(setToken(token));
-                }
-
-                await AsyncStorage.removeItem('pending_signup_data');
-
                 showToast({
-                    message: 'Account created successfully!',
+                    message: 'Phone number verified! Please login with your email and password.',
                     type: 'success',
                 });
-
+                
                 setTimeout(() => {
-                    setIsLoading(false);
-                    router.push('/(tabs)');
+                    router.push('/login');
                 }, 1500);
-            } else {
-                setIsLoading(false);
-                showToast({
-                    message: createUserResponse?.data?.message || 'Failed to create account',
-                    type: 'error',
-                });
             }
         } catch (error: any) {
             setIsLoading(false);
@@ -272,35 +328,58 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
         }
     };
 
-    const handleResendOTP = () => {
-        if (isResendDisabled || !signupData) return;
+    const handleResendOTP = async () => {
+        const currentData = currentFlow === 'signup' ? signupData : loginData;
+        
+        if (isResendDisabled || !currentData || maxAttemptsReached) return;
 
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useApiPort({
-            intent: "intent_send_otp_to_phone",
-            port: betterwayApiCall({
+        const newAttemptNumber = resendAttempts + 1;
+        
+        if (newAttemptNumber > 3) {
+            setMaxAttemptsReached(true);
+            showToast({
+                message: 'Maximum resend attempts reached. Please contact support.',
+                type: 'error',
+            });
+            return;
+        }
+
+        try {
+            const response = await betterwayApiCall({
                 method: "POST",
                 url: "SEND_OTP_TO_PHONE",
                 body: {
-                    phone: signupData.phone,
+                    phoneNumber: currentData.phone,
                 },
                 auth: null,
-            }),
-            success: () => {
-                setTimer(30);
+            });
+
+            if (response?.data?.message === 'code sent' || response?.status === 200) {
+                const newTimerDuration = getTimerDuration(newAttemptNumber);
+                setTimer(newTimerDuration);
                 setIsResendDisabled(true);
+                setResendAttempts(newAttemptNumber);
+                
+                if (newAttemptNumber >= 3) {
+                    setMaxAttemptsReached(true);
+                }
+                
                 showToast({
-                    message: 'OTP resent successfully!',
+                    message: `OTP resent successfully! Next resend available in ${newTimerDuration === 30 ? '30 seconds' : newTimerDuration === 120 ? '2 minutes' : '5 minutes'}.`,
                     type: 'success',
                 });
-            },
-            failure: (error) => {
+            } else {
                 showToast({
-                    message: error?.response?.data?.message || 'Failed to resend OTP',
+                    message: response?.data?.message || 'Failed to resend OTP',
                     type: 'error',
                 });
-            },
-        })();
+            }
+        } catch (error: any) {
+            showToast({
+                message: error?.message || 'Failed to resend OTP',
+                type: 'error',
+            });
+        }
     };
 
     return (
@@ -402,22 +481,48 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                         </View>
 
                                         <View alignItems="center" marginBottom="xl">
-                                            <Text
-                                                fontSize={14}
-                                                fontWeight="400"
-                                                color="textSecondary"
-                                                fontFamily="Poppins-Regular"
-                                            >
-                                                Resend OTP in:{' '}
+                                            {!maxAttemptsReached ? (
+                                                timer > 0 ? (
+                                                    <Text
+                                                        fontSize={14}
+                                                        fontWeight="400"
+                                                        color="textSecondary"
+                                                        fontFamily="Poppins-Regular"
+                                                    >
+                                                        Resend OTP in:{' '}
+                                                        <Text
+                                                            fontSize={14}
+                                                            fontWeight="600"
+                                                            color="danger"
+                                                            fontFamily="Poppins-Bold"
+                                                        >
+                                                            {timer > 60 ? `${Math.floor(timer / 60)} Min ${timer % 60} Sec` : `${timer} Sec`}
+                                                        </Text>
+                                                    </Text>
+                                                ) : (
+                                                    <Text
+                                                        fontSize={14}
+                                                        fontWeight="400"
+                                                        color="textSecondary"
+                                                        fontFamily="Poppins-Regular"
+                                                        textAlign="center"
+                                                        onPress={handleResendOTP}
+                                                        style={{ textDecorationLine: 'underline' }}
+                                                    >
+                                                        Request Again
+                                                    </Text>
+                                                )
+                                            ) : (
                                                 <Text
                                                     fontSize={14}
                                                     fontWeight="600"
                                                     color="danger"
                                                     fontFamily="Poppins-Bold"
+                                                    textAlign="center"
                                                 >
-                                                    {timer} Sec
+                                                    Maximum resend attempts reached
                                                 </Text>
-                                            </Text>
+                                            )}
                                         </View>
                                         <View marginBottom="l">
                                             <Button
@@ -427,27 +532,6 @@ const OTPVerify = memo(({ }: OTPVerifyProps) => {
                                                 loading={isLoading}
                                                 disabled={isLoading}
                                             />
-                                        </View>
-                                        <View alignItems="center">
-                                            <Text
-                                                fontSize={13}
-                                                fontWeight="400"
-                                                color="textSecondary"
-                                                textAlign="center"
-                                                fontFamily="Poppins-Regular"
-                                            >
-                                                Didn't receive the code yet?{' '}
-                                                <Text
-                                                    fontSize={13}
-                                                    fontWeight="700"
-                                                    color="textPrimary"
-                                                    textDecorationLine="underline"
-                                                    fontFamily="Poppins-Bold"
-                                                    onPress={handleResendOTP}
-                                                >
-                                                    Request Again
-                                                </Text>
-                                            </Text>
                                         </View>
                                     </ScrollView>
                                 </View>

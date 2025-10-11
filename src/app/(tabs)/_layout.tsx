@@ -4,6 +4,7 @@ import { Platform, StyleSheet, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Path, Svg } from 'react-native-svg';
 import { AuthGuard } from '../../components/AuthGuard';
+import FloatingCart from '../../components/FloatingCart';
 
 const HomeIcon = (props: any) => {
     const fill = props.isFocused ? "#A20538" : "#808080";
@@ -202,6 +203,7 @@ function TabsLayout() {
                     }}
                 />
             </Tabs>
+            <FloatingCart bottomOffset={70} />
         </AuthGuard>
     );
 }

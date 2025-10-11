@@ -30,6 +30,8 @@ export const API_ROUTES = {
   GET_PROFILE: "/api/user/me",
   PASSWORD_RESET_OTP: "/api/auth/phone-number/request-password-reset",
   RESET_PASSWORD: "/api/auth/phone-number/reset-password",
+  GET_WALLET_BALANCE: "/api/wallet/balance",
+  GET_WALLET_TRANSACTIONS: "/api/wallet/transactions",
 };
 
-  
+    

@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Image,
   ImageSourcePropType,
+  Pressable,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -19,7 +20,7 @@ import { RootState, useAppDispatch, useAppSelector } from "../store/store";
 import theme from "../theme/theme";
 import { showToast } from "../utils";
 import { pageHorizantalPadding } from "../utils/commomCompute";
-import { CloseIcon, HeartFilledIcon, HeartIcon } from "../utils/Svgs";
+import { BackIcon, HeartFilledIcon, HeartIcon } from "../utils/Svgs";
 
 const ProductDetail = () => {
   const dispatch = useAppDispatch();
@@ -47,13 +48,11 @@ const ProductDetail = () => {
       try {
         setLoading(true);
         
-        // Check if item is already in cart and set quantity
         const cartItem = cartItems.find(ci => String(ci.id) === String(params.itemId));
         if (cartItem) {
           setQuantity(cartItem.quantity);
         }
 
-        // Fetch only favorites status
         const favResponse = await betterwayApiCall({
           method: "GET",
           url: "GET_FAVOURITES",
@@ -106,7 +105,6 @@ const ProductDetail = () => {
           type: 'success',
         });
       } else {
-        // Add to favorites
         await betterwayApiCall({
           method: "POST",
           url: "ADD_TO_FAVOURITE",
@@ -117,10 +115,6 @@ const ProductDetail = () => {
         });
         
         setIsLiked(true);
-        showToast({
-          message: 'Added to favorites',
-          type: 'success',
-        });
       }
     } catch {
       showToast({
@@ -149,7 +143,6 @@ const ProductDetail = () => {
     const currentQuantity = currentCartItem?.quantity || 0;
 
     try {
-      // Handle image for cart
       let imageSource: ImageSourcePropType;
       if (params.image && params.image.trim() !== '') {
         imageSource = { uri: params.image };
@@ -158,7 +151,6 @@ const ProductDetail = () => {
       }
 
       if (currentQuantity === 0) {
-        // Add to cart for the first time
         await dispatch(addToCart({
           id: params.itemId,
           name: params.name,
@@ -168,12 +160,10 @@ const ProductDetail = () => {
           description: params.description,
         }, token));
         
-        // If quantity is more than 1, update to the selected quantity
         if (quantity > 1) {
           await dispatch(updateCartItem(params.itemId, quantity, token));
         }
       } else {
-        // Update existing cart item quantity
         await dispatch(updateCartItem(params.itemId, quantity, token));
       }
 
@@ -182,11 +172,8 @@ const ProductDetail = () => {
         type: 'success',
       });
       
-      // Navigate back or to cart
       router.back();
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error adding to cart:', error);
+    } catch {
       showToast({
         message: 'Failed to add to cart',
         type: 'error',
@@ -210,7 +197,6 @@ const ProductDetail = () => {
     );
   }
 
-  // Prepare image source from params
   const imageSource: ImageSourcePropType = params.image && params.image.trim() !== '' 
     ? { uri: params.image }
     : require('@/assets/images/bowl.png');
@@ -227,12 +213,10 @@ const ProductDetail = () => {
               resizeMode="cover"
             />
 
-            <View position="absolute" top={20} right={20}>
+            <View position="absolute" top={20} left={20}>
               <TouchableOpacity onPress={handleClosePress}>
                 <Card>
-                  <View padding="xs" backgroundColor='textPrimary' borderRadius='xxl'>
-                    <CloseIcon color='#FFFFFF' />
-                  </View>
+                  <BackIcon />
                 </Card>
               </TouchableOpacity>
             </View>
@@ -341,23 +325,32 @@ const ProductDetail = () => {
             </ScrollView>
 
             <View
-              backgroundColor="primary"
+              backgroundColor="mainBackgroundLight"
               paddingHorizontal={pageHorizantalPadding}
               paddingVertical="m"
             >
-              <TouchableOpacity
+              <Pressable
                 style={styles.confirmButton}
                 onPress={handleConfirmPress}
               >
-                <Text
-                  fontSize={18}
-                  fontWeight="600"
-                  color="textOnPrimary"
-                  fontFamily="Poppins-SemiBold"
+                <View
+                  flex={1}
+                  flexDirection="row"
+                  justifyContent="center"
+                  alignItems="center"
+                  height="100%"
+                  gap="m"
                 >
-                  Confirm
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    fontSize={18}
+                    fontWeight="600"
+                    color="textOnPrimary"
+                    fontFamily="Poppins-SemiBold"
+                  >
+                    Confirm
+                  </Text>
+                </View>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -391,10 +384,11 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadii.m,
-    height: 56,
-    justifyContent: "center",
+    borderRadius: 12,
+    height: 60,
+    flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 0,
   },
 });
 

@@ -250,6 +250,7 @@ const SignUp = memo(() => {
                     type: studentIdFile.mimeType,
                     name: studentIdFile.name,
                 } : null,
+                flow: 'signup',
             };
             
             await AsyncStorage.setItem('pending_signup_data', JSON.stringify(signupData));
