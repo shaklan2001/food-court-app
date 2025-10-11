@@ -1,8 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Image, Modal, Pressable } from 'react-native';
-import { betterwayApiCall } from '../network/useApiPort';
-import { logout } from '../store/slices/authSlice';
-import { useAppDispatch, useAppSelector } from '../store/store';
 import { Text, View } from './ui';
 
 interface LogoutModalProps {
@@ -20,8 +17,6 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const contentTranslateY = useRef(new Animated.Value(20)).current;
-  const dispatch = useAppDispatch();
-  const token = useAppSelector((state) => state.auth.token);
 
   useEffect(() => {
     if (visible) {
@@ -57,22 +52,16 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
-      if (token) {
-        await betterwayApiCall({
-          method: 'POST',
-          url: 'SIGN_OUT',
-          auth: token,
-        });
-      }
-      dispatch(logout());
+      // Just call the onConfirm callback - let the parent handle the logout logic
       onConfirm();
-    } catch {
-      dispatch(logout());
+    } catch (error) {
+      console.warn('Logout modal error:', error);
+      // Still call onConfirm to ensure logout happens
       onConfirm();
     } finally {
       setIsLoggingOut(false);
     }
-  }, [dispatch, token, onConfirm, isLoggingOut]);
+  }, [onConfirm, isLoggingOut]);
 
   return (
     <Modal

@@ -2,7 +2,7 @@ import axios, { AxiosError, isCancel } from "axios";
 
 const isProd = true;
 const BASE_URL = isProd
-    ? "http://backend.smartcsk.in"
+    ? "https://backend.smartcsk.in"
     : "http://localhost:8000";
 
 
@@ -68,12 +68,16 @@ apiClient.interceptors.response.use(
             }
         }
 
-        console.log('❌ API Error:', {
-            status: error.response?.status,
-            url: error.config?.url,
-            data: error.response?.data,
-            message: error.message,
-        });
+        // Prevent logging during logout to avoid DevLauncher crashes
+        if (!isLoggingOut) {
+            console.log('❌ API Error:', {
+                status: error.response?.status,
+                url: error.config?.url,
+                data: error.response?.data,
+                message: error.message,
+            });
+        }
+        
         return Promise.reject(error);
     },
 );

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { useCallback } from "react";
-import { Linking, Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, View } from "../../components/ui";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
@@ -15,30 +16,30 @@ const SupportItem = ({ icon, title, subtitle, onPress }: {
 }) => {
   return (
       <Pressable onPress={onPress} style={styles.supportItem}>
-        <View flexDirection="row" alignItems="center" paddingVertical="m">
+        <View flexDirection="row" alignItems="center" paddingVertical="l">
           <View
             width={40}
             height={40}
             justifyContent="center"
             alignItems="center"
-            backgroundColor="primary"
+            backgroundColor='mainBackground'
             borderRadius="m"
             marginRight="m"
           >
-            <Ionicons name={icon as any} size={20} color="white" />
+            <Ionicons name={icon as any} size={22} color="black" />
           </View>
           <View flex={1}>
             <Text
               fontSize={16}
-              fontWeight="500"
+              fontWeight="600"
               color="textPrimary"
-              fontFamily="Poppins-Medium"
+              fontFamily="Poppins-SemiBold"
               marginBottom="xs"
             >
               {title}
             </Text>
             <Text
-              fontSize={12}
+              fontSize={14}
               fontWeight="400"
               color="textSecondary"
               fontFamily="Poppins-Regular"
@@ -46,99 +47,57 @@ const SupportItem = ({ icon, title, subtitle, onPress }: {
               {subtitle}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#D3D3D3" />
+          <Ionicons name="chevron-forward" size={20} color="#000000" />
         </View>
       </Pressable>
   );
 };
 
 const Support = () => {
-
-  const handleCallSupport = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL('tel:+1234567890');
-  }, []);
-
-  const handleEmailSupport = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL('mailto:support@foodcourt.com');
-  }, []);
-
-  const handleLiveChat = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
-
   const handleFAQ = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/profile/fandq');
+  }, []);
+
+  const handleSupportTicket = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/profile/supportTicket');
+  }, []);
+
+  const handleContactSupport = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Navigate to contact support screen when implemented
+    console.log('Navigate to Contact Support');
   }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
-          <ScreenHeader title="Support" moreAction={false} />
+          <ScreenHeader title="Help & Support" moreAction={false} />
           <View paddingHorizontal={pageHorizantalPadding} paddingTop="l">
-            <View backgroundColor="mainBackground" borderRadius="l" marginBottom="m">
+            <View backgroundColor="transparent" borderRadius="l">
               <SupportItem
-                icon="call-outline"
-                title="Call Support"
-                subtitle="Speak with our support team"
-                onPress={handleCallSupport}
-              />
-              <View borderTopWidth={1} style={{ borderTopColor: '#F0F0F0' }} />
-              
-              <SupportItem
-                icon="mail-outline"
-                title="Email Support"
-                subtitle="Send us an email"
-                onPress={handleEmailSupport}
-              />
-              <View borderTopWidth={1} style={{ borderTopColor: '#F0F0F0' }} />
-              
-              <SupportItem
-                icon="chatbubble-outline"
-                title="Live Chat"
-                subtitle="Chat with us instantly"
-                onPress={handleLiveChat}
-              />
-              <View borderTopWidth={1} style={{ borderTopColor: '#F0F0F0' }} />
-              
-              <SupportItem
-                icon="help-circle-outline"
+                icon="help-circle"
                 title="FAQ"
-                subtitle="Find answers to common questions"
+                subtitle="Find quick answers here."
                 onPress={handleFAQ}
               />
-            </View>
-
-            <View backgroundColor="mainBackground" borderRadius="l" padding="l">
-              <Text
-                fontSize={16}
-                fontWeight="600"
-                color="textPrimary"
-                fontFamily="Poppins-SemiBold"
-                marginBottom="m"
-              >
-                Support Hours
-              </Text>
-              <Text
-                fontSize={14}
-                fontWeight="400"
-                color="textSecondary"
-                fontFamily="Poppins-Regular"
-                lineHeight={20}
-                marginBottom="s"
-              >
-                Monday - Friday: 9:00 AM - 6:00 PM
-              </Text>
-              <Text
-                fontSize={14}
-                fontWeight="400"
-                color="textSecondary"
-                fontFamily="Poppins-Regular"
-                lineHeight={20}
-              >
-                Saturday - Sunday: 10:00 AM - 4:00 PM
-              </Text>
+              <View borderTopWidth={1} borderTopColor='textPrimary' opacity={0.2} />
+              
+              <SupportItem
+                icon="document-text"
+                title="Raise a Support Ticket"
+                subtitle="Submit a support request here."
+                onPress={handleSupportTicket}
+              />
+              <View borderTopWidth={1} borderTopColor='textPrimary' opacity={0.2} />
+              
+              <SupportItem
+                icon="headset"
+                title="Contact Support"
+                subtitle="Reach out to Support."
+                onPress={handleContactSupport}
+              />
             </View>
           </View>
       </View>
