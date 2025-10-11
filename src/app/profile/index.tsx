@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LogoutModal from "../../components/LogoutModal";
 import { Text, View } from "../../components/ui";
 import { setLoggingOut } from "../../network";
+import { betterwayApiCall } from "../../network/useApiPort";
 import { logout } from "../../store/slices/authSlice";
 import { RootState, useAppDispatch, useAppSelector } from "../../store/store";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
@@ -66,7 +67,7 @@ ProfileMenuItem.displayName = 'ProfileMenuItem';
 const Profile = () => {
   const dispatch = useAppDispatch();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { user, token } = useAppSelector((state: RootState) => state.auth);
 
   const handleEditProfilePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -111,43 +112,61 @@ const Profile = () => {
   const handleLogoutConfirm = useCallback(async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      
-      // Set global flag to prevent API calls during logout
-      setLoggingOut(true);
-      
-      // Close the modal first
       setShowLogoutModal(false);
-      
-      // Clear AsyncStorage first
-      await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
-      
-      // Then dispatch logout to clear Redux state
+  
+      // 1️⃣ Call API FIRST (without blocking it by setLoggingOut)
+      if (token) {
+        try {
+          await betterwayApiCall({
+            method: 'POST',
+            url: 'SIGN_OUT',
+            auth: token,
+          });
+        } catch (apiError) {
+          if (apiError?.name !== 'CanceledError') {
+            console.warn('Sign-out API failed:', apiError);
+          }
+        }
+      }
+  
+      // 2️⃣ Clear storage safely
+      try {
+        await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
+      } catch (storageError) {
+        console.warn('Storage cleanup failed:', storageError);
+      }
+  
+      // 3️⃣ Clear Redux auth state
       dispatch(logout());
-      
-      // Small delay to ensure state is cleared before navigation
+  
+      // 4️⃣ Small delay to ensure UI unmounts
       await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Navigate to auth screen
-      router.replace('/(auth)/');
-      
-      // Reset the logging out flag after navigation
-      setTimeout(() => {
-        setLoggingOut(false);
-      }, 500);
+  
+      // 5️⃣ Navigate to login
+      router.replace('/(auth)/login');
+  
+      // 6️⃣ Finally block requests after everything resets
+      setTimeout(() => setLoggingOut(true), 500);
+  
     } catch (error) {
       console.error('Error during logout:', error);
-      // Still try to navigate even if there's an error
-      setLoggingOut(false);
-      router.replace('/(auth)/');
+      try {
+        router.replace('/(auth)/login');
+      } catch (navError) {
+        console.error('Emergency navigation failed:', navError);
+        router.push('/(auth)/login');
+      } finally {
+        setLoggingOut(false);
+      }
     }
-  }, [dispatch]);
+  }, [dispatch, token]);
+  
 
   const handleLogoutCancel = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowLogoutModal(false);
   }, []);
 
-  console.log(user?.image);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>

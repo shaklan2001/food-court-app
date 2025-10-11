@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Dimensions, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
-import { betterwayApiCall } from '../../network/useApiPort';
+import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
 import { setToken, setUser } from '../../store/slices/authSlice';
 import { showToast } from '../../utils';
 const { width, height } = Dimensions.get('window');
@@ -16,6 +16,17 @@ const Login = memo(() => {
     const [isLoading, setIsLoading] = useState(false);
     const [isPhoneLogin, setIsPhoneLogin] = useState(false);
     const [mobileNumber, setMobileNumber] = useState('');
+
+    useEffect(() => {
+        const clearOldData = async () => {
+            try {
+                await AsyncStorage.multiRemove(['pending_signup_data', 'pending_otp_data']);
+            } catch (error) {
+                console.warn('Failed to clear old signup/otp data:', error);
+            }
+        };
+        clearOldData();
+    }, []);
 
     const isEmailValid = useMemo(() => {
         return /\S+@\S+\.\S+/.test(email);
@@ -42,9 +53,10 @@ const Login = memo(() => {
         flow: 'login',
     }), [mobileNumber]);
 
-    const loginUser = useCallback(async () => {
-        try {
-            const response = await betterwayApiCall({
+    const loginUser = useCallback(() => {
+        const loginApiCall = useApiPort({
+            intent: 'Email Login',
+            port: betterwayApiCall({
                 method: "POST",
                 url: "SIGN_IN_EMAIL",
                 body: {
@@ -52,33 +64,37 @@ const Login = memo(() => {
                     password,
                 },
                 auth: null,
-            });
-
-            if (response?.data?.token && response?.data?.user) {
-                dispatch(setToken(response.data.token));
-                dispatch(setUser({
-                    id: response.data.user.id,
-                    email: response.data.user.email,
-                    name: response.data.user.name,
-                    phoneNumber: response.data.user.phoneNumber || response.data.user.phone,
-                    image: response.data.user.image,
-                    emailVerified: response.data.user.emailVerified,
-                    createdAt: response.data.user.createdAt,
-                    updatedAt: response.data.user.updatedAt,
-                }));
-                router.push('/(tabs)');
-            } else {
+            }),
+            success: (data) => {
+                if (data?.token && data?.user) {
+                    dispatch(setToken(data.token));
+                    dispatch(setUser({
+                        id: data.user.id,
+                        email: data.user.email,
+                        name: data.user.name,
+                        phoneNumber: data.user.phoneNumber || data.user.phone,
+                        image: data.user.image,
+                        emailVerified: data.user.emailVerified,
+                        createdAt: data.user.createdAt,
+                        updatedAt: data.user.updatedAt,
+                    }));
+                    router.push('/(tabs)');
+                } else {
+                    showToast({
+                        message: data?.message || 'Invalid credentials',
+                        type: 'error',
+                    });
+                }
+            },
+            failure: (error) => {
                 showToast({
-                    message: 'Invalid credentials',
+                    message: error?.response?.data?.message || error?.message || 'Login failed',
                     type: 'error',
                 });
-            }
-        } catch (error: any) {
-            showToast({
-                message: error?.message || 'Login failed',
-                type: 'error',
-            });
-        }
+            },
+            print: 'all',
+        });
+        return loginApiCall();
     }, [email, password, dispatch]);
 
     const handleLogin = useCallback(() => {
@@ -152,7 +168,6 @@ const Login = memo(() => {
         }
 
         try {
-            // Store login phone number for OTP verification
             await AsyncStorage.setItem('pending_otp_data', JSON.stringify(loginData));
 
             const response = await betterwayApiCall({

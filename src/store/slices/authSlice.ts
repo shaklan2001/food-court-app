@@ -31,6 +31,7 @@ interface AuthState {
     isLoading: boolean;
     isTokenValidating: boolean;
     error: string | null;
+    pendingPhoneNumber: string | null; // For OTP flow
 }
 
 const initialState: AuthState = {
@@ -40,6 +41,7 @@ const initialState: AuthState = {
     isLoading: false,
     isTokenValidating: false,
     error: null,
+    pendingPhoneNumber: null,
 };
 
 const authSlice = createSlice({
@@ -62,6 +64,12 @@ const authSlice = createSlice({
         setError: (state, action: PayloadAction<string | null>) => {
             state.error = action.payload;
         },
+        setPendingPhoneNumber: (state, action: PayloadAction<string | null>) => {
+            state.pendingPhoneNumber = action.payload;
+        },
+        clearPendingPhoneNumber: (state) => {
+            state.pendingPhoneNumber = null;
+        },
         logout: (state) => {
             state.user = null;
             state.token = null;
@@ -69,12 +77,13 @@ const authSlice = createSlice({
             state.error = null;
             state.isLoading = false;
             state.isTokenValidating = false;
-            AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']).catch(err => {
+            state.pendingPhoneNumber = null;
+            AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token', 'pending_signup_data', 'pending_otp_data']).catch(err => {
                 console.error('Error clearing AsyncStorage:', err);
             });
         },
     },
 });
 
-export const { setUser, setToken, setLoading, setError, logout } = authSlice.actions;
+export const { setUser, setToken, setLoading, setError, setPendingPhoneNumber, clearPendingPhoneNumber, logout } = authSlice.actions;
 export default authSlice.reducer;

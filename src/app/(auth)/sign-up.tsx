@@ -3,12 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@shopify/restyle';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, Stack } from 'expo-router';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
 import { Calendar, Checkbox, FormContainer } from '../../components/shared';
 import { Button, CountryCodeSelector, FileUpload, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall } from '../../network/useApiPort';
+import { setPendingPhoneNumber } from '../../store/slices/authSlice';
 import { Theme } from '../../theme/theme';
 import { showToast } from '../../utils';
 
@@ -17,6 +19,7 @@ const countryCode = '+91';
 
 const SignUp = memo(() => {
     const theme = useTheme<Theme>();
+    const dispatch = useDispatch();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
@@ -33,6 +36,18 @@ const SignUp = memo(() => {
     const [currentSemester, setCurrentSemester] = useState('');
     const [studentIdFile, setStudentIdFile] = useState<any>(null);
     const [studentIdFileName, setStudentIdFileName] = useState<string | null>(null);
+
+    // Clear old AsyncStorage data when component mounts
+    useEffect(() => {
+        const clearOldData = async () => {
+            try {
+                await AsyncStorage.multiRemove(['pending_signup_data', 'pending_otp_data']);
+            } catch (error) {
+                console.warn('Failed to clear old signup/otp data:', error);
+            }
+        };
+        clearOldData();
+    }, []);
 
 
     const formatDateForAPI = useCallback((dateString: string) => {
@@ -271,6 +286,9 @@ const SignUp = memo(() => {
         setIsLoading(true);
         
         try {
+            // Store phone number in Redux
+            dispatch(setPendingPhoneNumber(fullPhoneNumber));
+            // Store all signup data in AsyncStorage
             await AsyncStorage.setItem('pending_signup_data', JSON.stringify(signupData));
             sendOTP();
         } catch (error: any) {
@@ -280,7 +298,7 @@ const SignUp = memo(() => {
                 type: 'error',
             });
         }
-    }, [validateForm, signupData, sendOTP]);
+    }, [validateForm, signupData, sendOTP, dispatch, fullPhoneNumber]);
 
     const handleGoogleSignUp = useCallback(() => {
         console.log('Google sign up pressed');
