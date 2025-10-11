@@ -1,16 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from "@shopify/restyle";
 import * as Haptics from 'expo-haptics';
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, CustomTextInput, Text, View } from "../../components/ui";
-import { Theme } from "../../theme/theme";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
 import { ScreenHeader } from '../cart';
 
 const Feedback = () => {
-  const theme = useTheme<Theme>();
   const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState(0);
 
@@ -30,6 +28,7 @@ const Feedback = () => {
   }, [feedback, rating]);
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
     <View flex={1} backgroundColor="mainBackgroundLight">
         <ScreenHeader title="Feedback" moreAction={false} />
 
@@ -91,6 +90,7 @@ const Feedback = () => {
           />
         </View>
       </View>
+      </SafeAreaView>
   );
 };
 

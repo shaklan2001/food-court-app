@@ -3,7 +3,6 @@ import { apiClient } from "./index";
 
 interface BetterwayApiCall {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   url: keyof typeof API_ROUTES | string;
   body?: any;
   query?: Record<string, any>;

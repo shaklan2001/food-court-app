@@ -1,9 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { memo, useCallback, useState } from 'react';
-import { Dimensions, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, TouchableOpacity } from 'react-native';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { Dimensions, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
-import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { betterwayApiCall } from '../../network/useApiPort';
 import { setToken, setUser } from '../../store/slices/authSlice';
 import { showToast } from '../../utils';
 const { width, height } = Dimensions.get('window');
@@ -16,10 +17,34 @@ const Login = memo(() => {
     const [isPhoneLogin, setIsPhoneLogin] = useState(false);
     const [mobileNumber, setMobileNumber] = useState('');
 
-    const loginUser = () =>
-        useApiPort({
-            intent: "intent_login_user",
-            port: betterwayApiCall({
+    const isEmailValid = useMemo(() => {
+        return /\S+@\S+\.\S+/.test(email);
+    }, [email]);
+
+    const isEmailEmpty = useMemo(() => {
+        return !email.trim();
+    }, [email]);
+
+    const isPasswordEmpty = useMemo(() => {
+        return !password.trim();
+    }, [password]);
+
+    const isMobileNumberValid = useMemo(() => {
+        return mobileNumber.length >= 10;
+    }, [mobileNumber]);
+
+    const isMobileNumberEmpty = useMemo(() => {
+        return !mobileNumber.trim();
+    }, [mobileNumber]);
+
+    const loginData = useMemo(() => ({
+        phone: mobileNumber,
+        flow: 'login',
+    }), [mobileNumber]);
+
+    const loginUser = useCallback(async () => {
+        try {
+            const response = await betterwayApiCall({
                 method: "POST",
                 url: "SIGN_IN_EMAIL",
                 body: {
@@ -27,56 +52,51 @@ const Login = memo(() => {
                     password,
                 },
                 auth: null,
-            }),
-            success: (response) => {
-                setIsLoading(false);
-                
-                if (response?.token && response?.user) {
-                    dispatch(setToken(response.token));
-                    dispatch(setUser({
-                        id: response.user.id,
-                        email: response.user.email,
-                        name: response.user.name,
-                        phoneNumber: response.user.phoneNumber || response.user.phone,
-                        image: response.user.image,
-                        emailVerified: response.user.emailVerified,
-                        createdAt: response.user.createdAt,
-                        updatedAt: response.user.updatedAt,
-                    }));
-                    router.push('/(tabs)');
-                } else {
-                    showToast({
-                        message: 'Invalid credentials',
-                        type: 'error',
-                    });
-                }
-            },
-            failure: (error) => {
-                setIsLoading(false);
+            });
+
+            if (response?.data?.token && response?.data?.user) {
+                dispatch(setToken(response.data.token));
+                dispatch(setUser({
+                    id: response.data.user.id,
+                    email: response.data.user.email,
+                    name: response.data.user.name,
+                    phoneNumber: response.data.user.phoneNumber || response.data.user.phone,
+                    image: response.data.user.image,
+                    emailVerified: response.data.user.emailVerified,
+                    createdAt: response.data.user.createdAt,
+                    updatedAt: response.data.user.updatedAt,
+                }));
+                router.push('/(tabs)');
+            } else {
                 showToast({
-                    message: error?.message || 'Login failed',
+                    message: 'Invalid credentials',
                     type: 'error',
                 });
-            },
-            print: "error",
-        })();
+            }
+        } catch (error: any) {
+            showToast({
+                message: error?.message || 'Login failed',
+                type: 'error',
+            });
+        }
+    }, [email, password, dispatch]);
 
     const handleLogin = useCallback(() => {
-        if (!email.trim()) {
+        if (isEmailEmpty) {
             showToast({
                 message: 'Please enter your email',
                 type: 'error',
             });
             return;
         }
-        if (!password.trim()) {
+        if (isPasswordEmpty) {
             showToast({
                 message: 'Please enter your password',
                 type: 'error',
             });
             return;
         }
-        if (!/\S+@\S+\.\S+/.test(email)) {
+        if (!isEmailValid) {
             showToast({
                 message: 'Please enter a valid email address',
                 type: 'error',
@@ -85,64 +105,89 @@ const Login = memo(() => {
         }
         
         setIsLoading(true);
-        loginUser();
-    }, [email, password]);
+        loginUser().finally(() => setIsLoading(false));
+    }, [isEmailEmpty, isPasswordEmpty, isEmailValid, loginUser]);
 
-    const handleForgotPassword = () => {
+    const handleForgotPassword = useCallback(() => {
         console.log('Forgot password pressed');
-    };
+    }, []);
 
-    const handleGoogleLogin = () => {
+    const handleGoogleLogin = useCallback(() => {
         console.log('Google login pressed');
-    };
+    }, []);
 
-    const handleAppleLogin = () => {
+    const handleAppleLogin = useCallback(() => {
         console.log('Apple login pressed');
-    };
+    }, []);
 
-    const handleSignUp = () => {
+    const handleSignUp = useCallback(() => {
         router.push('/sign-up');
-    };
+    }, []);
 
-    const handlePhoneNumberLogin = () => {
+    const handlePhoneNumberLogin = useCallback(() => {
         setIsPhoneLogin(true);
-    };
+    }, []);
 
-    const handleEmailLogin = () => {
+    const handleEmailLogin = useCallback(() => {
         setIsPhoneLogin(false);
-    };
+    }, []);
 
-    const handleSendOTP = useCallback(() => {
-        if (!mobileNumber.trim()) {
+    const handleSendOTP = useCallback(async () => {
+        setIsLoading(true);
+        if (isMobileNumberEmpty) {
             showToast({
                 message: 'Please enter your mobile number',
                 type: 'error',
             });
+            setIsLoading(false);
             return;
         }
-        if (mobileNumber.length < 10) {
+        if (!isMobileNumberValid) {
             showToast({
                 message: 'Please enter a valid mobile number',
                 type: 'error',
             });
+            setIsLoading(false);
             return;
         }
-        
-        console.log('Sending OTP to:', mobileNumber);
-        showToast({
-            message: 'OTP sent successfully!',
-            type: 'success',
-        });
-        
-        setTimeout(() => {
-            router.push('/otp-verify');
-        }, 1000);
-    }, [mobileNumber]);
+
+        try {
+            // Store login phone number for OTP verification
+            await AsyncStorage.setItem('pending_otp_data', JSON.stringify(loginData));
+
+            const response = await betterwayApiCall({
+                method: "POST",
+                url: "SEND_OTP_TO_PHONE",
+                body: {
+                    phoneNumber: mobileNumber,
+                },
+                auth: null,
+            });
+
+            if (response?.data?.message === 'code sent' || response?.status === 200) {
+                setTimeout(() => {
+                    router.push('/otp-verify');
+                }, 100);
+            } else {
+                showToast({
+                    message: response?.data?.message || 'Failed to send OTP',
+                    type: 'error',
+                });
+            }
+        } catch (error: any) {
+            showToast({
+                message: error?.message || 'Failed to send OTP',
+                type: 'error',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [mobileNumber, isMobileNumberEmpty, isMobileNumberValid, loginData]);
 
     return (
         <ImageBackground
             source={require('../../../assets/images/primary_bg.webp')}
-            style={{ flex: 1, width, height }}
+            style={styles.background}
             resizeMode="cover"
         >
             <StatusBar barStyle='dark-content' backgroundColor="black" translucent />
@@ -154,27 +199,19 @@ const Login = memo(() => {
                 >
                     <Image
                         source={require('../../../assets/images/font-logo.png')}
-                        style={{
-                            height: 135,
-                            width: '90%',
-                            resizeMode: 'contain',
-                        }}
+                        style={styles.image}
                     />
                 </View>
 
                 <View
                     backgroundColor="mainBackgroundLight"
-                    style={{
-                        borderTopLeftRadius: 60,
-                    }}
+                    style={styles.container}
                     flex={1}
                 >
                     <View
                         padding="l"
                         paddingTop="xl"
-                        style={{
-                            marginBottom: -20,
-                        }}
+                        style={styles.header}
                     >
                         <Text
                             fontSize={24}
@@ -190,12 +227,8 @@ const Login = memo(() => {
                     </View>
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{
-                            paddingHorizontal: 24,
-                            paddingBottom: 40,
-                            flexGrow: 1,
-                        }}
-                        style={{ flex: 1 }}
+                        contentContainerStyle={styles.scrollContent}
+                        style={styles.scrollView}
                     >
                         {!isPhoneLogin ? (
                             <>
@@ -343,7 +376,7 @@ const Login = memo(() => {
                                 textAlign="center"
                                 fontFamily="Poppins-Regular"
                             >
-                                Don't have an account?{' '}
+                                Don&apos;t have an account?{' '}
                                 <Text
                                     fontSize={16}
                                     fontWeight="700"
@@ -364,5 +397,32 @@ const Login = memo(() => {
 });
 
 Login.displayName = 'Login';
+
+const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        width,
+        height,
+    },
+    image: {
+        height: 135,
+        width: '90%',
+        resizeMode: 'contain',
+    },
+    container: {
+        borderTopLeftRadius: 60,
+    },
+    header: {
+        marginBottom: -20,
+    },
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingBottom: 40,
+        flexGrow: 1,
+    },
+    scrollView: {
+        flex: 1,
+    },
+});
 
 export default Login;

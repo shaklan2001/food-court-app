@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Image,
@@ -23,6 +23,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const router = useRouter();
   const dispatch = useDispatch();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const hasCheckedAuth = useRef(false);
   const [dotAnimations] = useState([
     new Animated.Value(0.3),
     new Animated.Value(0.3),
@@ -55,6 +56,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   }, [dotAnimations, isCheckingAuth]);
 
   const checkAuthStatus = useCallback(async () => {
+    if (hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
+    
     try {
       const storedToken = await AsyncStorage.getItem("auth_token");
 
@@ -96,52 +100,75 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
             dispatch(setUser(userData));
 
             setTimeout(() => {
+              setIsCheckingAuth(false);
               router.replace("/(tabs)");
-              onFinish();
-            }, 2000);
+              setTimeout(() => {
+                onFinish();
+              }, 100);
+            }, 1500);
           } else {
+            // Clear invalid token
+            await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
             dispatch(logout());
             setTimeout(() => {
+              setIsCheckingAuth(false);
               router.replace("/(auth)");
-              onFinish();
-            }, 2000);
+              setTimeout(() => {
+                onFinish();
+              }, 100);
+            }, 1500);
           }
         } catch (apiError: any) {
+          console.error('Token validation failed:', apiError?.message);
+          // Clear invalid token
+          await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
           dispatch(logout());
           setTimeout(() => {
+            setIsCheckingAuth(false);
             router.replace("/(auth)");
-            onFinish();
-          }, 2000);
-          showToast({
-            message: apiError?.message || 'Token validation failed',
-            type: 'error',
-          });
+            setTimeout(() => {
+              onFinish();
+            }, 100);
+          }, 1500);
+          // Only show toast if it's not a network error or auth error
+          if (!apiError?.message?.includes('Authentication failed')) {
+            showToast({
+              message: 'Session expired. Please login again.',
+              type: 'error',
+            });
+          }
         }
       } else {
         setTimeout(() => {
+          setIsCheckingAuth(false);
           router.replace("/(auth)");
-          onFinish();
-        }, 2000);
+          setTimeout(() => {
+            onFinish();
+          }, 100);
+        }, 1500);
       }
     } catch (error: any) {
-      showToast({
-        message: error?.message || 'Auth check error',
-        type: 'error',
+      console.error('Auth check error:', error);
+      // Clear any stored tokens
+      await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']).catch((err) => {
+        console.error('Error clearing storage:', err);
       });
       dispatch(logout());
       setTimeout(() => {
+        setIsCheckingAuth(false);
         router.replace("/(auth)");
-        onFinish();
-      }, 2000);
-    } finally {
-      setIsCheckingAuth(false);
+        setTimeout(() => {
+          onFinish();
+        }, 100);
+      }, 1500);
     }
   }, [dispatch, router, onFinish]);
 
   useEffect(() => {
     checkAuthStatus();
     startDotAnimation();
-  }, [checkAuthStatus, startDotAnimation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -161,7 +188,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               />
             </View>
 
-            {isCheckingAuth && (
+            {/* {isCheckingAuth && (
               <View style={styles.loadingContainer}>
                 {dotAnimations.map((animation, index) => (
                   <Animated.View
@@ -175,7 +202,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                   />
                 ))}
               </View>
-            )}
+            )} */}
           </View>
         </SafeAreaView>
       </ImageBackground>
