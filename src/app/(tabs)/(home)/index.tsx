@@ -2,6 +2,7 @@ import FoodSection from '@/src/components/HomePage/FoodSection';
 import Header from '@/src/components/HomePage/Header';
 import UserReviewsSection from '@/src/components/HomePage/UserReviewsSection';
 import { Carousel, Text, View } from '@/src/components/ui';
+// import { getAllCuisines } from '@/src/data/mockCuisineData';
 import { betterwayApiCall, useApiPort } from '@/src/network/useApiPort';
 import { fetchCart } from '@/src/store/slices/cartSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@/src/store/store';
@@ -88,13 +89,13 @@ const Title = memo(({ user }: { user: any }) => {
 });
 
 const CuisineItem = memo(({ item }: { item: any }) => {
-    const handleCuisinePress = (route: string) => {
-        router.push(route);
+    const handleCuisinePress = (slug: string) => {
+        router.push(`/cuisine/${slug}`);
     };
 
     return (
         <Pressable
-            onPress={() => handleCuisinePress(item.route)}
+            onPress={() => handleCuisinePress(item.slug)}
             style={{ marginRight: 16 }}
         >
             <View
@@ -120,41 +121,42 @@ const CuisineItem = memo(({ item }: { item: any }) => {
 });
 
 const CuisineSection = memo(() => {
+    // Static cuisine data for now
     const cuisineData = [
         {
             id: '1',
             image: require('@/assets/images/Cuisins/cuisine 1.png'),
             title: 'Mini South',
             subtitle: 'Deliciously South Indian',
-            route: '/menu',
+            slug: 'mini-south',
         },
         {
             id: '2',
             image: require('@/assets/images/Cuisins/cuisine 2.png'),
-            title: 'Mo Ch',
-            subtitle: 'More Chini',
-            route: '/menu',
+            title: 'Mo China',
+            subtitle: 'More Chinese',
+            slug: 'mo-china',
         },
         {
             id: '3',
             image: require('@/assets/images/Cuisins/cuisine 3.png'),
             title: 'Italian Delight',
             subtitle: 'Authentic Italian flavors',
-            route: '/menu',
+            slug: 'italian-delight',
         },
         {
             id: '4',
             image: require('@/assets/images/Cuisins/cuisine 4.png'),
             title: 'Asian Fusion',
             subtitle: 'Modern Asian delights',
-            route: '/menu',
+            slug: 'asian-fusion',
         },
         {
             id: '5',
             image: require('@/assets/images/Cuisins/cuisine 5.png'),
             title: 'American Classics',
             subtitle: 'Traditional favorites',
-            route: '/menu',
+            slug: 'american-classics',
         },
     ];
 
@@ -284,7 +286,7 @@ const Home = () => {
                 setFavouriteIds(favIds);
             },
             failure: () => {
-                console.log('Failed to fetch favourites');
+                // console.log('Failed to fetch favourites');
             },
         })();
     }, [token]);
@@ -365,8 +367,8 @@ const Home = () => {
             if (menuItems && Array.isArray(menuItems)) {
                 setMenuData(menuItems);
             }
-        } catch (error) {
-            console.log('Error fetching menu:', error);
+        } catch {
+            // console.log('Error fetching menu:', error);
         } finally {
             setLoading(false);
             isLoadingRef.current = false;
