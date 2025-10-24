@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-export default function HomeLayout() {
+export default function OrderLaterLayout() {
     return (
         <>
             <Stack
@@ -9,7 +9,24 @@ export default function HomeLayout() {
                     headerShown: false,
                 })}
             >
-                <Stack.Screen name="index" />
+                <Stack.Screen 
+                    name="index" 
+                    options={{
+                        title: "Select Time",
+                    }}
+                />
+                <Stack.Screen 
+                    name="select-menu" 
+                    options={{
+                        title: "Select Menu",
+                    }}
+                />
+                <Stack.Screen 
+                    name="confirmation" 
+                    options={{
+                        title: "Confirmation",
+                    }}
+                />
             </Stack>
         </>
     );
