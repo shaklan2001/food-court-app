@@ -9,8 +9,7 @@ import { Dimensions, FlatList, ScrollView, StyleSheet, TextInput, TouchableOpaci
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
-    withSpring,
-    withTiming
+    withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../cart';
@@ -187,7 +186,6 @@ const CuisineSelector = memo(({ cuisines, selectedSlug, onSelect }: CuisineSelec
         setItemLayouts(prev => ({ ...prev, [slug]: { x, width } }));
     };
 
-    // Auto-center on initial load
     useEffect(() => {
         if (isInitialLoad && selectedSlug && itemLayouts[selectedSlug]) {
             setTimeout(() => {
@@ -206,16 +204,49 @@ const CuisineSelector = memo(({ cuisines, selectedSlug, onSelect }: CuisineSelec
 
     return (
         <View marginBottom="m" marginTop="l">
-            <View style={{ position: 'relative' }}>
+            <View style={{ position: 'relative', height: 100 }}>
+                {/* Fixed T-shaped pointer - stays in center, points UP */}
+                <View
+                    style={{
+                        position: 'absolute',
+                        left: SCREEN_WIDTH / 2,
+                        top: 0,
+                        alignItems: 'center',
+                        transform: [{ translateX: -7 }],
+                        zIndex: 10,
+                    }}
+                >
+                    {/* Horizontal line (top of T) */}
+                    <View
+                        style={{
+                            width: 14,
+                            height: 2,
+                            backgroundColor: theme.colors.textPrimary,
+                            marginBottom: -1,
+                        }}
+                    />
+                    {/* Vertical line (stem of T) */}
+                    <View
+                        style={{
+                            width: 2,
+                            height: 34,
+                            backgroundColor: theme.colors.textPrimary,
+                        }}
+                    />
+                </View>
+
                 <ScrollView
                     ref={scrollViewRef}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={{ 
                         paddingHorizontal: SCREEN_WIDTH / 2,
+                        alignItems: 'flex-end',
+                        paddingTop: 40,
                     }}
-                    decelerationRate="fast"
+                    decelerationRate={0.92}
                     snapToAlignment="center"
+                    snapToInterval={SCREEN_WIDTH}
                     onScroll={handleScroll}
                     onScrollBeginDrag={handleScrollBeginDrag}
                     onScrollEndDrag={handleScrollEndDrag}
@@ -232,20 +263,6 @@ const CuisineSelector = memo(({ cuisines, selectedSlug, onSelect }: CuisineSelec
                         />
                     ))}
                 </ScrollView>
-                
-                {/* Fixed T-shaped pointer - stays in center */}
-                <View
-                    style={{
-                        position: 'absolute',
-                        left: SCREEN_WIDTH / 2,
-                        bottom: 0,
-                        width: 2,
-                        height: 40,
-                        backgroundColor: theme.colors.textPrimary,
-                        transform: [{ translateX: -1 }],
-                        zIndex: 10,
-                    }}
-                />
             </View>
         </View>
     );
@@ -257,17 +274,21 @@ const CuisineChip = memo(({ item, isSelected, onPress, onLayout }: {
     onPress: () => void;
     onLayout: (event: { nativeEvent: { layout: { x: number; width: number } } }) => void;
 }) => {
-    const scale = useSharedValue(isSelected ? 1 : 0.95);
+    const scale = useSharedValue(isSelected ? 1 : 0.96);
+    const opacity = useSharedValue(isSelected ? 1 : 0.3);
 
     useEffect(() => {
-        scale.value = withSpring(isSelected ? 1 : 0.95, {
-            damping: 15,
-            stiffness: 150,
+        scale.value = withTiming(isSelected ? 1 : 0.96, {
+            duration: 300,
         });
-    }, [isSelected, scale]);
+        opacity.value = withTiming(isSelected ? 1 : 0.3, {
+            duration: 300,
+        });
+    }, [isSelected, scale, opacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],
+        opacity: opacity.value,
     }));
 
     return (
@@ -289,11 +310,16 @@ const CuisineChip = memo(({ item, isSelected, onPress, onLayout }: {
                 ]}
             >
                 <Text
-                    fontSize={isSelected ? 32 : 20}
-                    fontWeight={isSelected ? "600" : "400"}
-                    color={isSelected ? "textPrimary" : "textSecondary"}
-                    fontFamily={isSelected ? "Poppins-SemiBold" : "Poppins-Regular"}
-                    style={{ opacity: isSelected ? 1 : 0.5 }}
+                    fontSize={isSelected ? 32 : 28}
+                    fontWeight="600"
+                    color="textPrimary"
+                    fontFamily="Poppins-SemiBold"
+                    style={{ 
+                        textShadowColor: 'rgba(0, 0, 0, 0.15)',
+                        textShadowOffset: { width: 0, height: 2 },
+                        textShadowRadius: 4,
+                    }}
+                    lineHeight={isSelected ? 48 : 42}
                 >
                     {item.name}
                 </Text>
@@ -306,6 +332,7 @@ const CuisineDetail = () => {
     const [selectedCuisine, setSelectedCuisine] = useState<CuisineItem | null>(null);
     const [selectedSlug, setSelectedSlug] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [favoriteItems, setFavoriteItems] = useState<Set<string>>(new Set());
     const [allCuisines] = useState(getAllCuisines());
     const [allMenuItems] = useState(mockCuisineData.flatMap(cuisine => 
         cuisine.menuItems.map(item => ({
@@ -343,6 +370,18 @@ const CuisineDetail = () => {
         // Trigger immediate search if user presses search button
     }, []);
 
+    const handleToggleFavorite = useCallback((itemId: string) => {
+        setFavoriteItems(prev => {
+            const newFavorites = new Set(prev);
+            if (newFavorites.has(itemId)) {
+                newFavorites.delete(itemId);
+            } else {
+                newFavorites.add(itemId);
+            }
+            return newFavorites;
+        });
+    }, []);
+
     const filteredMenuItems = useMemo(() => {
         let items = selectedSlug 
             ? allMenuItems.filter(item => item.cuisineSlug === selectedSlug)
@@ -360,15 +399,15 @@ const CuisineDetail = () => {
         return items;
     }, [selectedSlug, allMenuItems, debouncedSearchQuery]);
 
-    const transformedMenuItems = filteredMenuItems.map(item => ({
+    const transformedMenuItems = useMemo(() => filteredMenuItems.map(item => ({
         id: item.id,
         title: item.name,
         price: `₹${item.price}`,
         pricePaise: item.price * 100,
         image: { uri: item.image },
         description: item.description,
-        isFavourite: false,
-    }));
+        isFavourite: favoriteItems.has(item.id),
+    })), [filteredMenuItems, favoriteItems]);
 
     useEffect(() => {
         if (allCuisines.length > 0 && !selectedSlug) {
@@ -390,10 +429,10 @@ const CuisineDetail = () => {
                 showHeartIcon={true}
                 isFavouriteItem={item.isFavourite}
                 isGridLayout={true}
-                onHeartPress={() => undefined}
+                onHeartPress={() => handleToggleFavorite(item.id)}
             />
         </View>
-    ), []);
+    ), [handleToggleFavorite]);
 
     const animatedContentStyle = useAnimatedStyle(() => ({
         opacity: fadeAnim.value,
@@ -436,7 +475,7 @@ const CuisineDetail = () => {
                     showsVerticalScrollIndicator={false}
                     columnWrapperStyle={{ justifyContent: 'flex-start' }}
                     contentContainerStyle={{ paddingBottom: 20 }}
-                    key={selectedSlug} // Force re-render on cuisine change
+                    key={selectedSlug}
                 />
             </Animated.View>
         </SafeAreaView>

@@ -2,7 +2,7 @@
 export const API_ROUTES = {
   CREATE_USER: "/api/onboarding/create-user",
   UPLOAD_STUDENT_ID: "/api/onboarding/upload-student-id",
-  SIGN_IN_EMAIL: "/api/auth/sign-in/email",
+  SIGN_IN_EMAIL: "/api/user/sign-in-email",
   SIGN_IN_PHONE: "/api/auth/sign-in/phone",
   VALIDATE_TOKEN: "/api/auth/validate-token",
   REFRESH_TOKEN: "/api/auth/refresh-token",

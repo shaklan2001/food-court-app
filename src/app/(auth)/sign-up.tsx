@@ -3,14 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@shopify/restyle';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, Stack } from 'expo-router';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { Calendar, Checkbox, FormContainer } from '../../components/shared';
 import { Button, CountryCodeSelector, FileUpload, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall } from '../../network/useApiPort';
-import { setPendingPhoneNumber } from '../../store/slices/authSlice';
+import { setToken, setUser } from '../../store/slices/authSlice';
 import { Theme } from '../../theme/theme';
 import { showToast } from '../../utils';
 
@@ -29,25 +29,13 @@ const SignUp = memo(() => {
     const [isStudentUser, setIsStudentUser] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
-    // Student-specific fields
     const [collegeName, setCollegeName] = useState('');
     const [courseName, setCourseName] = useState('');
     const [branch, setBranch] = useState('');
     const [currentSemester, setCurrentSemester] = useState('');
-    const [studentIdFile, setStudentIdFile] = useState<any>(null);
+    const [studentIdFile, setStudentIdFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
     const [studentIdFileName, setStudentIdFileName] = useState<string | null>(null);
 
-    // Clear old AsyncStorage data when component mounts
-    useEffect(() => {
-        const clearOldData = async () => {
-            try {
-                await AsyncStorage.multiRemove(['pending_signup_data', 'pending_otp_data']);
-            } catch (error) {
-                console.warn('Failed to clear old signup/otp data:', error);
-            }
-        };
-        clearOldData();
-    }, []);
 
 
     const formatDateForAPI = useCallback((dateString: string) => {
@@ -67,25 +55,6 @@ const SignUp = memo(() => {
     }, []);
 
     const fullPhoneNumber = useMemo(() => `${countryCode}${mobileNumber}`, [mobileNumber]);
-    
-    const signupData = useMemo(() => ({
-        phone: fullPhoneNumber,
-        name,
-        email,
-        dob: formatDateForAPI(dob),
-        password,
-        isStudent: isStudentUser,
-        collegeName,
-        courseName,
-        branch,
-        currentSemester,
-        studentIdFile: studentIdFile ? {
-            uri: studentIdFile.uri,
-            type: studentIdFile.mimeType,
-            name: studentIdFile.name,
-        } : null,
-        flow: 'signup',
-    }), [fullPhoneNumber, name, email, dob, password, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, formatDateForAPI]);
 
     const isNameEmpty = useMemo(() => !name.trim(), [name]);
     const isEmailEmpty = useMemo(() => !email.trim(), [email]);
@@ -131,10 +100,8 @@ const SignUp = memo(() => {
                 const file = result.assets[0];
                 setStudentIdFile(file);
                 setStudentIdFileName(file.name);
-                console.log('File selected:', file);
             }
-        } catch (error) {
-            console.error('Error picking document:', error);
+        } catch {
             Alert.alert('Error', 'Failed to pick document. Please try again.');
         }
     }, []);
@@ -245,39 +212,34 @@ const SignUp = memo(() => {
         return true;
     }, [isNameEmpty, isEmailEmpty, isEmailValid, isMobileNumberEmpty, isMobileNumberValid, isDobEmpty, isPasswordEmpty, isPasswordValid, isConfirmPasswordValid, isStudentUser, isCollegeNameEmpty, isCourseNameEmpty, isBranchEmpty, isCurrentSemesterEmpty, isStudentIdFileValid]);
 
-    const sendOTP = useCallback(async () => {
+    const uploadStudentId = useCallback(async (file: DocumentPicker.DocumentPickerAsset): Promise<string | null> => {
         try {
-            const response = await betterwayApiCall({
+            const formData = new FormData();
+            formData.append('file', {
+                uri: file.uri,
+                type: file.mimeType || 'image/jpeg',
+                name: file.name,
+            } as unknown as Blob);
+
+            const uploadResponse = await betterwayApiCall({
                 method: "POST",
-                url: "SEND_OTP_TO_PHONE",
-                body: {
-                    phoneNumber: mobileNumber,
-                },
+                url: "UPLOAD_STUDENT_ID",
+                body: formData,
                 auth: null,
             });
 
-            if (response?.data?.message === 'code sent' || response?.status === 200) {
-                setIsLoading(false);
-                showToast({
-                    message: response?.data?.message || 'OTP sent to your phone!',
-                    type: 'success',
-                });
-                router.push('/otp-verify');
-            } else {
-                setIsLoading(false);
-                showToast({
-                    message: response?.data?.message || 'Failed to send OTP',
-                    type: 'error',
-                });
+            if (uploadResponse?.data?.url) {
+                return uploadResponse.data.url;
             }
-        } catch (error: any) {
-            setIsLoading(false);
+            return null;
+        } catch {
             showToast({
-                message: error?.message || 'Failed to send OTP',
+                message: 'Failed to upload student ID',
                 type: 'error',
             });
+            return null;
         }
-    }, [mobileNumber]);
+    }, []);
 
     const handleSignUp = useCallback(async () => {
         if (!validateForm()) {
@@ -286,26 +248,127 @@ const SignUp = memo(() => {
         setIsLoading(true);
         
         try {
-            // Store phone number in Redux
-            dispatch(setPendingPhoneNumber(fullPhoneNumber));
-            // Store all signup data in AsyncStorage
-            await AsyncStorage.setItem('pending_signup_data', JSON.stringify(signupData));
-            sendOTP();
-        } catch (error: any) {
+            let studentIdImageUrl = null;
+
+            // Upload student ID if user is a student
+            if (isStudentUser && studentIdFile) {
+                studentIdImageUrl = await uploadStudentId(studentIdFile);
+                
+                if (!studentIdImageUrl) {
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            // Create user
+            const createUserBody: {
+                name: string;
+                email: string;
+                phone: string;
+                dob: string;
+                password: string;
+                isStudent: boolean;
+                collegeName?: string;
+                courseName?: string;
+                branch?: string;
+                currentSemester?: string;
+                studentIdImage?: string;
+            } = {
+                name,
+                email,
+                phone: fullPhoneNumber,
+                dob: formatDateForAPI(dob),
+                password,
+                isStudent: isStudentUser,
+            };
+
+            if (isStudentUser) {
+                createUserBody.collegeName = collegeName;
+                createUserBody.courseName = courseName;
+                createUserBody.branch = branch;
+                createUserBody.currentSemester = currentSemester;
+                if (studentIdImageUrl) {
+                    createUserBody.studentIdImage = studentIdImageUrl;
+                }
+            }
+
+            const createUserResponse = await betterwayApiCall({
+                method: "POST",
+                url: "CREATE_USER",
+                body: createUserBody,
+                auth: null,
+            });
+
+            if (createUserResponse?.data) {
+                const userData = createUserResponse.data;
+                const responseData: { token?: string } = createUserResponse as unknown as { token?: string };
+                const token = userData.token || responseData.token;
+                
+                // Store token
+                if (token) {
+                    await AsyncStorage.setItem('auth_token', token);
+                    dispatch(setToken(token));
+                }
+
+                // Store user data
+                dispatch(setUser({
+                    id: userData.id,
+                    email: userData.email,
+                    name: userData.name,
+                    phoneNumber: userData.phoneNumber || userData.phone || fullPhoneNumber,
+                    dob: userData.dob,
+                    isStudent: userData.isStudent,
+                    role: userData.role,
+                    image: userData.image,
+                    emailVerified: userData.emailVerified,
+                    createdAt: userData.createdAt,
+                    updatedAt: userData.updatedAt,
+                }));
+
+                setIsLoading(false);
+                
+                showToast({
+                    message: 'Account created successfully!',
+                    type: 'success',
+                });
+
+                // Navigate to home or appropriate screen
+                router.replace('/(tabs)/');
+            } else {
+                setIsLoading(false);
+                showToast({
+                    message: 'Failed to create account',
+                    type: 'error',
+                });
+            }
+        } catch (error) {
+            const errorMessage = (error as { response?: { data?: { error?: string; message?: string } }; message?: string })?.response?.data?.error 
+                || (error as { response?: { data?: { error?: string; message?: string } }; message?: string })?.response?.data?.message
+                || (error as { message?: string })?.message 
+                || 'Failed to create account';
+            
             setIsLoading(false);
             showToast({
-                message: error?.message || 'Failed to send OTP',
+                message: errorMessage,
                 type: 'error',
             });
         }
-    }, [validateForm, signupData, sendOTP, dispatch, fullPhoneNumber]);
+    }, [validateForm, name, email, fullPhoneNumber, dob, password, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, uploadStudentId, formatDateForAPI, dispatch]);
 
     const handleGoogleSignUp = useCallback(() => {
-        console.log('Google sign up pressed');
+        // TODO: Implement Google sign up
+        showToast({
+            message: 'Google sign up coming soon',
+            type: 'info',
+        });
     }, []);
 
     const handleAppleSignUp = useCallback(() => {
-        console.log('Apple sign up pressed');
+        // TODO: Implement Apple sign up
+        showToast({
+            message: 'Apple sign up coming soon',
+            type: 'info',
+        });
     }, []);
 
     const handleLogin = useCallback(() => {
@@ -365,7 +428,7 @@ const SignUp = memo(() => {
                                     </View>
                                 </View>
 
-                                <FormContainer>
+                        <FormContainer>
                         <FormField
                             label="Name"
                             required
@@ -521,6 +584,7 @@ const SignUp = memo(() => {
                                         required
                                         onPress={handleFileUpload}
                                         fileName={studentIdFileName || undefined}
+                                        uploadText="Upload your student I'd here"
                                     />
                                 </View>
                             </>

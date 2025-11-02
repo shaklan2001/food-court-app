@@ -12,6 +12,7 @@ interface FileUploadProps {
     onPress: () => void;
     fileName?: string;
     description?: string;
+    uploadText?: string;
     marginBottom?: 'xs' | 's' | 'm' | 'l' | 'xl' | 'xxl';
 }
 
@@ -21,6 +22,7 @@ const FileUpload = memo(({
     onPress,
     fileName,
     description = "(345x255 or larger recommended, upto 1MB each)",
+    uploadText = "Upload your file here",
     marginBottom = 'l',
 }: FileUploadProps) => {
     const theme = useTheme<Theme>();
@@ -92,7 +94,7 @@ const FileUpload = memo(({
                                 fontFamily="Poppins-Medium"
                                 marginBottom="xs"
                             >
-                                Upload your student I'd here
+                                {uploadText}
                             </Text>
                             <Text
                                 fontSize={12}

@@ -242,6 +242,8 @@ const Home = () => {
     const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
     const isLoadingRef = useRef(false);
 
+    console.log('usreeeeeee', user);
+
     const transformMenuData = useCallback((apiData: any[]) => {
         return apiData.map((item) => {
             // Handle image - use URL if available, otherwise fallback to local image
