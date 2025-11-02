@@ -22,6 +22,8 @@ interface FormFieldProps {
     fontFamily?: string;
     marginBottom?: keyof Theme['spacing'] | 'none';
     editable?: boolean;
+    multiline?: boolean;
+    numberOfLines?: number;
 }
 
 const FormField = memo(({
@@ -42,8 +44,12 @@ const FormField = memo(({
     fontFamily = 'Poppins-Regular',
     marginBottom = 'l' as keyof Theme['spacing'],
     editable = true,
+    multiline = false,
+    numberOfLines = 1,
     ...props
 }: FormFieldProps) => {
+    const adjustedHeight = multiline && numberOfLines > 1 ? height * numberOfLines : height;
+    
     return (
         <View marginBottom={marginBottom === 'none' ? undefined : marginBottom}>
             {label && (
@@ -64,7 +70,7 @@ const FormField = memo(({
                 secureTextEntry={secureTextEntry}
                 keyboardType={keyboardType}
                 autoCapitalize={autoCapitalize}
-                height={height}
+                height={adjustedHeight}
                 paddingRight={paddingRight}
                 backgroundColor={backgroundColor}
                 borderColor={borderColor}
@@ -72,6 +78,8 @@ const FormField = memo(({
                 fontSize={fontSize}
                 fontFamily={fontFamily}
                 editable={editable}
+                multiline={multiline}
+                numberOfLines={numberOfLines}
                 {...props}
             />
         </View>

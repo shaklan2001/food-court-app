@@ -81,12 +81,12 @@ const CustomTextInput = memo(({
                 style={{
                     backgroundColor: 'transparent',
                     paddingHorizontal: 16,
-                    paddingVertical: 10,
+                    paddingVertical: multiline ? 12 : 10,
                     fontSize,
                     fontFamily,
                     height,
                     paddingRight,
-                    textAlignVertical: 'center',
+                    textAlignVertical: multiline ? 'top' : 'center',
                     color: theme.colors.textPrimary,
                     includeFontPadding: false,
                 }}

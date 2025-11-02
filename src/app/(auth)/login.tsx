@@ -72,9 +72,10 @@ const Login = memo(() => {
                         id: data.user.id,
                         email: data.user.email,
                         name: data.user.name,
-                        phoneNumber: data.user.phoneNumber || data.user.phone,
+                        phoneNumber: data.phoneNumber || data.user.phoneNumber || data.user.phone,
                         image: data.user.image,
                         emailVerified: data.user.emailVerified,
+                        role: data.role || data.user.role,
                         createdAt: data.user.createdAt,
                         updatedAt: data.user.updatedAt,
                     }));

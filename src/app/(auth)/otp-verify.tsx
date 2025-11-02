@@ -33,9 +33,7 @@ const OTPVerify = memo(() => {
     const [timer, setTimer] = useState(30);
     const [isResendDisabled, setIsResendDisabled] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
-    const [signupData, setSignupData] = useState<any>(null);
-    const [loginData, setLoginData] = useState<any>(null);
-    const [currentFlow, setCurrentFlow] = useState<'signup' | 'login' | null>(null);
+    const [loginData, setLoginData] = useState<{ phone: string } | null>(null);
     const [resendAttempts, setResendAttempts] = useState(0);
     const [maxAttemptsReached, setMaxAttemptsReached] = useState(false);
     const inputRefs = useRef<TextInput[]>([]);
@@ -56,19 +54,10 @@ const OTPVerify = memo(() => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const signupData = await AsyncStorage.getItem('pending_signup_data');
-                if (signupData) {
-                    const parsedData = JSON.parse(signupData);
-                    setSignupData(parsedData);
-                    setCurrentFlow('signup');
-                    return;
-                }
-
                 const loginData = await AsyncStorage.getItem('pending_otp_data');
                 if (loginData) {
                     const parsedData = JSON.parse(loginData);
                     setLoginData(parsedData);
-                    setCurrentFlow('login');
                     return;
                 }
 
@@ -77,9 +66,10 @@ const OTPVerify = memo(() => {
                     type: 'error',
                 });
                 router.push('/login');
-            } catch (error: any) {
+            } catch (error) {
+                const errorMessage = (error as { message?: string })?.message || 'Session expired. Please try again.';
                 showToast({
-                    message: error?.message || 'Session expired. Please try again.',
+                    message: errorMessage,
                     type: 'error',
                 });
                 router.push('/login');
@@ -108,8 +98,8 @@ const OTPVerify = memo(() => {
                     const otpArray = clipboardContent.split('');
                     setOtp(otpArray);
                 }
-            } catch (error) {
-                console.log('Clipboard check failed:', error);
+            } catch {
+                
             }
         };
 
@@ -134,7 +124,7 @@ const OTPVerify = memo(() => {
         }
     };
 
-    const handleKeyPress = (e: any, index: number) => {
+    const handleKeyPress = (e: { nativeEvent: { key: string } }, index: number) => {
         if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
@@ -142,37 +132,6 @@ const OTPVerify = memo(() => {
 
     const handleBack = () => {
         router.back();
-    };
-
-    const uploadStudentId = async (studentIdFile: any) => {
-        try {
-            if (!studentIdFile) return null;
-
-            const formData = new FormData();
-            formData.append('file', {
-                uri: studentIdFile.uri,
-                type: studentIdFile.type || 'image/jpeg',
-                name: studentIdFile.name,
-            } as any);
-
-            const response = await betterwayApiCall({
-                method: "POST",
-                url: "UPLOAD_STUDENT_ID",
-                body: formData,
-                auth: null,
-            });
-
-            if (response?.data?.success && response?.data?.url) {
-                return response.data.url;
-            } else {
-                throw new Error('Failed to upload student ID');
-            }
-        } catch (error: any) {
-            showToast({
-                message: error?.message || 'Failed to upload student ID',
-                type: 'error',
-            });
-        }
     };
 
     const handleVerifyOTP = async () => {
@@ -184,10 +143,8 @@ const OTPVerify = memo(() => {
             });
             return;
         }
-
-        const currentData = currentFlow === 'signup' ? signupData : loginData;
         
-        if (!currentData) {
+        if (!loginData) {
             showToast({
                 message: 'Session expired. Please try again.',
                 type: 'error',
@@ -203,14 +160,13 @@ const OTPVerify = memo(() => {
                 method: "POST",
                 url: "VERIFY_OTP_TO_PHONE",
                 body: {
-                    phoneNumber: currentData.phone,
+                    phoneNumber: loginData.phone,
                     code: otpString,
                     disableSession: false,
                     updatePhoneNumber: false,
                 },
                 auth: null,
             });
-
 
             if (!verifyResponse?.data?.status) {
                 setIsLoading(false);
@@ -226,134 +182,65 @@ const OTPVerify = memo(() => {
                 type: 'success',
             });
 
-            if (currentFlow === 'signup') {
-                let studentIdImageUrl = null;
-                if (signupData.isStudent && signupData.studentIdFile) {
-                    studentIdImageUrl = await uploadStudentId(signupData.studentIdFile);
-                    
-                    if (!studentIdImageUrl) {
-                        throw new Error('Failed to upload student ID');
-                    }
-                }
+            // Login flow - OTP verified, user gets logged in automatically
+            if (verifyResponse?.data?.token && verifyResponse?.data?.user) {
+                const userData = verifyResponse.data.user;
+                const token = verifyResponse.data.token;
+                const role = verifyResponse.data.role || userData.role;
+                const phoneNumber = verifyResponse.data.phoneNumber || userData.phoneNumber || userData.phone;
 
-                const body: any = {
-                    name: signupData.name,
-                    email: signupData.email,
-                    phone: signupData.phone,
-                    dob: signupData.dob,
-                    password: signupData.password,
-                    isStudent: signupData.isStudent,
-                };
+                dispatch(setUser({
+                    id: userData.id,
+                    email: userData.email,
+                    name: userData.name,
+                    phoneNumber: phoneNumber,
+                    phoneNumberVerified: userData.phoneNumberVerified,
+                    emailVerified: userData.emailVerified,
+                    role: role,
+                    image: userData.image,
+                    createdAt: userData.createdAt,
+                    updatedAt: userData.updatedAt,
+                }));
 
-                if (signupData.isStudent) {
-                    body.collegeName = signupData.collegeName;
-                    body.course = signupData.courseName;
-                    body.branch = signupData.branch;
-                    body.currentSemester = parseInt(signupData.currentSemester);
-                    body.studentIdImage = studentIdImageUrl;
-                }
-
-                const createUserResponse = await betterwayApiCall({
-                    method: "POST",
-                    url: "CREATE_USER",
-                    body,
-                    auth: null,
+                dispatch(setToken(token));
+                
+                await AsyncStorage.removeItem('pending_otp_data');
+                
+                showToast({
+                    message: 'Login successful!',
+                    type: 'success',
                 });
-
-                if (createUserResponse?.data?.success && createUserResponse?.data?.user) {
-                    const userData = createUserResponse.data.user;
-                    const token = createUserResponse.data.token;
-
-                    dispatch(setUser({
-                        id: userData.id,
-                        email: userData.email,
-                        name: userData.name,
-                        phoneNumber: userData.phoneNumber || userData.phone,
-                        dob: userData.dob,
-                        isStudent: userData.isStudent,
-                        image: userData.image,
-                    }));
-
-                    if (token) {
-                        dispatch(setToken(token));
-                    }
-
-                    await AsyncStorage.removeItem('pending_signup_data');
-
-                    showToast({
-                        message: 'Account created successfully!',
-                        type: 'success',
-                    });
-
-                    setTimeout(() => {
-                        setIsLoading(false);
-                        router.push('/(tabs)');
-                    }, 1500);
-                } else {
+                
+                setTimeout(() => {
                     setIsLoading(false);
-                    showToast({
-                        message: createUserResponse?.data?.message || 'Failed to create account',
-                        type: 'error',
-                    });
-                }
+                    router.push('/(tabs)');
+                }, 1500);
             } else {
-                // Login flow - OTP verified, user gets logged in automatically
-                if (verifyResponse?.data?.token && verifyResponse?.data?.user) {
-                    const userData = verifyResponse.data.user;
-                    const token = verifyResponse.data.token;
-
-                    dispatch(setUser({
-                        id: userData.id,
-                        email: userData.email,
-                        name: userData.name,
-                        phoneNumber: userData.phoneNumber || userData.phone,
-                        phoneNumberVerified: userData.phoneNumberVerified,
-                        emailVerified: userData.emailVerified,
-                        image: userData.image,
-                        createdAt: userData.createdAt,
-                        updatedAt: userData.updatedAt,
-                    }));
-
-                    dispatch(setToken(token));
-                    
-                    await AsyncStorage.removeItem('pending_otp_data');
-                    
-                    showToast({
-                        message: 'Login successful!',
-                        type: 'success',
-                    });
-                    
-                    setTimeout(() => {
-                        setIsLoading(false);
-                        router.push('/(tabs)');
-                    }, 1500);
-                } else {
-                    // Fallback to login screen if no token/user data
-                    await AsyncStorage.removeItem('pending_otp_data');
-                    setIsLoading(false);
-                    
-                    showToast({
-                        message: 'Phone number verified! Please login with your email and password.',
-                        type: 'success',
-                    });
-                    
-                    setTimeout(() => {
-                        router.push('/login');
-                    }, 1500);
-                }
+                // Fallback to login screen if no token/user data
+                await AsyncStorage.removeItem('pending_otp_data');
+                setIsLoading(false);
+                
+                showToast({
+                    message: 'Phone number verified! Please login with your email and password.',
+                    type: 'success',
+                });
+                
+                setTimeout(() => {
+                    router.push('/login');
+                }, 1500);
             }
-        } catch (error: any) {
+        } catch (error) {
+            const errorMessage = (error as { message?: string })?.message || 'Failed to verify OTP';
             setIsLoading(false);
             showToast({
-                message: error?.message || 'Failed to verify OTP',
+                message: errorMessage,
                 type: 'error',
             });
         }
     };
 
     const handleResendOTP = async () => {
-        const currentData = currentFlow === 'signup' ? signupData : loginData;
-        if (isResendDisabled || !currentData || maxAttemptsReached) return;
+        if (isResendDisabled || !loginData || maxAttemptsReached) return;
         const newAttemptNumber = resendAttempts + 1;
         
         if (newAttemptNumber > 3) {
@@ -365,14 +252,12 @@ const OTPVerify = memo(() => {
             return;
         }
 
-        console.log('currentDataaaaa', currentData);
-
         try {
             const response = await betterwayApiCall({
                 method: "POST",
                 url: "SEND_OTP_TO_PHONE",
                 body: {
-                    phoneNumber: currentData.phone,
+                    phoneNumber: loginData.phone,
                 },
                 auth: null,
             });
@@ -397,9 +282,10 @@ const OTPVerify = memo(() => {
                     type: 'error',
                 });
             }
-        } catch (error: any) {
+        } catch (error) {
+            const errorMessage = (error as { message?: string })?.message || 'Failed to resend OTP';
             showToast({
-                message: error?.message || 'Failed to resend OTP',
+                message: errorMessage,
                 type: 'error',
             });
         }
