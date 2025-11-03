@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CouponBottomSheet from "../components/CouponBottomSheet";
 import { Card } from "../components/HomePage/Card";
+import OrderStatusLoadingModal from "../components/OrderStatusLoadingModal";
 import SuccessModal from "../components/SuccessModal";
 import { Text, View } from "../components/ui";
 import {
@@ -582,12 +583,15 @@ const Cart = () => {
     paymentSuccess,
     appliedCoupon,
     discountAmount,
+    orderStatus,
+    checkingOrderStatus,
   } = useAppSelector((state: RootState) => state.cart);
   const [selectedOption, setSelectedOption] = useState<"orderNow" | "takeaway">(
     "orderNow",
   );
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCouponBottomSheet, setShowCouponBottomSheet] = useState(false);
+  const [currentOrderStatus, setCurrentOrderStatus] = useState<string>("pending");
 
   const subtotal = cartTotal / 100;
   const walletCoins = 0;
@@ -608,6 +612,12 @@ const Cart = () => {
       setShowSuccessModal(true);
     }
   }, [paymentSuccess]);
+
+  useEffect(() => {
+    if (orderStatus) {
+      setCurrentOrderStatus(orderStatus);
+    }
+  }, [orderStatus]);
 
   const handleOrderNowPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -649,16 +659,18 @@ const Cart = () => {
     }
 
     if (cartItems.length === 0) {
+      await dispatch(fetchCart(token));
       return;
     }
 
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setCurrentOrderStatus("pending");
 
       const userDetails = {
         name: user?.name || "Customer",
         email: user?.email || "",
-        contact: user?.phone || "",
+        contact: user?.phoneNumber || "",
       };
 
       const orderType =
@@ -667,11 +679,18 @@ const Cart = () => {
         selectedOption === "orderNow"
           ? "Food Court Location"
           : "Takeaway Counter";
+      
+      const handleStatusUpdate = (status: string) => {
+        setCurrentOrderStatus(status);
+      };
+      
       await dispatch(
-        processPayment(userDetails, orderType, deliveryAddress, token),
+        processPayment(userDetails, orderType, deliveryAddress, token, handleStatusUpdate),
       );
     } catch (error: unknown) {
-      console.log("❌ Payment process failed:", error);
+      if (token) {
+        await dispatch(fetchCart(token));
+      }
     }
   }, [token, cartItems, user, selectedOption, dispatch]);
 
@@ -786,7 +805,6 @@ const Cart = () => {
                   )}
                 </View>
                 
-                {/* Checkout Button - Now inside ScrollView */}
                 <View
                   marginHorizontal={pageHorizantalPadding}
                   marginBottom="xl"
@@ -796,11 +814,11 @@ const Cart = () => {
                     style={[
                       styles.checkoutButton,
                       {
-                        opacity: paymentLoading || cartItems.length === 0 ? 0.6 : 1,
+                        opacity: (paymentLoading || checkingOrderStatus || cartItems.length === 0) ? 0.6 : 1,
                       },
                     ]}
                     onPress={handlePlaceOrder}
-                    disabled={paymentLoading || cartItems.length === 0}
+                    disabled={paymentLoading || checkingOrderStatus || cartItems.length === 0}
                   >
                     <View
                       flex={1}
@@ -827,21 +845,19 @@ const Cart = () => {
                       height="100%"
                       gap="m"
                     >
-                      <Text
-                        fontSize={18}
-                        fontWeight="600"
-                        color="textOnPrimary"
-                        fontFamily="Poppins-SemiBold"
-                      >
-                        {paymentLoading ? (
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : paymentSuccess ? (
-                          "Success!"
-                        ) : (
-                          "Place Order"
-                        )}
-                      </Text>
-                      {!paymentLoading && !paymentSuccess && (
+                      {paymentLoading && !checkingOrderStatus ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text
+                          fontSize={18}
+                          fontWeight="600"
+                          color="textOnPrimary"
+                          fontFamily="Poppins-SemiBold"
+                        >
+                          {paymentSuccess ? "Success!" : "Place Order"}
+                        </Text>
+                      )}
+                      {!paymentLoading && !checkingOrderStatus && !paymentSuccess && (
                         <Ionicons
                           style={{ marginTop: 4 }}
                           name="chevron-forward"
@@ -849,7 +865,7 @@ const Cart = () => {
                           color="#FFFFFF"
                         />
                       )}
-                      {paymentLoading && (
+                      {paymentLoading && !checkingOrderStatus && (
                         <Ionicons
                           style={{ marginTop: 4 }}
                           name="hourglass-outline"
@@ -871,6 +887,11 @@ const Cart = () => {
               </>
             )}
           </ScrollView>
+
+          <OrderStatusLoadingModal
+            visible={checkingOrderStatus}
+            status={currentOrderStatus}
+          />
 
           {showSuccessModal && (
             <SuccessModal

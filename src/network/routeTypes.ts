@@ -30,7 +30,11 @@ export type ApiType =
   "PASSWORD_RESET_OTP" |
   "RESET_PASSWORD" |
   "GET_WALLET_BALANCE" |
-  "GET_WALLET_TRANSACTIONS";
+  "GET_WALLET_TRANSACTIONS" |
+  "GET_DINEIN_SLOT_AVAILABILITY" |
+  "GET_ORDER_STATUS" |
+  "VERIFY_PAYMENT" |
+  "CREATE_ORDER";
   
 export type TransactionIntentType =
   "intent_create_user" |
@@ -64,4 +68,8 @@ export type TransactionIntentType =
   "intent_password_reset_otp" |
   "intent_reset_password" |
   "intent_get_wallet_balance" |
-  "intent_get_wallet_transactions";
+  "intent_get_wallet_transactions" |
+  "intent_get_dinein_slot_availability" |
+  "intent_get_order_status" |
+  "intent_verify_payment" |
+  "intent_create_order";

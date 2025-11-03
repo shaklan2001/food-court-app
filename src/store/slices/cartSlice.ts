@@ -25,6 +25,9 @@ interface CartState {
   paymentError: string | null;
   appliedCoupon: Coupon | null;
   discountAmount: number;
+  orderStatus: string | null;
+  orderId: number | null;
+  checkingOrderStatus: boolean;
 }
 
 const initialState: CartState = {
@@ -38,6 +41,9 @@ const initialState: CartState = {
   paymentError: null,
   appliedCoupon: null,
   discountAmount: 0,
+  orderStatus: null,
+  orderId: null,
+  checkingOrderStatus: false,
 };
 
 const cartSlice = createSlice({
@@ -114,6 +120,21 @@ const cartSlice = createSlice({
       state.paymentLoading = false;
       state.paymentSuccess = false;
       state.paymentError = null;
+      state.orderStatus = null;
+      state.orderId = null;
+      state.checkingOrderStatus = false;
+    },
+    
+    setOrderStatus: (state, action: PayloadAction<string | null>) => {
+      state.orderStatus = action.payload;
+    },
+    
+    setOrderId: (state, action: PayloadAction<number | null>) => {
+      state.orderId = action.payload;
+    },
+    
+    setCheckingOrderStatus: (state, action: PayloadAction<boolean>) => {
+      state.checkingOrderStatus = action.payload;
     },
     
     applyCoupon: (state, action: PayloadAction<Coupon>) => {
@@ -163,6 +184,9 @@ export const {
   resetPaymentState,
   applyCoupon,
   removeCoupon,
+  setOrderStatus,
+  setOrderId,
+  setCheckingOrderStatus,
 } = cartSlice.actions;
 
 export const fetchCart = (token: string) => async (dispatch: any) => {
@@ -312,6 +336,42 @@ export const removeCartItemAPI = (itemId: string, token: string) => async (dispa
   }
 };
 
+export const verifyPayment = (orderId: number, paymentData: { razorpay_order_id?: string; razorpay_payment_id: string; razorpay_signature?: string }, token: string) => async (_dispatch: any) => {
+  try {
+    const payload: any = {
+      orderId: orderId,
+      razorpay_payment_id: paymentData.razorpay_payment_id,
+    };
+
+    if (paymentData.razorpay_order_id && paymentData.razorpay_order_id.trim().length > 0) {
+      payload.razorpay_order_id = paymentData.razorpay_order_id;
+    }
+
+    if (paymentData.razorpay_signature && paymentData.razorpay_signature.trim().length > 0) {
+      payload.razorpay_signature = paymentData.razorpay_signature;
+    }
+
+    const response = await betterwayApiCall({
+      method: "POST",
+      url: "VERIFY_PAYMENT",
+      auth: token,
+      body: payload,
+    });
+
+    const responseData = response?.data || response;
+    
+    if (responseData?.success === true || responseData?.data?.success === true) {
+      return true;
+    }
+    
+    throw new Error(responseData?.message || responseData?.data?.message || 'Payment verification failed');
+    
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Payment verification failed. Please try again.';
+    throw new Error(errorMessage);
+  }
+};
+
 export const clearCartAPI = (token: string) => async (dispatch: any) => {
   dispatch(setLoading(true));
   
@@ -340,38 +400,125 @@ export const clearCartAPI = (token: string) => async (dispatch: any) => {
   }
 };
 
-export const pushBillingToPetPooja = (orderType: string, deliveryAddress: string, token: string) => async (_dispatch: any) => {
+export const pushBillingToPetPooja = (orderType: string, deliveryAddress: string, token: string) => async (dispatch: any) => {
   try {    
-    const apiCall = useApiPort({
-      intent: "intent_billing_push",
-      port: betterwayApiCall({
-        method: "POST",
-        url: "BILLING_PUSH",
-        auth: token,
-        body: {
-          orderType: orderType,
-          deliveryAddress: deliveryAddress,
-        },
-      }),
-      success: (_response: any) => {
-        // Billing pushed successfully
-      },
-      failure: (error: any) => {
-        throw new Error(error?.message || 'Failed to process billing. Please try again.');
+    const response = await betterwayApiCall({
+      method: "POST",
+      url: "BILLING_PUSH",
+      auth: token,
+      body: {
+        orderType: orderType,
+        deliveryAddress: deliveryAddress,
       },
     });
 
-    await apiCall();
-    return true; 
+    // Extract orderId from response
+    let orderId: number | null = null;
+    const responseData = response?.data || response;
+    
+    if (responseData?.data?.order?.id) {
+      orderId = responseData.data.order.id;
+      dispatch(setOrderId(orderId));
+    } else if (responseData?.order?.id) {
+      orderId = responseData.order.id;
+      dispatch(setOrderId(orderId));
+    }
+
+    if (!orderId) {
+      throw new Error('Failed to get order ID from billing push response.');
+    }
+
+    return orderId; 
     
   } catch (error: any) {
-    throw error;
+    const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to process billing. Please try again.';
+    throw new Error(errorMessage);
   }
 };
 
-export const processPayment = (userDetails: { name?: string; email?: string; contact?: string }, orderType: string, deliveryAddress: string, token: string) => async (dispatch: any, getState: any) => {
+export const getOrderStatus = (orderId: number, token: string) => async (dispatch: any) => {
   try {
-    dispatch(setPaymentLoading(true));
+    const response = await betterwayApiCall({
+      method: "POST",
+      url: "GET_ORDER_STATUS",
+      auth: token,
+      body: {
+        orderId: orderId,
+      },
+    });
+
+    let orderStatus: string | null = null;
+    const responseData = response?.data || response;
+    
+    if (responseData?.data?.data?.order?.status) {
+      orderStatus = responseData.data.data.order.status;
+      dispatch(setOrderStatus(orderStatus));
+    } else if (responseData?.data?.order?.status) {
+      orderStatus = responseData.data.order.status;
+      dispatch(setOrderStatus(orderStatus));
+    } else if (responseData?.order?.status) {
+      orderStatus = responseData.order.status;
+      dispatch(setOrderStatus(orderStatus));
+    }
+
+    return orderStatus;
+    
+  } catch (error: any) {
+    throw new Error(error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to get order status.');
+  }
+};
+
+export const pollOrderStatusUntilAccepted = (orderId: number, token: string, onStatusUpdate?: (status: string) => void) => async (dispatch: any) => {
+  dispatch(setCheckingOrderStatus(true));
+  
+  const pollInterval = 3000;
+  const maxAttempts = 60;
+  let attempts = 0;
+  
+  return new Promise((resolve, reject) => {
+    const poll = async () => {
+      try {
+        attempts++;
+        const status = await dispatch(getOrderStatus(orderId, token));
+        
+        if (onStatusUpdate && status) {
+          onStatusUpdate(status);
+        }
+        
+        const statusLower = status?.toLowerCase();
+        
+        if (statusLower === 'preparing') {
+          dispatch(setCheckingOrderStatus(false));
+          resolve(status);
+          return;
+        }
+        
+        if (statusLower === 'rejected' || statusLower === 'cancelled') {
+          dispatch(setCheckingOrderStatus(false));
+          reject(new Error(`Order was ${statusLower}`));
+          return;
+        }
+        
+        if (attempts >= maxAttempts) {
+          dispatch(setCheckingOrderStatus(false));
+          reject(new Error('Order status check timeout. Please try again.'));
+          return;
+        }
+        
+        setTimeout(poll, pollInterval);
+        
+      } catch (error: any) {
+        dispatch(setCheckingOrderStatus(false));
+        reject(error);
+      }
+    };
+    
+    poll();
+  });
+};
+
+export const processPayment = (userDetails: { name?: string; email?: string; contact?: string }, orderType: string, deliveryAddress: string, token: string, onStatusUpdate?: (status: string) => void) => async (dispatch: any, getState: any) => {
+  try {
     dispatch(setPaymentError(null));
     
     const state = getState();
@@ -381,16 +528,18 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
       throw new Error('Cart is empty. Cannot process payment.');
     }
     
-    // Step 1: First push billing to PetPooja
-    await dispatch(pushBillingToPetPooja(orderType, deliveryAddress, token));
+    const orderId = await dispatch(pushBillingToPetPooja(orderType, deliveryAddress, token));
     
-    // Step 2: Only if billing is successful, proceed with Razorpay payment
+    if (!orderId) {
+      throw new Error('Failed to get order ID from billing push response.');
+    }
     
-    // Convert total to paise for Razorpay
+    await dispatch(pollOrderStatusUntilAccepted(orderId, token, onStatusUpdate));
+    
+    dispatch(setPaymentLoading(true));
+    
     const amountInPaise = convertToPaise(cartTotal / 100);
     const receiptId = generateReceiptId();
-    
-    // Processing payment
     
     const paymentOptions = {
       amount: amountInPaise,
@@ -408,18 +557,56 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
       },
     };
     
-    const paymentResponse = await initiatePayment(paymentOptions);
+    await new Promise(resolve => {
+      setTimeout(() => {
+        resolve(null);
+      }, 1000);
+    });
     
-    // Payment successful
+    let paymentResponse;
+    try {
+      paymentResponse = await initiatePayment(paymentOptions);
+      
+      if (!paymentResponse?.razorpay_payment_id) {
+        throw new Error('Payment was not completed. Please try again.');
+      }
+      
+    } catch (paymentError: any) {
+      dispatch(setPaymentLoading(false));
+      dispatch(setCheckingOrderStatus(false));
+      
+      if (paymentError?.code === 'USER_CANCELLED' || paymentError?.message?.includes('cancelled')) {
+        throw new Error('Payment cancelled by user.');
+      }
+      
+      const errorMessage = paymentError?.message || paymentError?.description || 'Failed to open payment gateway. Please try again.';
+      throw new Error(errorMessage);
+    }
     
-    // Update payment state
-    dispatch(setPaymentSuccess(true));
     dispatch(setPaymentLoading(false));
     
-    // Clear the cart via API call
+    try {
+      const verifyResult = await dispatch(verifyPayment(orderId, {
+        razorpay_order_id: paymentResponse.razorpay_order_id,
+        razorpay_payment_id: paymentResponse.razorpay_payment_id || '',
+        razorpay_signature: paymentResponse.razorpay_signature,
+      }, token));
+      
+      if (!verifyResult) {
+        throw new Error('Payment verification failed. Please contact support.');
+      }
+    } catch (verifyError: any) {
+      dispatch(setPaymentLoading(false));
+      dispatch(setCheckingOrderStatus(false));
+      const errorMsg = verifyError?.message || 'Payment verification failed. Please contact support.';
+      dispatch(setPaymentError(errorMsg));
+      throw new Error(errorMsg);
+    }
+    
     await dispatch(clearCartAPI(token));
     
-    // Reset payment state after a short delay to show success
+    dispatch(setPaymentSuccess(true));
+    
     setTimeout(() => {
       dispatch(resetPaymentState());
     }, 2000);
@@ -429,6 +616,7 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
   } catch (error: any) {
     dispatch(setPaymentError(error.message || 'Payment failed. Please try again.'));
     dispatch(setPaymentLoading(false));
+    dispatch(setCheckingOrderStatus(false));
     
     throw error;
   }

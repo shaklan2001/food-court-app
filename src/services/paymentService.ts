@@ -1,4 +1,5 @@
 // @ts-ignore - react-native-razorpay doesn't have TypeScript declarations
+import { InteractionManager } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 
 const RAZORPAY_KEY_ID = 'rzp_test_vs76x2TTkva4t6';
@@ -53,16 +54,46 @@ export const initiatePayment = async (options: PaymentOptions): Promise<PaymentR
       },
     };
     
-    const response = await RazorpayCheckout.open(paymentOptions);
-    return response as PaymentResponse;
+    if (!RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
+      throw new Error('Razorpay SDK is not properly initialized. Please check your installation.');
+    }
+    
+    await new Promise(resolve => {
+      InteractionManager.runAfterInteractions(() => {
+        resolve(null);
+      });
+    });
+    
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const response = await new Promise<PaymentResponse>((resolve, reject) => {
+      try {
+        const result = RazorpayCheckout.open(paymentOptions);
+        
+        if (result && typeof result.then === 'function') {
+          result
+            .then((res: any) => {
+              resolve(res as PaymentResponse);
+            })
+            .catch((err: any) => {
+              reject(err);
+            });
+        } else {
+          resolve(result as PaymentResponse);
+        }
+      } catch (syncError: any) {
+        reject(syncError);
+      }
+    });
+    
+    return response;
     
   } catch (error: any) {
-    console.log('❌ Payment failed:', error);
     if (error.code === 'BAD_REQUEST_ERROR') {
       throw new Error('Invalid payment request. Please check your details.');
     } else if (error.code === 'NETWORK_ERROR') {
       throw new Error('Network error. Please check your internet connection.');
-    } else if (error.code === 'USER_CANCELLED') {
+    } else if (error.code === 'USER_CANCELLED' || error.code === 'PENDING') {
       throw new Error('Payment cancelled by user.');
     } else {
       throw new Error(error.description || error.message || 'Payment failed. Please try again.');
