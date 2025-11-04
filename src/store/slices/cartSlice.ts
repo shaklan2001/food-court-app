@@ -6,12 +6,26 @@ import { convertToPaise, generateReceiptId, initiatePayment } from '../../servic
 
 export interface CartItem {
   id: string;
+  dishId?: string;
   name: string;
   price: string;
   pricePaise: number;
   quantity: number;
   image?: ImageSourcePropType;
   description?: string;
+}
+
+export interface OrderBreakdown {
+  subtotal: { paise: number; rupees: number };
+  taxes: { paise: number; rupees: number };
+  cgst: { paise: number; rupees: number };
+  sgst: { paise: number; rupees: number };
+  platformFee: { paise: number; rupees: number };
+  platformFeeGst: { paise: number; rupees: number };
+  discount: { paise: number; rupees: number };
+  total: { paise: number; rupees: number };
+  pointsUsedPaise: number;
+  finalTotalPaise: number;
 }
 
 interface CartState {
@@ -28,6 +42,9 @@ interface CartState {
   orderStatus: string | null;
   orderId: number | null;
   checkingOrderStatus: boolean;
+  orderBreakdown: OrderBreakdown | null;
+  walletBalance: number;
+  useWalletPoints: boolean;
 }
 
 const initialState: CartState = {
@@ -44,6 +61,9 @@ const initialState: CartState = {
   orderStatus: null,
   orderId: null,
   checkingOrderStatus: false,
+  orderBreakdown: null,
+  walletBalance: 0,
+  useWalletPoints: false,
 };
 
 const cartSlice = createSlice({
@@ -123,6 +143,7 @@ const cartSlice = createSlice({
       state.orderStatus = null;
       state.orderId = null;
       state.checkingOrderStatus = false;
+      state.orderBreakdown = null;
     },
     
     setOrderStatus: (state, action: PayloadAction<string | null>) => {
@@ -137,15 +158,25 @@ const cartSlice = createSlice({
       state.checkingOrderStatus = action.payload;
     },
     
+    setOrderBreakdown: (state, action: PayloadAction<OrderBreakdown | null>) => {
+      state.orderBreakdown = action.payload;
+    },
+    
+    setWalletBalance: (state, action: PayloadAction<number>) => {
+      state.walletBalance = action.payload;
+    },
+    
+    setUseWalletPoints: (state, action: PayloadAction<boolean>) => {
+      state.useWalletPoints = action.payload;
+    },
+    
     applyCoupon: (state, action: PayloadAction<Coupon>) => {
       const coupon = action.payload;
       const subtotal = state.total;
       
-      // Check if coupon is applicable
       if (subtotal >= coupon.minOrderPaise) {
         state.appliedCoupon = coupon;
         
-        // Calculate discount amount
         const discountPercent = coupon.discountPercent / 100;
         const calculatedDiscount = subtotal * discountPercent;
         const maxDiscount = coupon.maxDiscountPaise;
@@ -187,9 +218,55 @@ export const {
   setOrderStatus,
   setOrderId,
   setCheckingOrderStatus,
+  setOrderBreakdown,
+  setWalletBalance,
+  setUseWalletPoints,
 } = cartSlice.actions;
 
-export const fetchCart = (token: string) => async (dispatch: any) => {
+export const fetchWalletBalance = (token: string) => async (dispatch: any) => {
+  try {
+    const response = await betterwayApiCall({
+      method: "GET",
+      url: "GET_WALLET_BALANCE",
+      auth: token,
+    });
+
+    const responseData = response?.data || response;
+    
+    if (responseData?.balance !== undefined) {
+      dispatch(setWalletBalance(responseData.balance));
+    } else if (responseData?.data?.balance !== undefined) {
+      dispatch(setWalletBalance(responseData.data.balance));
+    }
+  } catch {
+    // Silently fail - wallet balance is optional
+  }
+};
+
+export const fetchOrderTotal = (token: string, couponCode?: string, usePoints?: boolean, pointsToUse?: number) => async (dispatch: any) => {
+  try {
+    const response = await betterwayApiCall({
+      method: "POST",
+      url: "GET_ORDER_TOTAL",
+      auth: token,
+      body: {
+        couponCode: couponCode || '',
+        usePoints: usePoints || false,
+        pointsToUse: pointsToUse || 0,
+      },
+    });
+
+    const responseData = response?.data || response;
+    
+    if (responseData?.success && responseData?.data?.breakdown) {
+      dispatch(setOrderBreakdown(responseData.data.breakdown));
+    }
+  } catch {
+    // Silently fail - breakdown is optional
+  }
+};
+
+export const fetchCart = (token: string) => async (dispatch: any, getState: any) => {
   dispatch(setLoading(true));
   dispatch(setError(null));
   
@@ -203,20 +280,22 @@ export const fetchCart = (token: string) => async (dispatch: any) => {
     success: (response: any) => {
       if (response && response.cartItems && Array.isArray(response.cartItems)) {
         const cartItems: CartItem[] = response.cartItems.map((item: any) => {
-          // Handle image - use URL if available, otherwise fallback to local image
           const imageUrl = item.dish?.image || item.image;
           let imageSource;
           if (typeof imageUrl === 'string' && imageUrl.trim() !== '') {
             imageSource = { uri: imageUrl };
           } else if (typeof imageUrl === 'object') {
-            // Already an object (from addToCart), keep as is
             imageSource = imageUrl;
           } else {
             imageSource = require('@/assets/images/bowl.png');
           }
 
+          const cartItemId = item.id || item.dishId;
+          const dishIdValue = item.dishId || null;
+
           return {
-            id: item.dishId || item.id,
+            id: cartItemId,
+            dishId: dishIdValue,
             name: item.dish?.name || item.name || item.itemName,
             price: `₹${((item.dish?.pricePaise || item.pricePaise || item.price) / 100).toFixed(0)}`,
             pricePaise: item.dish?.pricePaise || item.pricePaise || item.price || 0,
@@ -228,6 +307,17 @@ export const fetchCart = (token: string) => async (dispatch: any) => {
         const totalPaise = response.totalPaise || cartItems.reduce((sum, item) => sum + (item.pricePaise * item.quantity), 0);
         dispatch(setCart(cartItems));
         dispatch(setTotal(totalPaise));
+        
+        // Fetch wallet balance and order breakdown after cart is loaded (only if cart has items)
+        if (cartItems.length > 0) {
+          const state = getState();
+          const couponCode = state.cart.appliedCoupon?.code || '';
+          const usePoints = state.cart.useWalletPoints;
+          const pointsToUse = usePoints ? state.cart.walletBalance : 0;
+          
+          dispatch(fetchWalletBalance(token));
+          dispatch(fetchOrderTotal(token, couponCode, usePoints, pointsToUse));
+        }
       }
       dispatch(setLoading(false));
     },
@@ -254,33 +344,47 @@ export const addToCart = (item: Omit<CartItem, 'quantity'>, token: string) => as
       url: "ADD_TO_CART",
       auth: token,
       body: {
-        itemId: item.id,
+        itemId: item.dishId || item.id,
         quantity: 1,
       },
     }),
     success: (_response: any) => {
-      // Item added successfully
     },
     failure: (_error: any) => {
-      // Handle error silently for add to cart
     },
   });
 
   try {
     await apiCall();
   } catch {
-    // Handle error silently
   }
 };
 
-export const updateCartItem = (dishId: string, quantity: number, token: string) => async (dispatch: any) => {
-  dispatch(updateQuantity({ id: dishId, quantity }));
+export const updateCartItem = (cartItemId: string, quantity: number, token: string) => async (dispatch: any, getState: any) => {
+  const state = getState();
+  const cartItem = state.cart.items.find((item: CartItem) => item.id === cartItemId);
   
-  if (quantity <= 0) {
-    // Call the remove API when quantity becomes 0
-    await dispatch(removeCartItemAPI(dishId, token));
+  if (!cartItem) {
     return;
   }
+  
+  const dishId = cartItem.dishId;
+  
+  if (!dishId) {
+    return;
+  }
+  
+  const isUUID = dishId.includes('-') && dishId.length >= 36;
+  if (isUUID) {
+    return;
+  }
+  
+  if (quantity <= 0) {
+    await dispatch(removeCartItemAPI(dishId, cartItemId, token));
+    return;
+  }
+  
+  dispatch(updateQuantity({ id: cartItemId, quantity }));
   
   const apiCall = useApiPort({
     intent: "intent_update_cart",
@@ -295,17 +399,41 @@ export const updateCartItem = (dishId: string, quantity: number, token: string) 
     }),
     success: (_response: any) => {
     },
-    failure: (_error: any) => {
+    failure: (error: any) => {
+      const isNotFound = error?.status === 404 || 
+                        error?.response?.status === 404 ||
+                        error?.response?.data?.error === 'Item not found in cart' ||
+                        error?.message?.includes('Item not found in cart');
+      
+      if (isNotFound) {
+        dispatch(removeItem(cartItemId));
+      }
     },
   });
 
   try {
     await apiCall();
-  } catch {
+  } catch (error: any) {
+    const isNotFound = error?.status === 404 || 
+                      error?.response?.status === 404 ||
+                      error?.response?.data?.error === 'Item not found in cart' ||
+                      error?.message?.includes('Item not found in cart');
+    
+    if (isNotFound) {
+      dispatch(removeItem(cartItemId));
+    }
   }
 };
 
-export const removeCartItemAPI = (itemId: string, token: string) => async (dispatch: any) => {
+export const removeCartItemAPI = (dishId: string, cartItemId: string, token: string) => async (dispatch: any) => {
+  const isUUID = dishId && dishId.includes('-') && dishId.length >= 36;
+  
+  if (!dishId || isUUID) {
+    dispatch(setError('Invalid item ID. Please refresh and try again.'));
+    dispatch(setLoading(false));
+    return;
+  }
+  
   dispatch(setLoading(true));
   
   const apiCall = useApiPort({
@@ -315,41 +443,91 @@ export const removeCartItemAPI = (itemId: string, token: string) => async (dispa
       url: "REMOVE_CART_ITEM",
       auth: token,
       body: {
-        itemId: itemId,
+        itemId: dishId,
       },
     }),
     success: (_response: any) => {
-      dispatch(removeItem(itemId));
+      dispatch(removeItem(cartItemId));
       dispatch(setLoading(false));
     },
     failure: (error: any) => {
-      dispatch(setError(error?.message || 'Failed to remove cart item'));
-      dispatch(setLoading(false));
+      const isNotFound = error?.status === 404 || 
+                        error?.response?.status === 404 ||
+                        error?.response?.data?.error === 'Item not found in cart' ||
+                        error?.message?.includes('Item not found in cart');
+      
+      if (isNotFound) {
+        dispatch(removeItem(cartItemId));
+        dispatch(setLoading(false));
+      } else {
+        dispatch(setError(error?.message || 'Failed to remove cart item'));
+        dispatch(setLoading(false));
+      }
     },
   });
 
   try {
     await apiCall();
-  } catch {
-    dispatch(setError('Failed to remove cart item'));
-    dispatch(setLoading(false));
+  } catch (error: any) {
+    const isNotFound = error?.status === 404 || 
+                      error?.response?.status === 404 ||
+                      error?.response?.data?.error === 'Item not found in cart' ||
+                      error?.message?.includes('Item not found in cart');
+    
+    if (isNotFound) {
+      dispatch(removeItem(cartItemId));
+      dispatch(setLoading(false));
+    } else {
+      dispatch(setError('Failed to remove cart item'));
+      dispatch(setLoading(false));
+    }
+  }
+};
+
+export const createRazorpayOrder = (orderId: number, token: string, usePoints?: boolean) => async (_dispatch: any) => {
+  try {
+    const response = await betterwayApiCall({
+      method: "POST",
+      url: "CREATE_ORDER",
+      auth: token,
+      body: {
+        orderId: orderId,
+        usePoints: usePoints || false,
+      },
+    });
+
+    const responseData = response?.data || response;
+    
+    let razorpayOrderId: string | null = null;
+    
+    if (responseData?.data?.data?.order?.razorpayOrderId) {
+      razorpayOrderId = responseData.data.data.order.razorpayOrderId;
+    } else if (responseData?.data?.order?.razorpayOrderId) {
+      razorpayOrderId = responseData.data.order.razorpayOrderId;
+    } else if (responseData?.order?.razorpayOrderId) {
+      razorpayOrderId = responseData.order.razorpayOrderId;
+    }
+    
+    if (!razorpayOrderId) {
+      throw new Error('Failed to get razorpay_order_id from create order response');
+    }
+    
+    return razorpayOrderId;
+    
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to create order. Please try again.';
+    throw new Error(errorMessage);
   }
 };
 
 export const verifyPayment = (orderId: number, paymentData: { razorpay_order_id?: string; razorpay_payment_id: string; razorpay_signature?: string }, token: string) => async (_dispatch: any) => {
   try {
-    const payload: any = {
+    const payload = {
       orderId: orderId,
-      razorpay_payment_id: paymentData.razorpay_payment_id,
+      razorpay_order_id: paymentData.razorpay_order_id || '',
+      razorpay_payment_id: paymentData.razorpay_payment_id || '',
+      razorpay_signature: paymentData.razorpay_signature || '',
     };
-
-    if (paymentData.razorpay_order_id && paymentData.razorpay_order_id.trim().length > 0) {
-      payload.razorpay_order_id = paymentData.razorpay_order_id;
-    }
-
-    if (paymentData.razorpay_signature && paymentData.razorpay_signature.trim().length > 0) {
-      payload.razorpay_signature = paymentData.razorpay_signature;
-    }
 
     const response = await betterwayApiCall({
       method: "POST",
@@ -412,7 +590,6 @@ export const pushBillingToPetPooja = (orderType: string, deliveryAddress: string
       },
     });
 
-    // Extract orderId from response
     let orderId: number | null = null;
     const responseData = response?.data || response;
     
@@ -453,12 +630,26 @@ export const getOrderStatus = (orderId: number, token: string) => async (dispatc
     if (responseData?.data?.data?.order?.status) {
       orderStatus = responseData.data.data.order.status;
       dispatch(setOrderStatus(orderStatus));
+      
+      if (responseData.data.data.breakdown) {
+        dispatch(setOrderBreakdown(responseData.data.data.breakdown));
+      }
     } else if (responseData?.data?.order?.status) {
       orderStatus = responseData.data.order.status;
       dispatch(setOrderStatus(orderStatus));
+      
+      if (responseData.data.breakdown) {
+        dispatch(setOrderBreakdown(responseData.data.breakdown));
+      }
     } else if (responseData?.order?.status) {
       orderStatus = responseData.order.status;
       dispatch(setOrderStatus(orderStatus));
+      
+      if (responseData.breakdown) {
+        dispatch(setOrderBreakdown(responseData.breakdown));
+      }
+    } else if (responseData?.data?.breakdown) {
+      dispatch(setOrderBreakdown(responseData.data.breakdown));
     }
 
     return orderStatus;
@@ -523,6 +714,7 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
     
     const state = getState();
     const cartTotal = state.cart.total;
+    const usePoints = state.cart.useWalletPoints;
     
     if (cartTotal <= 0) {
       throw new Error('Cart is empty. Cannot process payment.');
@@ -538,6 +730,15 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
     
     dispatch(setPaymentLoading(true));
     
+    let razorpayOrderId: string | null = null;
+    try {
+      razorpayOrderId = await dispatch(createRazorpayOrder(orderId, token, usePoints));
+    } catch (orderError: any) {
+      dispatch(setPaymentLoading(false));
+      dispatch(setCheckingOrderStatus(false));
+      throw new Error(orderError?.message || 'Failed to create Razorpay order. Please try again.');
+    }
+    
     const amountInPaise = convertToPaise(cartTotal / 100);
     const receiptId = generateReceiptId();
     
@@ -547,6 +748,7 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
       receipt: receiptId,
       name: 'Food Court App',
       description: `Payment for ${state.cart.itemCount} items`,
+      order_id: razorpayOrderId || undefined,
       prefill: {
         name: userDetails.name || 'Customer',
         email: userDetails.email || '',
@@ -586,10 +788,20 @@ export const processPayment = (userDetails: { name?: string; email?: string; con
     dispatch(setPaymentLoading(false));
     
     try {
+      const paymentData: any = paymentResponse || {};
+      
+      if (!paymentData.razorpay_payment_id && !paymentData.payment_id) {
+        throw new Error('Payment ID not found in Razorpay response');
+      }
+      
+      if (!paymentData.razorpay_signature && !paymentData.signature) {
+        throw new Error('Payment signature not found in Razorpay response');
+      }
+      
       const verifyResult = await dispatch(verifyPayment(orderId, {
-        razorpay_order_id: paymentResponse.razorpay_order_id,
-        razorpay_payment_id: paymentResponse.razorpay_payment_id || '',
-        razorpay_signature: paymentResponse.razorpay_signature,
+        razorpay_order_id: razorpayOrderId || '',
+        razorpay_payment_id: paymentData.razorpay_payment_id || paymentData.payment_id || '',
+        razorpay_signature: paymentData.razorpay_signature || paymentData.signature || '',
       }, token));
       
       if (!verifyResult) {

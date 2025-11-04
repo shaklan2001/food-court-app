@@ -10,6 +10,7 @@ export interface PaymentOptions {
   receipt: string;
   name: string;
   description: string;
+  order_id?: string;
   prefill?: {
     email?: string;
     contact?: string;
@@ -36,14 +37,13 @@ export interface PaymentError {
 
 export const initiatePayment = async (options: PaymentOptions): Promise<PaymentResponse> => {
   try {
-    const paymentOptions = {
+    const paymentOptions: any = {
       description: options.description,
       image: 'https://your-logo-url.com/logo.png',
       currency: options.currency || 'INR',
       key: RAZORPAY_KEY_ID,
       amount: options.amount,
       name: options.name,
-      order_id: '',
       prefill: {
         email: options.prefill?.email || '',
         contact: options.prefill?.contact || '',
@@ -53,6 +53,10 @@ export const initiatePayment = async (options: PaymentOptions): Promise<PaymentR
         color: options.theme?.color || '#A20538',
       },
     };
+
+    if (options.order_id) {
+      paymentOptions.order_id = options.order_id;
+    }
     
     if (!RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
       throw new Error('Razorpay SDK is not properly initialized. Please check your installation.');
@@ -102,17 +106,14 @@ export const initiatePayment = async (options: PaymentOptions): Promise<PaymentR
 };
 
 
-// Helper function to convert rupees to paise
 export const convertToPaise = (rupees: number): number => {
   return Math.round(rupees * 100);
 };
 
-// Helper function to format amount for display
 export const formatAmount = (paise: number): string => {
   return `₹${(paise / 100).toFixed(0)}`;
 };
 
-// Generate a unique receipt ID
 export const generateReceiptId = (): string => {
   return `receipt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
