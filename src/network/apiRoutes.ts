@@ -34,6 +34,7 @@ export const API_ROUTES = {
   GET_WALLET_TRANSACTIONS: "/api/wallet/transactions",
   GET_DINEIN_SLOT_AVAILABILITY: "/api/dinein/slot-availability",
   GET_ORDER_STATUS: "/api/billing/get-order-status",
+  GET_ORDER_TOTAL: "/api/billing/get-order-total",
   VERIFY_PAYMENT: "/api/billing/verify-payment",
   CREATE_ORDER: "/api/billing/create-order",
 };

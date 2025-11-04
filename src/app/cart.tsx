@@ -22,8 +22,11 @@ import { Text, View } from "../components/ui";
 import {
   applyCoupon,
   fetchCart,
+  fetchOrderTotal,
+  fetchWalletBalance,
   processPayment,
   removeCoupon,
+  setUseWalletPoints,
   updateCartItem,
 } from "../store/slices/cartSlice";
 import { RootState, useAppDispatch, useAppSelector } from "../store/store";
@@ -585,6 +588,9 @@ const Cart = () => {
     discountAmount,
     orderStatus,
     checkingOrderStatus,
+    orderBreakdown,
+    walletBalance,
+    useWalletPoints,
   } = useAppSelector((state: RootState) => state.cart);
   const [selectedOption, setSelectedOption] = useState<"orderNow" | "takeaway">(
     "orderNow",
@@ -593,11 +599,17 @@ const Cart = () => {
   const [showCouponBottomSheet, setShowCouponBottomSheet] = useState(false);
   const [currentOrderStatus, setCurrentOrderStatus] = useState<string>("pending");
 
-  const subtotal = cartTotal / 100;
-  const walletCoins = 0;
+  const subtotal = orderBreakdown?.subtotal?.rupees ?? cartTotal / 100;
+  const taxes = orderBreakdown?.taxes?.rupees ?? 0;
+  const cgst = orderBreakdown?.cgst?.rupees ?? 0;
+  const sgst = orderBreakdown?.sgst?.rupees ?? 0;
+  const platformFee = orderBreakdown?.platformFee?.rupees ?? 0;
+  const platformFeeGst = orderBreakdown?.platformFeeGst?.rupees ?? 0;
+  const discount = orderBreakdown?.discount?.rupees ?? discountAmount / 100;
+  const walletCoins = orderBreakdown?.pointsUsedPaise ? orderBreakdown.pointsUsedPaise / 100 : 0;
   const deliveryFee = 0;
   const couponDiscount = discountAmount / 100;
-  const total = subtotal - walletCoins + deliveryFee - couponDiscount;
+  const total = orderBreakdown?.finalTotalPaise ? orderBreakdown.finalTotalPaise / 100 : (subtotal + taxes + platformFee + platformFeeGst - discount - walletCoins);
 
   const inset = useSafeAreaInsets();
 
@@ -641,8 +653,11 @@ const Cart = () => {
   const handleCouponSelect = useCallback(
     (coupon: Coupon) => {
       dispatch(applyCoupon(coupon));
+      if (token) {
+        dispatch(fetchOrderTotal(token, coupon.code, useWalletPoints, useWalletPoints ? walletBalance : 0));
+      }
     },
-    [dispatch],
+    [dispatch, token, useWalletPoints, walletBalance],
   );
 
   const handleCloseCouponBottomSheet = useCallback(() => {
@@ -651,7 +666,32 @@ const Cart = () => {
 
   const handleRemoveCoupon = useCallback(() => {
     dispatch(removeCoupon());
-  }, [dispatch]);
+    if (token) {
+      dispatch(fetchOrderTotal(token, '', useWalletPoints, useWalletPoints ? walletBalance : 0));
+    }
+  }, [dispatch, token, useWalletPoints, walletBalance]);
+
+  const handleToggleWalletPoints = useCallback(() => {
+    const newUseWalletPoints = !useWalletPoints;
+    dispatch(setUseWalletPoints(newUseWalletPoints));
+    if (token) {
+      const couponCode = appliedCoupon?.code || '';
+      dispatch(fetchOrderTotal(token, couponCode, newUseWalletPoints, newUseWalletPoints ? walletBalance : 0));
+    }
+  }, [dispatch, token, useWalletPoints, walletBalance, appliedCoupon]);
+
+  useEffect(() => {
+    if (token && cartItems.length > 0) {
+      dispatch(fetchWalletBalance(token));
+    }
+  }, [token, cartItems.length, dispatch]);
+
+  useEffect(() => {
+    if (token && cartItems.length > 0) {
+      const couponCode = appliedCoupon?.code || '';
+      dispatch(fetchOrderTotal(token, couponCode, useWalletPoints, useWalletPoints ? walletBalance : 0));
+    }
+  }, [token, appliedCoupon, useWalletPoints, walletBalance, cartItems.length, dispatch]);
 
   const handlePlaceOrder = useCallback(async () => {
     if (!token) {
@@ -687,7 +727,7 @@ const Cart = () => {
       await dispatch(
         processPayment(userDetails, orderType, deliveryAddress, token, handleStatusUpdate),
       );
-    } catch (error: unknown) {
+    } catch {
       if (token) {
         await dispatch(fetchCart(token));
       }
@@ -764,6 +804,66 @@ const Cart = () => {
                   onRemoveCoupon={handleRemoveCoupon}
                   onViewAllCoupons={handleViewAllCoupons}
                 />
+                
+                {walletBalance > 0 && (
+                  <View
+                    marginHorizontal={pageHorizantalPadding}
+                    marginBottom="l"
+                    backgroundColor="mainBackground"
+                    borderRadius="m"
+                    padding="m"
+                    borderWidth={1}
+                    borderColor="border"
+                  >
+                    <View
+                      flexDirection="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      <View flexDirection="row" alignItems="center" flex={1}>
+                        <MaterialCommunityIcons name="wallet" size={24} color="#A20538" />
+                        <View marginLeft="s">
+                          <Text
+                            fontSize={14}
+                            fontWeight="500"
+                            color="textPrimary"
+                            fontFamily="Poppins-Medium"
+                          >
+                            Wallet Balance: ₹{walletBalance.toFixed(2)}
+                          </Text>
+                          <Text
+                            fontSize={12}
+                            fontWeight="400"
+                            color="textSecondary"
+                            fontFamily="Poppins-Regular"
+                          >
+                            Use wallet points to pay
+                          </Text>
+                        </View>
+                      </View>
+                      <Pressable onPress={handleToggleWalletPoints}>
+                        <View
+                          width={50}
+                          height={28}
+                          borderRadius="xxl"
+                          backgroundColor={useWalletPoints ? "primary" : undefined}
+                          style={useWalletPoints ? undefined : { backgroundColor: "#E5E5E5" }}
+                          justifyContent="center"
+                          alignItems={useWalletPoints ? "flex-end" : "flex-start"}
+                          paddingHorizontal="xs"
+                        >
+                          <View
+                            width={24}
+                            height={24}
+                            borderRadius="xxl"
+                            backgroundColor="mainBackground"
+                          />
+                        </View>
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+                
                 <View
                   marginHorizontal={pageHorizantalPadding}
                   marginBottom="l"
@@ -771,18 +871,48 @@ const Cart = () => {
                 >
                   <PriceRow
                     label="Subtotal:"
-                    value={`₹${subtotal.toFixed(0)}`}
+                    value={`₹${subtotal.toFixed(2)}`}
                   />
-                  {walletCoins > 0 && (
+                  {orderBreakdown && (
+                    <>
+                      <PriceRow
+                        label="Taxes:"
+                        value={`₹${taxes.toFixed(2)}`}
+                      />
+                      <PriceRow
+                        label="CGST:"
+                        value={`₹${cgst.toFixed(2)}`}
+                      />
+                      <PriceRow
+                        label="SGST:"
+                        value={`₹${sgst.toFixed(2)}`}
+                      />
+                      <PriceRow
+                        label="Platform Fee:"
+                        value={`₹${platformFee.toFixed(2)}`}
+                      />
+                      <PriceRow
+                        label="Platform Fee GST:"
+                        value={`₹${platformFeeGst.toFixed(2)}`}
+                      />
+                    </>
+                  )}
+                  {discount > 0 && (
                     <PriceRow
-                      label="Wallet Coins"
-                      value={`-₹${walletCoins}`}
+                      label="Discount:"
+                      value={`-₹${discount.toFixed(2)}`}
+                      isDiscount
                       showIcon
                     />
                   )}
-                  {deliveryFee > 0 && (
-                    <PriceRow label="Delivery Fee:" value={`₹${deliveryFee}`} />
+                  {walletCoins > 0 && (
+                    <PriceRow
+                      label="Wallet Coins"
+                      value={`-₹${walletCoins.toFixed(2)}`}
+                      showIcon
+                    />
                   )}
+                  <PriceRow label="Delivery Fee:" value={`₹${deliveryFee}`} />
                   {appliedCoupon && couponDiscount > 0 && (
                     <>
                       <PriceRow
@@ -803,6 +933,15 @@ const Cart = () => {
                       </Text>
                     </>
                   )}
+                  <View
+                    height={1}
+                    backgroundColor="border"
+                    marginVertical="s"
+                  />
+                  <PriceRow
+                    label="Total:"
+                    value={`₹${total.toFixed(2)}`}
+                  />
                 </View>
                 
                 <View
