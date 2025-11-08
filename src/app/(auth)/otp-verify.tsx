@@ -108,8 +108,6 @@ const OTPVerify = memo(() => {
         return () => clearInterval(clipboardInterval);
     }, []);
 
-
-
     const handleOtpChange = (value: string, index: number) => {
         const newOtp = [...otp];
         newOtp[index] = value;

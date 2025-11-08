@@ -1,14 +1,33 @@
 import { addToCart, updateCartItem } from "@/src/store/slices/cartSlice";
 import { RootState, useAppDispatch, useAppSelector } from "@/src/store/store";
+import { AddonGroup, VariationOption } from "@/src/types/customization";
 import { pageHorizantalPadding } from "@/src/utils/commomCompute";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
 import { memo, useCallback } from "react";
-import { FlatList, Image, Pressable } from "react-native";
+import { FlatList, Image, ImageSourcePropType, Pressable, TouchableOpacity } from "react-native";
 import { Text, View } from "../ui";
 import { FoodSectionSkeleton } from "./FoodSectionSkeleton";
 import QuantitySelector from "./QuantitySelector";
+
+export type FoodItemData = {
+    id: string;
+    title: string;
+    price: string;
+    pricePaise?: number;
+    basePricePaise?: number;
+    maxPricePaise?: number;
+    image: ImageSourcePropType;
+    description?: string;
+    addons?: AddonGroup[];
+    variations?: VariationOption[];
+    hasCustomizations?: boolean;
+    isFavourite?: boolean;
+    categoryId?: string;
+    payload?: Record<string, unknown>;
+    imageUri?: string;
+};
 
 export const FoodItem = memo(({ 
     item, 
@@ -17,31 +36,19 @@ export const FoodItem = memo(({
     isGridLayout = false,
     isFavouriteItem = false,
     onHeartPress,
+    onCustomize,
 }: { 
-    item: any; 
+    item: FoodItemData; 
     showHeartIcon?: boolean;
     marginBottom?: number;
     isGridLayout?: boolean;
     isFavouriteItem?: boolean;
     onHeartPress?: (itemId: string) => void;
+    onCustomize?: (item: FoodItemData) => void;
 }) => {
     const dispatch = useAppDispatch();
     const { token } = useAppSelector((state: RootState) => state.auth);
     const cartItems = useAppSelector((state: RootState) => state.cart.items);
-
-    const handleItemPress = () => {
-        router.push({
-            pathname: '/product-detail',
-            params: {
-                itemId: String(item.id),
-                name: item.title,
-                price: item.price,
-                pricePaise: String(item.pricePaise),
-                description: item.description || '',
-                image: typeof item.image === 'object' && item.image.uri ? item.image.uri : '',
-            },
-        });
-    };
 
     const currentQuantity = cartItems.find(cartItem => cartItem.id === item.id)?.quantity || 0;
 
@@ -50,6 +57,26 @@ export const FoodItem = memo(({
             onHeartPress(item.id);
         }
     }, [onHeartPress, item.id]);
+
+    const handleCustomizePress = useCallback(() => {
+        if (onCustomize) {
+            onCustomize(item);
+            return;
+        }
+
+        router.push({
+            pathname: '/product-detail',
+            params: {
+                itemId: String(item.id),
+                name: item.title,
+                price: item.price,
+                pricePaise: String(item.pricePaise ?? item.basePricePaise ?? 0),
+                description: item.description || '',
+                image: typeof item.image === 'object' && 'uri' in item.image ? item.image.uri ?? '' : '',
+                isCustomizable: item.hasCustomizations ? '1' : '0',
+            },
+        });
+    }, [item, onCustomize]);
 
     const handleQuantityChange = useCallback(async (itemId: string, quantity: number) => {
         if (!token) return;
@@ -71,7 +98,7 @@ export const FoodItem = memo(({
     }, [item, token, dispatch, currentQuantity]);
 
     return (
-        <Pressable onPress={handleItemPress}>
+        <View>
             <View
                 minHeight={220}
                 width={isGridLayout ? undefined : 200}
@@ -131,8 +158,8 @@ export const FoodItem = memo(({
                         {item.title}
                     </Text>
                 </View>
-                <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'}>
-                    <View width={'60%'} alignItems="flex-start" justifyContent="center" >
+                <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'} paddingBottom={'xs'}>
+                    <View width={'45%'} alignItems="flex-start" justifyContent="center" >
                         <Text
                             fontSize={14}
                             marginTop={'xs'}
@@ -142,16 +169,33 @@ export const FoodItem = memo(({
                             {item.price}
                         </Text>
                     </View>
-                    <View width={'40%'} alignItems="center" justifyContent="center">
-                        <QuantitySelector
-                            itemId={item.id}
-                            currentQuantity={currentQuantity}
-                            onQuantityChange={handleQuantityChange}
-                        />
+                    <View width={'55%'} alignItems="center" justifyContent="center" >
+                        {item.hasCustomizations ? (
+                            <TouchableOpacity onPress={handleCustomizePress}>
+                                <View
+                                    width={80}
+                                    backgroundColor="primary"
+                                    borderRadius="m"
+                                    justifyContent="center"
+                                    alignItems="center"
+                                    paddingVertical='xs'
+                                >
+                                    <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
+                                        Add
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ) : (
+                            <QuantitySelector
+                                itemId={item.id}
+                                currentQuantity={currentQuantity}
+                                onQuantityChange={handleQuantityChange}
+                            />
+                        )}
                     </View>
                 </View>
             </View>
-        </Pressable>
+        </View>
     );
 });
 
@@ -163,21 +207,24 @@ const FoodSection = memo(({
     loading = false, 
     showHeartIcon = false,
     onHeartPress,
+    onCustomize,
 }: { 
     title: string; 
-    data: any[]; 
+    data: FoodItemData[]; 
     loading?: boolean;
     showHeartIcon?: boolean;
     onHeartPress?: (itemId: string, isFavourite: boolean) => void;
+    onCustomize?: (item: FoodItemData) => void;
 }) => {
-    const renderFoodItem = useCallback(({ item }: { item: any }) => (
+    const renderFoodItem = useCallback(({ item }: { item: FoodItemData }) => (
         <FoodItem 
             item={item} 
             showHeartIcon={showHeartIcon}
             isFavouriteItem={item.isFavourite}
-            onHeartPress={onHeartPress ? () => onHeartPress(item.id, item.isFavourite) : undefined}
+            onHeartPress={onHeartPress ? () => onHeartPress(item.id, item.isFavourite ?? false) : undefined}
+            onCustomize={onCustomize}
         />
-    ), [showHeartIcon, onHeartPress]);
+    ), [showHeartIcon, onHeartPress, onCustomize]);
 
     return (
         <View marginTop="l" paddingHorizontal={pageHorizantalPadding}>

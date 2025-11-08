@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -13,11 +13,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "../components/HomePage/Card";
+import Checkbox from "../components/shared/Checkbox";
 import { Text, View } from "../components/ui";
 import { betterwayApiCall } from "../network/useApiPort";
 import { addToCart, updateCartItem } from "../store/slices/cartSlice";
 import { RootState, useAppDispatch, useAppSelector } from "../store/store";
 import theme from "../theme/theme";
+import { AddonItem, CustomizationPayload, VariationOption } from "../types/customization";
 import { showToast } from "../utils";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { BackIcon, HeartFilledIcon, HeartIcon } from "../utils/Svgs";
@@ -31,12 +33,17 @@ const ProductDetail = () => {
     pricePaise: string;
     description: string;
     image: string;
+    isCustomizable: string;
+    customization: string;
   }>();
   const { token } = useAppSelector((state: RootState) => state.auth);
   const cartItems = useAppSelector((state: RootState) => state.cart.items);
   const [quantity, setQuantity] = useState(1);
   const [isLiked, setIsLiked] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [customData, setCustomData] = useState<CustomizationPayload | null>(null);
+  const [selectedVariation, setSelectedVariation] = useState<VariationOption | null>(null);
+  const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonItem[]>>(new Map());
 
   useEffect(() => {
     const initializeProductDetails = async () => {
@@ -76,6 +83,76 @@ const ProductDetail = () => {
 
     initializeProductDetails();
   }, [params.itemId, token, cartItems]);
+
+  useEffect(() => {
+    if (params.isCustomizable === '1' && params.customization) {
+      try {
+        const decoded = decodeURIComponent(params.customization);
+        const parsed: CustomizationPayload = JSON.parse(decoded);
+        setCustomData(parsed);
+      } catch {
+        setCustomData(null);
+      }
+    }
+  }, [params.isCustomizable, params.customization]);
+
+  useEffect(() => {
+    if (customData && customData.variations.length > 0 && !selectedVariation) {
+      setSelectedVariation(customData.variations[0]);
+    }
+  }, [customData, selectedVariation]);
+
+  const toggleAddon = (groupId: string, item: AddonItem) => {
+    setSelectedAddons(prev => {
+      const newMap = new Map(prev);
+      const customization = customData;
+      if (!customization) {
+        return prev;
+      }
+      const group = customization.addons.find(g => g.id === groupId);
+      if (!group) {
+        return prev;
+      }
+      const groupSelected = newMap.get(groupId) || [];
+
+      if (group.maxSelection === 1) {
+        if (groupSelected.some(s => s.id === item.id)) {
+          newMap.delete(groupId);
+        } else {
+          newMap.set(groupId, [item]);
+        }
+      } else {
+        if (groupSelected.some(s => s.id === item.id)) {
+          const filtered = groupSelected.filter(s => s.id !== item.id);
+          if (filtered.length === 0) {
+            newMap.delete(groupId);
+          } else {
+            newMap.set(groupId, filtered);
+          }
+        } else {
+          if (groupSelected.length >= group.maxSelection && group.maxSelection > 0) {
+            return prev;
+          }
+          newMap.set(groupId, [...groupSelected, item]);
+        }
+      }
+      return newMap;
+    });
+  };
+
+  const totalPricePaise = useMemo(() => {
+    let base = parseInt(params.pricePaise) || 0;
+    if (customData) {
+      if (customData.variations.length > 0 && selectedVariation) {
+        base = selectedVariation.pricePaise;
+      } else {
+        base = customData.basePricePaise;
+      }
+      const addonsSum = Array.from(selectedAddons.values()).reduce((sum, items) => sum + items.reduce((s, i) => s + i.pricePaise, 0), 0);
+      base += addonsSum;
+    }
+    return base;
+  }, [customData, selectedVariation, selectedAddons, params.pricePaise]);
 
   const handleClosePress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -139,6 +216,26 @@ const ProductDetail = () => {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    if (customData) {
+      const errors = [];
+      if (customData.variations.length > 0 && !selectedVariation) {
+        errors.push('Please select a variation');
+      }
+      customData.addons.forEach((group) => {
+        const selectedCount = selectedAddons.get(group.id)?.length || 0;
+        if (selectedCount < group.minSelection) {
+          errors.push(`Please select at least ${group.minSelection} options for ${group.name}`);
+        }
+        if (group.maxSelection > 0 && selectedCount > group.maxSelection) {
+          errors.push(`Please select at most ${group.maxSelection} options for ${group.name}`);
+        }
+      });
+      if (errors.length > 0) {
+        showToast({ message: errors[0], type: 'error' });
+        return;
+      }
+    }
+
     const currentCartItem = cartItems.find(ci => String(ci.id) === String(params.itemId));
     const currentQuantity = currentCartItem?.quantity || 0;
 
@@ -150,16 +247,17 @@ const ProductDetail = () => {
         imageSource = require('@/assets/images/bowl.png');
       }
 
+      const item = {
+        id: params.itemId,
+        name: params.name,
+        price: `₹${(totalPricePaise / 100).toFixed(2)}`,
+        pricePaise: totalPricePaise,
+        image: imageSource,
+        description: params.description,
+      };
+
       if (currentQuantity === 0) {
-        await dispatch(addToCart({
-          id: params.itemId,
-          name: params.name,
-          price: params.price,
-          pricePaise: parseInt(params.pricePaise),
-          image: imageSource,
-          description: params.description,
-        }, token));
-        
+        await dispatch(addToCart(item, token));
         if (quantity > 1) {
           await dispatch(updateCartItem(params.itemId, quantity, token));
         }
@@ -179,7 +277,7 @@ const ProductDetail = () => {
         type: 'error',
       });
     }
-  }, [token, params, quantity, cartItems, dispatch]);
+  }, [token, params, quantity, cartItems, dispatch, customData, selectedVariation, selectedAddons, totalPricePaise]);
 
   if (loading) {
     return (
@@ -256,7 +354,7 @@ const ProductDetail = () => {
                       lineHeight={28}
                       marginTop="xs"
                     >
-                      {params.price}
+                      ₹{(totalPricePaise / 100).toFixed(2)}
                     </Text>
                   </View>
 
@@ -287,11 +385,61 @@ const ProductDetail = () => {
                   </Text>
                 </View>
 
+                {customData && (
+                  <View marginTop="l" marginBottom="l">
+                    {customData.variations.length > 0 && (
+                      <View marginBottom="l">
+                        <Text fontSize={18} fontWeight="600" color="textPrimary" fontFamily="Poppins-SemiBold" marginBottom="s">
+                          Choose {customData.variations[0].groupName || 'Variation'}
+                        </Text>
+                        {customData.variations.map((option) => (
+                          <TouchableOpacity 
+                            key={option.id} 
+                            onPress={() => setSelectedVariation(option)}
+                          >
+                            <View flexDirection="row" alignItems="center" marginBottom="s">
+                              <Checkbox 
+                                label="" 
+                                checked={selectedVariation?.id === option.id} 
+                                onToggle={() => setSelectedVariation(option)} 
+                              />
+                              <Text marginLeft="s" flex={1} fontSize={16}>{option.name}</Text>
+                              <Text fontSize={16}>₹{(option.pricePaise / 100).toFixed(2)}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                    {customData.addons.map((group) => (
+                      <View key={group.id} marginBottom="l">
+                        <Text fontSize={18} fontWeight="600" color="textPrimary" fontFamily="Poppins-SemiBold" marginBottom="s">
+                          {group.name} (Select {group.minSelection} - {group.maxSelection})
+                        </Text>
+                        {group.items.map((item) => (
+                          <Pressable 
+                            key={item.id} 
+                            onPress={() => toggleAddon(group.id, item)} 
+                          >
+                            <View flexDirection="row" alignItems="center" marginBottom="s" justifyContent="space-between">
+                              <Text marginLeft="s" flex={1} fontSize={16}>{item.name}</Text>
+                              <Checkbox 
+                                label="" 
+                                checked={selectedAddons.get(group.id)?.some((s) => s.id === item.id) || false} 
+                                onToggle={() => toggleAddon(group.id, item)} 
+                              />
+                              {item.pricePaise > 0 && <Text fontSize={16}>+ ₹{(item.pricePaise / 100).toFixed(2)}</Text>}
+                            </View>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                )}
+
                 <View
                   flexDirection="row"
                   alignItems="center"
                   justifyContent="center"
-                  marginTop="xl"
                   marginBottom="xl"
                   paddingVertical="s"
                 >

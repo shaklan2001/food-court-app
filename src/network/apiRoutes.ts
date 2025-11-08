@@ -37,6 +37,9 @@ export const API_ROUTES = {
   GET_ORDER_TOTAL: "/api/billing/get-order-total",
   VERIFY_PAYMENT: "/api/billing/verify-payment",
   CREATE_ORDER: "/api/billing/create-order",
+  MENU_RECOMMENDATIONS: "/api/home/recommendations",
+  MENU_BEST_SELLERS: "/api/home/best-sellers",
+  MENU_NEW_ARRIVALS: "/api/home/new-arrivals",
 };
 
     
