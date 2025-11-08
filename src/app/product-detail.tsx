@@ -24,6 +24,31 @@ import { showToast } from "../utils";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { BackIcon, HeartFilledIcon, HeartIcon } from "../utils/Svgs";
 
+const normalizeAddonIds = (ids?: string[] | null): string[] =>
+  ids ? [...ids].map((id) => String(id)).sort() : [];
+
+const extractSelectedAddonIds = (selectedAddons: Map<string, AddonItem[]>): string[] => {
+  const ids: string[] = [];
+  selectedAddons.forEach((items) => {
+    items.forEach((addon) => {
+      ids.push(String(addon.id));
+    });
+  });
+  return ids.sort();
+};
+
+const areAddonSetsEqual = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index] !== b[index]) {
+      return false;
+    }
+  }
+  return true;
+};
+
 const ProductDetail = () => {
   const dispatch = useAppDispatch();
   const params = useLocalSearchParams<{ 
@@ -45,6 +70,11 @@ const ProductDetail = () => {
   const [selectedVariation, setSelectedVariation] = useState<VariationOption | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Map<string, AddonItem[]>>(new Map());
 
+  const selectedAddonIds = useMemo(
+    () => extractSelectedAddonIds(selectedAddons),
+    [selectedAddons],
+  );
+
   useEffect(() => {
     const initializeProductDetails = async () => {
       if (!token || !params.itemId) {
@@ -55,7 +85,7 @@ const ProductDetail = () => {
       try {
         setLoading(true);
         
-        const cartItem = cartItems.find(ci => String(ci.id) === String(params.itemId));
+        const cartItem = cartItems.find((ci) => String(ci.dishId ?? ci.id) === String(params.itemId));
         if (cartItem) {
           setQuantity(cartItem.quantity);
         }
@@ -236,8 +266,21 @@ const ProductDetail = () => {
       }
     }
 
-    const currentCartItem = cartItems.find(ci => String(ci.id) === String(params.itemId));
-    const currentQuantity = currentCartItem?.quantity || 0;
+    const targetDishId = String(params.itemId);
+    const variationId = selectedVariation?.id ?? null;
+    const matchingCartItem = cartItems.find((ci) => {
+      const cartDishId = String(ci.dishId ?? ci.id);
+      if (cartDishId !== targetDishId) {
+        return false;
+      }
+      const cartVariationId = ci.selectedVariationId ?? null;
+      if (cartVariationId !== variationId) {
+        return false;
+      }
+      const cartAddonIds = normalizeAddonIds(ci.selectedAddonIds);
+      return areAddonSetsEqual(cartAddonIds, selectedAddonIds);
+    });
+    const currentQuantity = matchingCartItem?.quantity || 0;
 
     try {
       let imageSource: ImageSourcePropType;
@@ -249,20 +292,21 @@ const ProductDetail = () => {
 
       const item = {
         id: params.itemId,
+        dishId: params.itemId,
         name: params.name,
         price: `₹${(totalPricePaise / 100).toFixed(2)}`,
         pricePaise: totalPricePaise,
         image: imageSource,
         description: params.description,
+        selectedVariationId: variationId,
+        selectedAddonIds: selectedAddonIds.length > 0 ? selectedAddonIds : undefined,
+        quantity,
       };
 
-      if (currentQuantity === 0) {
+      if (currentQuantity === 0 || !matchingCartItem?.id) {
         await dispatch(addToCart(item, token));
-        if (quantity > 1) {
-          await dispatch(updateCartItem(params.itemId, quantity, token));
-        }
       } else {
-        await dispatch(updateCartItem(params.itemId, quantity, token));
+        await dispatch(updateCartItem(String(matchingCartItem.id), quantity, token));
       }
 
       showToast({
@@ -277,7 +321,7 @@ const ProductDetail = () => {
         type: 'error',
       });
     }
-  }, [token, params, quantity, cartItems, dispatch, customData, selectedVariation, selectedAddons, totalPricePaise]);
+  }, [token, params, quantity, cartItems, dispatch, customData, selectedVariation, selectedAddonIds, totalPricePaise]);
 
   if (loading) {
     return (

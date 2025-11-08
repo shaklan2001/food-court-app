@@ -279,6 +279,9 @@ const Menu = () => {
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const [customizerItem, setCustomizerItem] = useState<FoodItemData | null>(null);
     const [customizerVisible, setCustomizerVisible] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
 
     const transformMenuData = useCallback((apiData: RawMenuItem[]) => {
         return apiData.map((item) => {
@@ -439,39 +442,62 @@ const Menu = () => {
         }
     }, [token]);
 
-    const getMenu = useCallback(async () => {
-        setLoading(true);
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useApiPort({
-            intent: "intent_get_menu",
-            port: betterwayApiCall({
+    const fetchMenuPage = useCallback(async (nextPage: number, append: boolean) => {
+        if (!token) return;
+
+        if (append) {
+            setIsFetchingMore(true);
+        } else {
+            setLoading(true);
+            setHasMore(true);
+        }
+
+        try {
+            const response = await betterwayApiCall({
                 method: "POST",
                 url: "GET_MENU",
                 auth: token,
                 body: {
-                    page: 1,
-                    limit: 50,
+                    page: nextPage,
+                    limit: 20,
                 },
-            }),
-            success: (response: unknown) => {
-                if (Array.isArray(response)) {
-                    setMenuData(response as RawMenuItem[]);
-                } else if (response && typeof response === 'object' && Array.isArray((response as { data?: unknown }).data)) {
-                    setMenuData((response as { data: RawMenuItem[] }).data);
-                } else {
-                    setMenuData([]);
-                }
-                setLoading(false);
-            },
-            failure: (error: { message?: string }) => {
-                setMenuData([]);
-                setLoading(false);
-                showToast({
-                    message: error?.message || 'Failed to fetch menu',
-                    type: 'error',
+            });
+
+            let pageItems: RawMenuItem[] = [];
+            if (Array.isArray(response)) {
+                pageItems = response as RawMenuItem[];
+            } else if (response && typeof response === 'object' && Array.isArray((response as { data?: unknown }).data)) {
+                pageItems = (response as { data: RawMenuItem[] }).data;
+            }
+
+            setHasMore(pageItems.length === 20);
+            setPage(nextPage);
+
+            setMenuData(prev => {
+                const combined = append ? [...prev, ...pageItems] : pageItems;
+                const uniqueMap = new Map<string, RawMenuItem>();
+                combined.forEach(item => {
+                    if (item && item.id !== undefined && item.id !== null) {
+                        uniqueMap.set(String(item.id), item);
+                    }
                 });
-            },
-        })();
+                return Array.from(uniqueMap.values());
+            });
+        } catch (error) {
+            if (!append) {
+                setMenuData([]);
+            }
+            showToast({
+                message: (error as { message?: string })?.message || 'Failed to fetch menu',
+                type: 'error',
+            });
+        } finally {
+            if (append) {
+                setIsFetchingMore(false);
+            } else {
+                setLoading(false);
+            }
+        }
     }, [token]);
 
     const filteredData = useMemo(() => {
@@ -503,9 +529,9 @@ const Menu = () => {
     }, []);
 
     useEffect(() => {
-        getMenu();
+        fetchMenuPage(1, false);
         fetchFavourites();
-    }, [getMenu, fetchFavourites]);
+    }, [fetchMenuPage, fetchFavourites]);
 
     const transformedData = transformMenuData(filteredData);
     
@@ -632,8 +658,25 @@ const Menu = () => {
                             keyExtractor={(item) => item.id}
                             numColumns={2}
                             showsVerticalScrollIndicator={false}
+                            onEndReachedThreshold={0.5}
+                            onEndReached={() => {
+                                if (!loading && !isFetchingMore && hasMore && !debouncedSearchQuery.trim()) {
+                                    fetchMenuPage(page + 1, true);
+                                }
+                            }}
                             columnWrapperStyle={{ justifyContent: 'flex-start' }}
                             contentContainerStyle={{ paddingBottom: 20 }}
+                            ListFooterComponent={
+                                isFetchingMore ? (
+                                    <View padding="m" alignItems="center">
+                                        <Text fontSize={12} color="textSecondary">Loading more...</Text>
+                                    </View>
+                                ) : !loading && !debouncedSearchQuery.trim() && !hasMore && transformedData.length > 0 ? (
+                                    <View padding="m" alignItems="center">
+                                        <Text fontSize={12} color="textSecondary">No more items</Text>
+                                    </View>
+                                ) : null
+                            }
                         />
                     </View>
                 )}

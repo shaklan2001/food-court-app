@@ -1,29 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, {
-    BottomSheetBackdrop,
-    BottomSheetScrollView,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 import * as Haptics from "expo-haptics";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    ImageSourcePropType,
-    Pressable,
-    StyleSheet,
+  ActivityIndicator,
+  Image,
+  ImageSourcePropType,
+  Pressable,
+  StyleSheet,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { addToCart, updateCartItem } from "@/src/store/slices/cartSlice";
+import { addToCart } from "@/src/store/slices/cartSlice";
 import { RootState, useAppDispatch, useAppSelector } from "@/src/store/store";
 import theme from "@/src/theme/theme";
 import { showToast } from "@/src/utils";
 import { pageHorizantalPadding } from "@/src/utils/commomCompute";
 
 import {
-    AddonGroup,
-    AddonItem,
-    VariationOption,
+  AddonGroup,
+  AddonItem,
+  VariationOption,
 } from "@/src/types/customization";
 import Checkbox from "../shared/Checkbox";
 import { Text, View } from "../ui";
@@ -46,12 +46,14 @@ interface CustomizationBottomSheetProps {
   visible: boolean;
   item: CustomizableFoodItem;
   onClose: () => void;
+  bottomOffset?: number;
 }
 
 const CustomizationBottomSheetComponent = ({
   visible,
   item,
   onClose,
+  bottomOffset = TAB_BAR_HEIGHT,
 }: CustomizationBottomSheetProps) => {
   const { id, title, description = "", image, addons, variations } = item;
   const basePrice = item.basePricePaise ?? item.pricePaise ?? 0;
@@ -60,13 +62,12 @@ const CustomizationBottomSheetComponent = ({
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ["65%", "90%"], []);
   const bottomInset = useMemo(
-    () => insets.bottom + TAB_BAR_HEIGHT,
-    [insets.bottom],
+    () => insets.bottom + bottomOffset,
+    [insets.bottom, bottomOffset],
   );
 
   const dispatch = useAppDispatch();
   const { token } = useAppSelector((state: RootState) => state.auth);
-  const cartItems = useAppSelector((state: RootState) => state.cart.items);
 
   const [quantity, setQuantity] = useState(1);
   const [loadingImage, setLoadingImage] = useState(true);
@@ -76,22 +77,28 @@ const CustomizationBottomSheetComponent = ({
     Map<string, AddonItem[]>
   >(new Map());
 
-  const currentCartItem = cartItems.find(
-    (cartItem) => String(cartItem.id) === String(id),
-  );
+  const selectedAddonIds = useMemo(() => {
+    const ids: string[] = [];
+    selectedAddons.forEach((items) => {
+      items.forEach((addon) => {
+        ids.push(String(addon.id));
+      });
+    });
+    return ids.sort();
+  }, [selectedAddons]);
 
   useEffect(() => {
     if (visible) {
-      const initialQuantity = currentCartItem?.quantity ?? 1;
-      setQuantity(initialQuantity);
-      setSelectedVariation(variations.length > 0 ? variations[0] : null);
+      setQuantity(1);
+      const defaultVariation = variations[0] ?? null;
+      setSelectedVariation(defaultVariation ?? null);
       setSelectedAddons(new Map());
       setLoadingImage(true);
       bottomSheetRef.current?.expand();
     } else {
       bottomSheetRef.current?.close();
     }
-  }, [visible, currentCartItem, variations]);
+  }, [visible, variations]);
 
   const handleSheetChange = useCallback(
     (index: number) => {
@@ -234,31 +241,30 @@ const CustomizationBottomSheetComponent = ({
       return;
     }
 
-    const currentQuantity = currentCartItem?.quantity ?? 0;
-
     try {
       let imageSource: ImageSourcePropType = image;
       if (!imageSource) {
         imageSource = require("@/assets/images/bowl.png");
       }
 
+      const variationId = selectedVariation?.id ?? null;
+      const addonsIdsPayload =
+        selectedAddonIds.length > 0 ? selectedAddonIds : undefined;
+
       const itemPayload = {
         id,
+        dishId: id,
         name: title,
         price: `₹${(totalPricePaise / 100).toFixed(2)}`,
         pricePaise: totalPricePaise,
         image: imageSource,
         description,
+        selectedVariationId: variationId,
+        selectedAddonIds: addonsIdsPayload,
+        quantity,
       };
 
-      if (currentQuantity === 0) {
-        await dispatch(addToCart(itemPayload, token));
-        if (quantity > 1) {
-          await dispatch(updateCartItem(id, quantity, token));
-        }
-      } else {
-        await dispatch(updateCartItem(id, quantity, token));
-      }
+      await dispatch(addToCart(itemPayload, token));
 
       showToast({ message: "Added to cart successfully", type: "success" });
       onClose();
@@ -268,7 +274,6 @@ const CustomizationBottomSheetComponent = ({
   }, [
     token,
     validateSelections,
-    currentCartItem,
     dispatch,
     id,
     title,
@@ -277,6 +282,8 @@ const CustomizationBottomSheetComponent = ({
     description,
     quantity,
     onClose,
+    selectedVariation,
+    selectedAddonIds,
   ]);
 
   if (!visible) {
@@ -297,7 +304,7 @@ const CustomizationBottomSheetComponent = ({
       <BottomSheetScrollView
         contentContainerStyle={[
           styles.contentContainer,
-          { paddingBottom: Math.max(insets.bottom, 16) + FOOTER_HEIGHT },
+          { paddingBottom: Math.max(insets.bottom, 16) + FOOTER_HEIGHT + Math.max(bottomOffset - TAB_BAR_HEIGHT, 0) },
         ]}
       >
         <View paddingHorizontal={pageHorizantalPadding}>

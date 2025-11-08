@@ -263,8 +263,8 @@ export default function WalletScreen() {
       const response = await betterwayApiCall({
         method: 'GET',
         url: 'GET_WALLET_BALANCE',
-        body: null,
         auth: token,
+      query: token ? { timestamp: Date.now() } : undefined,
       });
 
       if (response?.data?.balance !== undefined) {
@@ -272,19 +272,23 @@ export default function WalletScreen() {
       } else if (response?.data?.data?.balance !== undefined) {
         setBalance(response.data.data.balance);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        (error as { message?: string })?.message ||
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Failed to fetch wallet balance';
       showToast({
-        message: error?.message || 'Failed to fetch wallet balance',
+        message,
         type: 'error',
       });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
       fetchWalletBalance();
-  }, []);
+  }, [fetchWalletBalance]);
 
   const transactions = [
     {

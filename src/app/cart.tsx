@@ -21,6 +21,7 @@ import SuccessModal from "../components/SuccessModal";
 import { Text, View } from "../components/ui";
 import {
   applyCoupon,
+  clearCartAPI,
   fetchCart,
   fetchOrderTotal,
   fetchWalletBalance,
@@ -30,7 +31,8 @@ import {
   updateCartItem,
 } from "../store/slices/cartSlice";
 import { RootState, useAppDispatch, useAppSelector } from "../store/store";
-import { BackIcon, MoreIcon } from "../utils/Svgs";
+import { showToast } from "../utils";
+import { BackIcon } from "../utils/Svgs";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { Coupon } from "./all-coupons";
 
@@ -537,10 +539,14 @@ DiscountCoupon.displayName = "DiscountCoupon";
 
 export const ScreenHeader = ({
   title,
-  moreAction = true,
+  onClearPress,
+  clearDisabled,
+  clearLoading,
 }: {
   title: string;
-  moreAction?: boolean;
+  onClearPress?: () => void;
+  clearDisabled?: boolean;
+  clearLoading?: boolean;
 }) => {
   return (
     <View
@@ -566,9 +572,15 @@ export const ScreenHeader = ({
         {title}
       </Text>
 
-      <Pressable style={{ opacity: moreAction ? 1 : 0 }}>
+      <Pressable
+        onPress={onClearPress}
+        disabled={clearLoading || clearDisabled}
+        style={{ opacity: clearLoading || clearDisabled ? 0.5 : 1 }}
+      >
         <Card>
-          <MoreIcon />
+          <Text fontSize={12} color="primary" fontFamily="Poppins-SemiBold">
+            {clearLoading ? 'Clearing...' : 'Clear'}
+          </Text>
         </Card>
       </Pressable>
     </View>
@@ -598,6 +610,7 @@ const Cart = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showCouponBottomSheet, setShowCouponBottomSheet] = useState(false);
   const [currentOrderStatus, setCurrentOrderStatus] = useState<string>("pending");
+  const [clearLoading, setClearLoading] = useState(false);
 
   const subtotal = orderBreakdown?.subtotal?.rupees ?? cartTotal / 100;
   const taxes = orderBreakdown?.taxes?.rupees ?? 0;
@@ -734,12 +747,42 @@ const Cart = () => {
     }
   }, [token, cartItems, user, selectedOption, dispatch]);
 
+  const handleClearCart = useCallback(async () => {
+    if (!token) {
+      showToast({ message: "Please login to clear cart", type: "info" });
+      return;
+    }
+    if (cartItems.length === 0) {
+      showToast({ message: "Cart is already empty", type: "info" });
+      return;
+    }
+    try {
+      setClearLoading(true);
+      await dispatch(clearCartAPI(token));
+      showToast({ message: "Cart cleared", type: "success" });
+    } catch (error) {
+      showToast({
+        message:
+          (error as { message?: string })?.message ||
+          "Failed to clear cart",
+        type: "error",
+      });
+    } finally {
+      setClearLoading(false);
+    }
+  }, [token, cartItems.length, dispatch]);
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ flex: 1, backgroundColor: '#F8F8F8', paddingTop: inset.top, paddingBottom: Platform.OS === 'ios' ? 0 : inset.bottom }}>
         <View flex={1} backgroundColor="mainBackgroundLight">
-          <ScreenHeader title="Cart" />
+          <ScreenHeader
+            title="Cart"
+            onClearPress={cartItems.length > 0 ? handleClearCart : undefined}
+            clearDisabled={!token || cartItems.length === 0}
+            clearLoading={clearLoading}
+          />
           <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
             {cartItems.length > 0 && (
               <View paddingHorizontal={"l"}>

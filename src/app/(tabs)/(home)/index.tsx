@@ -1,3 +1,4 @@
+import CustomizationBottomSheet from '@/src/components/HomePage/CustomizationBottomSheet';
 import FoodSection, { type FoodItemData } from '@/src/components/HomePage/FoodSection';
 import Header from '@/src/components/HomePage/Header';
 import UserReviewsSection from '@/src/components/HomePage/UserReviewsSection';
@@ -5,6 +6,7 @@ import { Carousel, Text, View } from '@/src/components/ui';
 import { betterwayApiCall, useApiPort } from '@/src/network/useApiPort';
 import type { User } from '@/src/store/slices/authSlice';
 import { fetchCart } from '@/src/store/slices/cartSlice';
+import { setCustomizationVisible } from '@/src/store/slices/uiSlice';
 import { RootState, useAppDispatch, useAppSelector } from '@/src/store/store';
 import type { AddonGroup, AddonItem, VariationOption } from '@/src/types/customization';
 import { showToast } from '@/src/utils';
@@ -445,6 +447,8 @@ const Home = () => {
     const [recommendationIds, setRecommendationIds] = useState<string[]>([]);
     const [bestSellerIds, setBestSellerIds] = useState<string[]>([]);
     const [newArrivalIds, setNewArrivalIds] = useState<string[]>([]);
+    const [customizerItem, setCustomizerItem] = useState<FoodItemData | null>(null);
+    const [customizerVisible, setCustomizerVisible] = useState(false);
     const isLoadingRef = useRef(false);
 
     const transformMenuItem = useCallback((rawItem?: RawMenuItem): FoodItemData | null => {
@@ -539,7 +543,7 @@ const Home = () => {
                 items.push(transformed);
             }
         });
-        return items;
+    return items;
     }, [menuItemsById, transformMenuItem]);
 
     const recommendationsData = useMemo(
@@ -556,6 +560,17 @@ const Home = () => {
         () => buildSectionItems(newArrivalIds),
         [buildSectionItems, newArrivalIds],
     );
+    const handleCustomizerClose = useCallback(() => {
+        setCustomizerVisible(false);
+        setCustomizerItem(null);
+        dispatch(setCustomizationVisible(false));
+    }, [dispatch]);
+
+    const handleCustomizeItem = useCallback((item: FoodItemData) => {
+        setCustomizerItem(item);
+        setCustomizerVisible(true);
+        dispatch(setCustomizationVisible(true));
+    }, [dispatch]);
 
     const fetchFavourites = useCallback(() => {
         if (!token) {
@@ -772,13 +787,20 @@ const Home = () => {
             setBestSellerIds([]);
             setNewArrivalIds([]);
             setLoading(false);
+            handleCustomizerClose();
             return;
         }
 
         loadHomeContent();
         fetchFavourites();
         dispatch(fetchCart(token));
-    }, [token, loadHomeContent, fetchFavourites, dispatch]);
+    }, [token, loadHomeContent, fetchFavourites, dispatch, handleCustomizerClose]);
+
+    useEffect(() => {
+        return () => {
+            dispatch(setCustomizationVisible(false));
+        };
+    }, [dispatch]);
 
     return (
         <SafeAreaView style={{ paddingTop: 10 }}>
@@ -788,11 +810,49 @@ const Home = () => {
                 <SearchBar />
                 <CuisineCarousel />
                 <CuisineSection />
-                <FoodSection title="Recommendations" data={recommendationsData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
-                <FoodSection title="Best Sellers" data={bestSellersData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
-                <FoodSection title="New Arrivals" data={newArrivalsData} loading={loading} showHeartIcon={true} onHeartPress={handleHeartPress} />
+                <FoodSection
+                    title="Recommendations"
+                    data={recommendationsData}
+                    loading={loading}
+                    showHeartIcon={true}
+                    onHeartPress={handleHeartPress}
+                    onCustomize={handleCustomizeItem}
+                />
+                <FoodSection
+                    title="Best Sellers"
+                    data={bestSellersData}
+                    loading={loading}
+                    showHeartIcon={true}
+                    onHeartPress={handleHeartPress}
+                    onCustomize={handleCustomizeItem}
+                />
+                <FoodSection
+                    title="New Arrivals"
+                    data={newArrivalsData}
+                    loading={loading}
+                    showHeartIcon={true}
+                    onHeartPress={handleHeartPress}
+                    onCustomize={handleCustomizeItem}
+                />
                 <UserReviewsSection />
             </ScrollView>
+            {customizerItem && (
+                <CustomizationBottomSheet
+                    visible={customizerVisible}
+                    item={{
+                        id: customizerItem.id,
+                        title: customizerItem.title,
+                        description: customizerItem.description,
+                        image: customizerItem.image,
+                        pricePaise: customizerItem.pricePaise ?? customizerItem.basePricePaise ?? 0,
+                        basePricePaise: customizerItem.basePricePaise ?? customizerItem.pricePaise ?? 0,
+                        addons: customizerItem.addons ?? [],
+                        variations: customizerItem.variations ?? [],
+                    }}
+                    onClose={handleCustomizerClose}
+                    bottomOffset={0}
+                />
+            )}
         </SafeAreaView>
     );
 };
