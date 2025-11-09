@@ -8,7 +8,7 @@ const About = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
-        <ScreenHeader title="About Screen" moreAction={false} />
+        <ScreenHeader title="About Screen" />
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <View paddingHorizontal={pageHorizantalPadding} paddingTop="l" paddingBottom="xl">

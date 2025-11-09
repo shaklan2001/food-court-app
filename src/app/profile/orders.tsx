@@ -48,7 +48,7 @@ const Orders = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.mainBackgroundLight }}>
         <View flex={1} backgroundColor="mainBackgroundLight">
-          <ScreenHeader title="Your Orders" moreAction={false} />
+          <ScreenHeader title="Your Orders" />
 
           <View flex={1} justifyContent="center" alignItems="center" paddingHorizontal={pageHorizantalPadding}>
             <Ionicons name="bag-outline" size={80} color="#D3D3D3" />
@@ -81,7 +81,7 @@ const Orders = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.mainBackgroundLight }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
-        <ScreenHeader title="Your Orders" moreAction={false} />
+        <ScreenHeader title="Your Orders" />
 
         {/* Search Bar */}
         <View

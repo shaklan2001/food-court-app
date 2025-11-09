@@ -2,7 +2,7 @@ import { Feather, FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/ve
 import * as Haptics from "expo-haptics";
 import { Stack, router } from "expo-router";
 import { MotiView } from "moti";
-import { memo, useCallback, useEffect, useState } from "react";
+import { ReactNode, memo, useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -542,12 +542,40 @@ export const ScreenHeader = ({
   onClearPress,
   clearDisabled,
   clearLoading,
+  showClearButton = false,
+  rightAccessory,
 }: {
   title: string;
   onClearPress?: () => void;
   clearDisabled?: boolean;
   clearLoading?: boolean;
+  showClearButton?: boolean;
+  rightAccessory?: ReactNode;
 }) => {
+  const renderRightContent = () => {
+    if (showClearButton) {
+      return (
+        <Pressable
+          onPress={onClearPress}
+          disabled={clearLoading || clearDisabled}
+          style={{ opacity: clearLoading || clearDisabled ? 0.5 : 1 }}
+        >
+          <Card width={94}>
+            <Text fontSize={12} color="primary" fontFamily="Poppins-SemiBold">
+              {clearLoading ? "Clearing..." : "Clear"}
+            </Text>
+          </Card>
+        </Pressable>
+      );
+    }
+
+    if (rightAccessory) {
+      return <View>{rightAccessory}</View>;
+    }
+
+    return <View width={54} />;
+  };
+
   return (
     <View
       flexDirection="row"
@@ -572,17 +600,7 @@ export const ScreenHeader = ({
         {title}
       </Text>
 
-      <Pressable
-        onPress={onClearPress}
-        disabled={clearLoading || clearDisabled}
-        style={{ opacity: clearLoading || clearDisabled ? 0.5 : 1 }}
-      >
-        <Card>
-          <Text fontSize={12} color="primary" fontFamily="Poppins-SemiBold">
-            {clearLoading ? 'Clearing...' : 'Clear'}
-          </Text>
-        </Card>
-      </Pressable>
+      {renderRightContent()}
     </View>
   );
 };
@@ -779,6 +797,7 @@ const Cart = () => {
         <View flex={1} backgroundColor="mainBackgroundLight">
           <ScreenHeader
             title="Cart"
+            showClearButton
             onClearPress={cartItems.length > 0 ? handleClearCart : undefined}
             clearDisabled={!token || cartItems.length === 0}
             clearLoading={clearLoading}

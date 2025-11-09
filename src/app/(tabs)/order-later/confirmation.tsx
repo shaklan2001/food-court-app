@@ -265,7 +265,7 @@ const Confirmation = () => {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.mainBackgroundLight }}>
-            <ScreenHeader title="Order Later" moreAction={false} />
+            <ScreenHeader title="Order Later" />
 
             <View paddingHorizontal="l">
                 <StepIndicator currentStep={3} totalSteps={3} />

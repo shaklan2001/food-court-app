@@ -73,7 +73,7 @@ const Support = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
-          <ScreenHeader title="Help & Support" moreAction={false} />
+          <ScreenHeader title="Help & Support" />
           <View paddingHorizontal={pageHorizantalPadding} paddingTop="l">
             <View backgroundColor="transparent" borderRadius="l">
               <SupportItem

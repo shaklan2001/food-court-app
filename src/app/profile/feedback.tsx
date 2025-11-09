@@ -30,7 +30,7 @@ const Feedback = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
     <View flex={1} backgroundColor="mainBackgroundLight">
-        <ScreenHeader title="Feedback" moreAction={false} />
+        <ScreenHeader title="Feedback" />
 
         <View paddingHorizontal={pageHorizantalPadding} paddingTop="l">
           <View backgroundColor="mainBackground" borderRadius="l" padding="l" marginBottom="m">

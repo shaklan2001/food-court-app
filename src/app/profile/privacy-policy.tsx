@@ -8,7 +8,7 @@ const PrivacyPolicy = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
-        <ScreenHeader title="Privacy Policy" moreAction={false} />
+        <ScreenHeader title="Privacy Policy" />
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <View paddingHorizontal={pageHorizantalPadding} paddingTop="l" paddingBottom="xl">

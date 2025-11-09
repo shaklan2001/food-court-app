@@ -216,7 +216,7 @@ const AllCoupons = () => {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View flex={1} backgroundColor="mainBackgroundLight">
-        <ScreenHeader title="All Coupons" moreAction={false} />
+        <ScreenHeader title="All Coupons" />
         
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
           <View paddingHorizontal={pageHorizantalPadding}>

@@ -151,7 +151,7 @@ const Favourites = () => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
             <View flex={1} backgroundColor="mainBackgroundLight">
-                <ScreenHeader title="Favourites" moreAction={false} />
+                <ScreenHeader title="Favourites" />
                 
                 {loading ? (
                     <View style={[styles.container, { marginTop: 16 }]}>
