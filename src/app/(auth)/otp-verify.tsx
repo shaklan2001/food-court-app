@@ -61,10 +61,10 @@ const OTPVerify = memo(() => {
                     return;
                 }
 
-                showToast({
-                    message: 'Session expired. Please try again.',
-                    type: 'error',
-                });
+                // showToast({
+                //     message: 'Session expired. Please try again.',
+                //     type: 'error',
+                // });
                 router.push('/login');
             } catch (error) {
                 const errorMessage = (error as { message?: string })?.message || 'Session expired. Please try again.';

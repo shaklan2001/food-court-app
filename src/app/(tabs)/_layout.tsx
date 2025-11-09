@@ -158,19 +158,18 @@ function TabsLayout() {
                         tabBarShowLabel: true,
                     }}
                 />
-                {isAdmin && (
-                    <Tabs.Screen
-                        name="admin"
-                        options={{
-                            tabBarLabel: "Admin",
-                            title: "Admin",
-                            tabBarIcon: ({ focused }) => (
-                                <MaterialIcons name="admin-panel-settings" size={24} color={focused ? "#A20538" : "#808080"} />
-                            ),
-                            tabBarShowLabel: true,
-                        }}
-                    />
-                )}
+                <Tabs.Screen
+                    name="admin"
+                    options={{
+                        tabBarLabel: "Admin",
+                        title: "Admin",
+                        tabBarButton: isAdmin ? undefined : () => null,
+                        tabBarIcon: ({ focused }) => (
+                            <MaterialIcons name="admin-panel-settings" size={24} color={focused ? "#A20538" : "#808080"} />
+                        ),
+                        tabBarShowLabel: true,
+                    }}
+                />
             </Tabs>
             {!customizationVisible && <FloatingCart bottomOffset={70} />}
         </AuthGuard>

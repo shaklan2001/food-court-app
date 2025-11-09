@@ -450,6 +450,7 @@ const Home = () => {
     const [customizerItem, setCustomizerItem] = useState<FoodItemData | null>(null);
     const [customizerVisible, setCustomizerVisible] = useState(false);
     const isLoadingRef = useRef(false);
+    const lastLoadedTokenRef = useRef<string | null>(null);
 
     const transformMenuItem = useCallback((rawItem?: RawMenuItem): FoodItemData | null => {
         if (!rawItem) {
@@ -782,6 +783,7 @@ const Home = () => {
 
     useEffect(() => {
         if (!token) {
+            lastLoadedTokenRef.current = null;
             setMenuItemsById(new Map());
             setRecommendationIds([]);
             setBestSellerIds([]);
@@ -791,6 +793,11 @@ const Home = () => {
             return;
         }
 
+        if (lastLoadedTokenRef.current === token) {
+            return;
+        }
+
+        lastLoadedTokenRef.current = token;
         loadHomeContent();
         fetchFavourites();
         dispatch(fetchCart(token));

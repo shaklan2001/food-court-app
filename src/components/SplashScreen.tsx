@@ -12,7 +12,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import { betterwayApiCall } from "../network/useApiPort";
 import { logout, setToken, setUser } from "../store/slices/authSlice";
-import { showToast } from "../utils";
 import { View } from "./ui";
 
 interface SplashScreenProps {
@@ -130,13 +129,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               onFinish();
             }, 100);
           }, 1500);
-          // Only show toast if it's not a network error or auth error
-          if (!apiError?.message?.includes('Authentication failed')) {
-            showToast({
-              message: 'Session expired. Please login again.',
-              type: 'error',
-            });
-          }
+          // // Only show toast if it's not a network error or auth error
+          // if (!apiError?.message?.includes('Authentication failed')) {
+          //   showToast({
+          //     message: 'Session expired. Please login again.',
+          //     type: 'error',
+          //   });
+          // }
         }
       } else {
         setTimeout(() => {
