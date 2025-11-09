@@ -1,11 +1,11 @@
 import { memo } from "react";
 import { View } from "../ui";
 
-export const Card = memo(({ children, notification = false }: { children: React.ReactNode; notification?: boolean }) => {
+export const Card = memo(({ width = 52, height = 52, children, notification = false }: { width?: number; height?: number; children: React.ReactNode; notification?: boolean }) => {
     return (
         <View
-            width={52}
-            height={52}
+            width={width}
+            height={height}
             backgroundColor="mainBackground"
             borderRadius="m"
             borderWidth={1}

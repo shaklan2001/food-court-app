@@ -85,7 +85,7 @@ const FAQ = () => {
     <Stack.Screen options={{ headerShown: false }} />
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
-          <ScreenHeader title="FAQ's" moreAction={false} />
+          <ScreenHeader title="FAQ's" />
           <View paddingHorizontal={pageHorizantalPadding} paddingTop="l">
             <View backgroundColor="transparent" borderRadius="l">
               {faqData.map((item, index) => (

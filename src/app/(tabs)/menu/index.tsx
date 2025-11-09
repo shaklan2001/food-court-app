@@ -1,14 +1,16 @@
-import { FoodItem } from '@/src/components/HomePage/FoodSection';
+import CustomizationBottomSheet from '@/src/components/HomePage/CustomizationBottomSheet';
+import { FoodItem, FoodItemData } from '@/src/components/HomePage/FoodSection';
 import { FoodItemSkeleton } from '@/src/components/HomePage/FoodSectionSkeleton';
 import Header from '@/src/components/HomePage/Header';
 import { Text, View } from '@/src/components/ui';
 import { betterwayApiCall, useApiPort } from '@/src/network/useApiPort';
-import { RootState, useAppSelector } from '@/src/store/store';
+import { setCustomizationVisible } from '@/src/store/slices/uiSlice';
+import { RootState, useAppDispatch, useAppSelector } from '@/src/store/store';
 import { showToast } from '@/src/utils';
 import { SearchIcon, SortIcon } from '@/src/utils/Svgs';
 import { pageHorizantalPadding } from '@/src/utils/commomCompute';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { Dimensions, FlatList, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { Dimensions, FlatList, ImageSourcePropType, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -21,6 +23,181 @@ const styles = StyleSheet.create({
         paddingHorizontal: HORIZONTAL_PADDING,
     },
 });
+
+const parsePriceToPaise = (priceInput?: string | number | null): number => {
+    if (priceInput === null || priceInput === undefined) {
+        return 0;
+    }
+
+    if (typeof priceInput === 'number' && !Number.isNaN(priceInput)) {
+        return Math.round(priceInput);
+    }
+
+    if (typeof priceInput === 'string') {
+        const numeric = priceInput.replace(/[^\d.]/g, '');
+        const parsed = parseFloat(numeric);
+        if (!Number.isNaN(parsed)) {
+            return Math.round(parsed * 100);
+        }
+    }
+
+    return 0;
+};
+
+type AddonItem = {
+    id: string;
+    addonGroupId?: string;
+    name: string;
+    pricePaise: number;
+    rank?: number;
+};
+
+type AddonGroup = {
+    id: string;
+    name: string;
+    minSelection: number;
+    maxSelection: number;
+    items: AddonItem[];
+};
+
+type VariationOption = {
+    id: string;
+    name: string;
+    pricePaise: number;
+    variationId?: string;
+    groupName?: string;
+};
+
+type UnknownRecord = Record<string, unknown>;
+
+type FavouriteItem = {
+    dishId?: string | number;
+    id?: string | number;
+};
+
+type FavouriteResponse = {
+    items?: FavouriteItem[];
+};
+
+type RawMenuItem = {
+    id: string;
+    name?: string;
+    description?: string;
+    image?: string;
+    pricePaise?: number;
+    categoryId?: string;
+    payload?: UnknownRecord;
+    addons?: unknown[];
+    variations?: unknown[];
+};
+
+const extractPriceInput = (...values: unknown[]): string | number | undefined => {
+    for (const value of values) {
+        if (typeof value === 'number' || typeof value === 'string') {
+            return value;
+        }
+    }
+    return undefined;
+};
+
+const sanitizeAddonGroups = (rawAddons?: unknown[]): AddonGroup[] => {
+    if (!Array.isArray(rawAddons)) {
+        return [];
+    }
+
+    return rawAddons.map((rawGroup) => {
+        const group = (rawGroup as UnknownRecord) ?? {};
+        const payload = (group.payload as UnknownRecord) ?? {};
+        const groupId = String(group.id ?? payload.addongroupid ?? '');
+        const rawItems = Array.isArray(group.items) ? (group.items as unknown[]) : [];
+
+        const minSelection = Number(group.minSelection ?? payload.addon_item_selection_min ?? 0) || 0;
+        const maxSelection = Number(
+            group.maxSelection ??
+            payload.addon_item_selection_max ??
+            rawItems.length ??
+            0,
+        ) || 0;
+
+        const items: AddonItem[] = rawItems.map((rawItem) => {
+            const item = (rawItem as UnknownRecord) ?? {};
+            const addonPayload = (item.payload as UnknownRecord) ?? {};
+            const addonId = String(item.id ?? addonPayload.addonitemid ?? '');
+            const pricePaise = (item.pricePaise as number | undefined) ??
+                parsePriceToPaise(
+                    extractPriceInput(
+                        addonPayload.addonitem_price,
+                        addonPayload.price,
+                        item.price,
+                    ),
+                );
+
+            const rankValue = addonPayload.addonitem_rank;
+
+            return {
+                id: addonId,
+                addonGroupId: groupId,
+                name: String(item.name ?? addonPayload.addonitem_name ?? ''),
+                pricePaise: Number.isNaN(pricePaise) ? 0 : pricePaise,
+                rank: typeof rankValue === 'number' ? rankValue : rankValue ? Number(rankValue) : undefined,
+            };
+        });
+
+        return {
+            id: groupId,
+            name: String(group.name ?? payload.addongroup_name ?? ''),
+            minSelection,
+            maxSelection: maxSelection === 0 && items.length > 0 ? items.length : maxSelection,
+            items,
+        };
+    });
+};
+
+const sanitizeVariations = (rawVariations?: unknown[], fallbackPayload?: UnknownRecord): VariationOption[] => {
+    const variations: VariationOption[] = [];
+
+    if (Array.isArray(rawVariations) && rawVariations.length > 0) {
+        rawVariations.forEach((rawVariation) => {
+            const variation = (rawVariation as UnknownRecord) ?? {};
+            const payload = (variation.payload as UnknownRecord) ?? {};
+            const variationId = variation.variationId ?? variation.id;
+            const pricePaise = (variation.pricePaise as number | undefined) ??
+                parsePriceToPaise(extractPriceInput(variation.price, payload.price));
+
+            variations.push({
+                id: String(variationId ?? ''),
+                variationId: String(variationId ?? ''),
+                name: String(variation.name ?? payload.variation_name ?? ''),
+                pricePaise,
+                groupName: typeof variation.groupname === 'string'
+                    ? variation.groupname
+                    : typeof payload.groupname === 'string'
+                        ? payload.groupname
+                        : undefined,
+            });
+        });
+    } else {
+        const fallbackVariations = Array.isArray(fallbackPayload?.variation)
+            ? (fallbackPayload?.variation as unknown[])
+            : [];
+
+        fallbackVariations.forEach((rawVariation) => {
+            const variation = (rawVariation as UnknownRecord) ?? {};
+            const variationId = variation.variationid ?? variation.id;
+            const pricePaise = parsePriceToPaise(extractPriceInput(variation.price));
+
+            variations.push({
+                id: String(variationId ?? ''),
+                variationId: String(variationId ?? ''),
+                name: String(variation.name ?? ''),
+                pricePaise,
+                groupName: typeof variation.groupname === 'string' ? variation.groupname : undefined,
+            });
+        });
+    }
+
+    return variations;
+};
 
 const SearchBar = memo(({ searchQuery, onSearchChange, onSearchPress }: {
     searchQuery: string;
@@ -93,43 +270,91 @@ const useDebounce = (value: string, delay: number) => {
 };
 
 const Menu = () => {
+    const dispatch = useAppDispatch();
     const { token } = useAppSelector((state: RootState) => state.auth);
-    const [menuData, setMenuData] = useState<any[]>([]);
+    const [menuData, setMenuData] = useState<RawMenuItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
+    const [customizerItem, setCustomizerItem] = useState<FoodItemData | null>(null);
+    const [customizerVisible, setCustomizerVisible] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-    const transformMenuData = useCallback((apiData: any[]) => {
+    const transformMenuData = useCallback((apiData: RawMenuItem[]) => {
         return apiData.map((item) => {
-            let imageSource;
-            const imageUrl = item.payload?.item_image_url || item.image;
-            if (imageUrl && imageUrl.trim() !== '') {
+            let imageSource: ImageSourcePropType;
+            const payload = item.payload ?? {};
+            const imageUrl = typeof payload.item_image_url === 'string' && payload.item_image_url.trim() !== ''
+                ? payload.item_image_url
+                : item.image;
+            if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim() !== '') {
                 imageSource = { uri: imageUrl };
             } else {
                 imageSource = require('@/assets/images/bowl.png');
             }
 
-            let displayPrice;
-            if (item.payload?.price) {
-                displayPrice = `₹${item.payload.price}`;
-            } else if (item.pricePaise) {
-                displayPrice = `₹${(item.pricePaise / 100).toFixed(2)}`;
-            } else {
-                displayPrice = '₹0';
+            const addons = sanitizeAddonGroups(item.addons);
+            const variations = sanitizeVariations(item.variations, item.payload ?? {});
+
+            const basePricePaise = typeof item.pricePaise === 'number'
+                ? item.pricePaise
+                : parsePriceToPaise(
+                    extractPriceInput(
+                        item.payload?.price,
+                        item.payload?.markup_price,
+                    ),
+                );
+
+            const variationPrices = variations.map(variation => variation.pricePaise).filter(price => price > 0);
+
+            let displayPricePaise: number | undefined = typeof basePricePaise === 'number' && basePricePaise > 0
+                ? basePricePaise
+                : undefined;
+
+            if (variationPrices.length > 0) {
+                const minVariationPrice = Math.min(...variationPrices);
+                displayPricePaise = displayPricePaise !== undefined
+                    ? Math.min(displayPricePaise, minVariationPrice)
+                    : minVariationPrice;
+            }
+
+            if (displayPricePaise === undefined) {
+                displayPricePaise = basePricePaise || 0;
+            }
+
+            const priceRangeMaxPaise = variationPrices.length > 0
+                ? Math.max(...variationPrices)
+                : basePricePaise;
+
+            const hasCustomizations = addons.length > 0 || variations.length > 0;
+
+            const ensuredDisplayPricePaise = displayPricePaise ?? 0;
+
+            let displayPrice = `₹${(ensuredDisplayPricePaise / 100).toFixed(2)}`;
+            if (hasCustomizations && priceRangeMaxPaise && priceRangeMaxPaise !== ensuredDisplayPricePaise) {
+                displayPrice = `From ₹${(ensuredDisplayPricePaise / 100).toFixed(2)}`;
             }
 
             return {
                 id: item.id,
                 title: item.name,
                 price: displayPrice,
-                pricePaise: item.pricePaise || 0,
+                pricePaise: ensuredDisplayPricePaise,
+                basePricePaise: basePricePaise,
+                maxPricePaise: priceRangeMaxPaise || ensuredDisplayPricePaise,
                 image: imageSource,
-                description: item.payload?.itemdescription || item.description || '',
+                imageUri: typeof imageSource === 'object' && 'uri' in imageSource ? imageSource.uri : '',
+                description: item.payload?.itemdescription as string || item.description || '',
                 categoryId: item.categoryId,
                 payload: item.payload,
+                addons,
+                variations,
+                hasCustomizations,
                 isFavourite: favouriteIds.has(item.id),
-            };
+            } as FoodItemData;
         });
     }, [favouriteIds]);
 
@@ -144,10 +369,17 @@ const Menu = () => {
                 url: "GET_FAVOURITES",
                 auth: token,
             }),
-            success: (response: { items?: any[] }) => {
-                const favIds = new Set(
-                    response?.items?.map((item) => item.dishId || item.id) || [],
-                );
+            success: (response: FavouriteResponse) => {
+                const items = Array.isArray(response?.items) ? response.items : [];
+                const favIds = new Set<string>();
+
+                items.forEach((item) => {
+                    const identifier = item.dishId ?? item.id;
+                    if (identifier !== undefined && identifier !== null) {
+                        favIds.add(String(identifier));
+                    }
+                });
+
                 setFavouriteIds(favIds);
             },
             failure: () => {
@@ -210,33 +442,62 @@ const Menu = () => {
         }
     }, [token]);
 
-    const getMenu = useCallback(async () => {
-        setLoading(true);
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useApiPort({
-            intent: "intent_get_menu",
-            port: betterwayApiCall({
+    const fetchMenuPage = useCallback(async (nextPage: number, append: boolean) => {
+        if (!token) return;
+
+        if (append) {
+            setIsFetchingMore(true);
+        } else {
+            setLoading(true);
+            setHasMore(true);
+        }
+
+        try {
+            const response = await betterwayApiCall({
                 method: "POST",
                 url: "GET_MENU",
                 auth: token,
                 body: {
-                    page: 1,
-                    limit: 50,
+                    page: nextPage,
+                    limit: 20,
                 },
-            }),
-            success: (response) => {
-                setMenuData(response);
-                setLoading(false);
-            },
-            failure: (error) => {
-                setMenuData([]);
-                setLoading(false);
-                showToast({
-                    message: error?.message || 'Failed to fetch menu',
-                    type: 'error',
+            });
+
+            let pageItems: RawMenuItem[] = [];
+            if (Array.isArray(response)) {
+                pageItems = response as RawMenuItem[];
+            } else if (response && typeof response === 'object' && Array.isArray((response as { data?: unknown }).data)) {
+                pageItems = (response as { data: RawMenuItem[] }).data;
+            }
+
+            setHasMore(pageItems.length === 20);
+            setPage(nextPage);
+
+            setMenuData(prev => {
+                const combined = append ? [...prev, ...pageItems] : pageItems;
+                const uniqueMap = new Map<string, RawMenuItem>();
+                combined.forEach(item => {
+                    if (item && item.id !== undefined && item.id !== null) {
+                        uniqueMap.set(String(item.id), item);
+                    }
                 });
-            },
-        })();
+                return Array.from(uniqueMap.values());
+            });
+        } catch (error) {
+            if (!append) {
+                setMenuData([]);
+            }
+            showToast({
+                message: (error as { message?: string })?.message || 'Failed to fetch menu',
+                type: 'error',
+            });
+        } finally {
+            if (append) {
+                setIsFetchingMore(false);
+            } else {
+                setLoading(false);
+            }
+        }
     }, [token]);
 
     const filteredData = useMemo(() => {
@@ -248,11 +509,13 @@ const Menu = () => {
         return menuData.filter(item => {
             const name = item.name?.toLowerCase() || '';
             const description = item.description?.toLowerCase() || '';
-            const itemDescription = item.payload?.itemdescription?.toLowerCase() || '';
-            
+            const payloadDescription = typeof item.payload?.itemdescription === 'string'
+                ? item.payload.itemdescription.toLowerCase()
+                : '';
+
             return name.includes(query) || 
                    description.includes(query) || 
-                   itemDescription.includes(query);
+                   payloadDescription.includes(query);
         });
     }, [menuData, debouncedSearchQuery]);
 
@@ -266,9 +529,9 @@ const Menu = () => {
     }, []);
 
     useEffect(() => {
-        getMenu();
+        fetchMenuPage(1, false);
         fetchFavourites();
-    }, [getMenu, fetchFavourites]);
+    }, [fetchMenuPage, fetchFavourites]);
 
     const transformedData = transformMenuData(filteredData);
     
@@ -288,7 +551,25 @@ const Menu = () => {
         };
     }, [debouncedSearchQuery, filteredData.length, menuData.length]);
 
-    const renderFoodItem = useCallback(({ item, index }: { item: any; index: number }) => (
+    const handleCustomizerClose = useCallback(() => {
+        setCustomizerVisible(false);
+        setCustomizerItem(null);
+        dispatch(setCustomizationVisible(false));
+    }, [dispatch]);
+
+    const handleCustomizeItem = useCallback((item: FoodItemData) => {
+        setCustomizerItem(item);
+        setCustomizerVisible(true);
+        dispatch(setCustomizationVisible(true));
+    }, [dispatch]);
+
+    useEffect(() => {
+        return () => {
+            dispatch(setCustomizationVisible(false));
+        };
+    }, [dispatch]);
+
+    const renderFoodItem = useCallback(({ item, index }: { item: FoodItemData; index: number }) => (
         <View style={{ 
             width: CARD_WIDTH, 
             marginBottom: 12, 
@@ -299,10 +580,11 @@ const Menu = () => {
                 showHeartIcon={true}
                 isFavouriteItem={item.isFavourite}
                 isGridLayout={true}
-                onHeartPress={handleHeartPress ? () => handleHeartPress(item.id, item.isFavourite) : undefined}
+                onHeartPress={handleHeartPress ? () => handleHeartPress(item.id, !!item.isFavourite) : undefined}
+                onCustomize={handleCustomizeItem}
             />
         </View>
-    ), [handleHeartPress]);
+    ), [handleHeartPress, handleCustomizeItem]);
 
     const renderSkeletonItem = useCallback(({ index }: { index: number }) => (
         <View style={{ width: CARD_WIDTH, marginBottom: 12, marginRight: index % 2 === 0 ? CARD_GAP : 0 }}>
@@ -369,19 +651,52 @@ const Menu = () => {
                         </Text>
                     </View>
                 ) : (
-                    <View style={[styles.container, { marginTop: 16, flex: 1 }]}>
+                    <View style={[styles.container, { marginTop: 16, flex: 1 }]}> 
                         <FlatList
                             data={transformedData}
                             renderItem={renderFoodItem}
                             keyExtractor={(item) => item.id}
                             numColumns={2}
                             showsVerticalScrollIndicator={false}
+                            onEndReachedThreshold={0.5}
+                            onEndReached={() => {
+                                if (!loading && !isFetchingMore && hasMore && !debouncedSearchQuery.trim()) {
+                                    fetchMenuPage(page + 1, true);
+                                }
+                            }}
                             columnWrapperStyle={{ justifyContent: 'flex-start' }}
                             contentContainerStyle={{ paddingBottom: 20 }}
+                            ListFooterComponent={
+                                isFetchingMore ? (
+                                    <View padding="m" alignItems="center">
+                                        <Text fontSize={12} color="textSecondary">Loading more...</Text>
+                                    </View>
+                                ) : !loading && !debouncedSearchQuery.trim() && !hasMore && transformedData.length > 0 ? (
+                                    <View padding="m" alignItems="center">
+                                        <Text fontSize={12} color="textSecondary">No more items</Text>
+                                    </View>
+                                ) : null
+                            }
                         />
                     </View>
                 )}
             </View>
+            {customizerItem && (
+                <CustomizationBottomSheet
+                    visible={customizerVisible}
+                    item={{
+                        id: customizerItem.id,
+                        title: customizerItem.title,
+                        description: customizerItem.description,
+                        image: customizerItem.image,
+                        pricePaise: customizerItem.pricePaise ?? customizerItem.basePricePaise ?? 0,
+                        basePricePaise: customizerItem.basePricePaise ?? customizerItem.pricePaise ?? 0,
+                        addons: customizerItem.addons || [],
+                        variations: customizerItem.variations || [],
+                    }}
+                    onClose={handleCustomizerClose}
+                />
+            )}
         </SafeAreaView>
     );
 };

@@ -13,6 +13,8 @@ export interface CartItem {
   quantity: number;
   image?: ImageSourcePropType;
   description?: string;
+  selectedVariationId?: string | null;
+  selectedAddonIds?: string[];
 }
 
 export interface OrderBreakdown {
@@ -70,13 +72,48 @@ const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    addItem: (state, action: PayloadAction<Omit<CartItem, 'quantity'>>) => {
-      const existingItem = state.items.find(item => item.id === action.payload.id);
+    addItem: (state, action: PayloadAction<Omit<CartItem, 'quantity'> & { quantity?: number }>) => {
+      const {
+        quantity: incomingQuantity = 1,
+        selectedVariationId,
+        selectedAddonIds,
+        id,
+      } = action.payload;
+
+      const sortedIncomingAddons = selectedAddonIds ? [...selectedAddonIds].sort() : undefined;
+
+      const existingItem = state.items.find((item) => {
+        if (item.id !== id) {
+          return false;
+        }
+
+        const itemVariation = item.selectedVariationId ?? null;
+        const incomingVariation = selectedVariationId ?? null;
+        if (itemVariation !== incomingVariation) {
+          return false;
+        }
+
+        const itemAddonsSorted = item.selectedAddonIds ? [...item.selectedAddonIds].sort() : undefined;
+        if (itemAddonsSorted?.length !== sortedIncomingAddons?.length) {
+          return false;
+        }
+
+        if (itemAddonsSorted && sortedIncomingAddons) {
+          return itemAddonsSorted.every((addonId, idx) => addonId === sortedIncomingAddons[idx]);
+        }
+
+        return true;
+      });
       
       if (existingItem) {
-        existingItem.quantity += 1;
+        existingItem.quantity += incomingQuantity;
       } else {
-        state.items.push({ ...action.payload, quantity: 1 });
+        state.items.push({
+          ...action.payload,
+          quantity: incomingQuantity,
+          selectedVariationId: selectedVariationId ?? null,
+          selectedAddonIds: sortedIncomingAddons,
+        });
       }
       
       state.itemCount = state.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -290,18 +327,60 @@ export const fetchCart = (token: string) => async (dispatch: any, getState: any)
             imageSource = require('@/assets/images/bowl.png');
           }
 
-          const cartItemId = item.id || item.dishId;
-          const dishIdValue = item.dishId || null;
+          const cartItemId = item.id ?? item.cartItemId ?? item.dishId ?? item.itemId;
+          const dishIdValue = item.dishId ?? item.itemId ?? item.menuId ?? null;
+
+          const rawSelectedVariation =
+            item.selectedVariationId ??
+            item.selectedVariation ??
+            item.variationId ??
+            item.variation?.id ??
+            null;
+
+          const rawSelectedAddons =
+            item.selectedAddonIds ??
+            item.selectedAddons ??
+            item.addonsSelected ??
+            item.addons ??
+            [];
+
+          const normalizeAddonId = (entry: any) => {
+            if (typeof entry === 'string' || typeof entry === 'number') {
+              return String(entry);
+            }
+            if (entry && typeof entry === 'object') {
+              return String(
+                entry.addonItemId ??
+                entry.addonId ??
+                entry.id ??
+                entry.value ??
+                '',
+              );
+            }
+            return '';
+          };
+
+          let selectedAddonIds: string[] | undefined;
+          if (Array.isArray(rawSelectedAddons)) {
+            const mapped = rawSelectedAddons
+              .map(normalizeAddonId)
+              .filter((addonId) => addonId.length > 0);
+            if (mapped.length > 0) {
+              selectedAddonIds = Array.from(new Set(mapped)).sort();
+            }
+          }
 
           return {
-            id: cartItemId,
-            dishId: dishIdValue,
+            id: String(cartItemId ?? dishIdValue ?? ''),
+            dishId: dishIdValue ? String(dishIdValue) : undefined,
             name: item.dish?.name || item.name || item.itemName,
             price: `₹${((item.dish?.pricePaise || item.pricePaise || item.price) / 100).toFixed(0)}`,
             pricePaise: item.dish?.pricePaise || item.pricePaise || item.price || 0,
             quantity: item.quantity || 1,
             image: imageSource,
             description: item.dish?.description || item.description || '',
+            selectedVariationId: rawSelectedVariation ? String(rawSelectedVariation) : null,
+            selectedAddonIds,
           };
         });
         const totalPaise = response.totalPaise || cartItems.reduce((sum, item) => sum + (item.pricePaise * item.quantity), 0);
@@ -335,20 +414,73 @@ export const fetchCart = (token: string) => async (dispatch: any, getState: any)
   }
 };
 
-export const addToCart = (item: Omit<CartItem, 'quantity'>, token: string) => async (dispatch: any) => {
-  dispatch(addItem(item));
+const buildCompositeId = (
+  dishId: string,
+  selectedVariationId?: string | null,
+  selectedAddonIds?: string[],
+) => {
+  const variationKey = selectedVariationId ?? 'base';
+  const addonsKey = selectedAddonIds && selectedAddonIds.length > 0
+    ? selectedAddonIds.slice().sort().join('_')
+    : 'none';
+
+  return `${dishId}__${variationKey}__${addonsKey}`;
+};
+
+export const addToCart = (
+  item: Omit<CartItem, 'quantity'> & { quantity?: number },
+  token: string,
+) => async (dispatch: any) => {
+  const dishId = String(item.dishId ?? item.id);
+  const selectedVariationId = item.selectedVariationId ?? null;
+  const selectedAddonIds = item.selectedAddonIds
+    ? [...item.selectedAddonIds].map((addonId) => String(addonId)).sort()
+    : undefined;
+  const quantity = item.quantity ?? 1;
+
+  const optimisticId =
+    selectedVariationId || (selectedAddonIds && selectedAddonIds.length > 0)
+      ? buildCompositeId(dishId, selectedVariationId, selectedAddonIds)
+      : dishId;
+
+  dispatch(
+    addItem({
+      ...item,
+      id: optimisticId,
+      dishId,
+      selectedVariationId,
+      selectedAddonIds: selectedAddonIds
+        ? [...selectedAddonIds].sort()
+        : undefined,
+      quantity,
+    }),
+  );
+
+  const body: Record<string, any> = {
+    itemId: dishId,
+    quantity,
+  };
+
+  if (selectedVariationId) {
+    body.selectedVariation = selectedVariationId;
+  }
+
+  if (selectedAddonIds && selectedAddonIds.length > 0) {
+    body.selectedAddons = selectedAddonIds;
+  }
+
   const apiCall = useApiPort({
     intent: "intent_add_to_cart",
     port: betterwayApiCall({
       method: "POST",
       url: "ADD_TO_CART",
       auth: token,
-      body: {
-        itemId: item.dishId || item.id,
-        quantity: 1,
-      },
+      body,
     }),
     success: (_response: any) => {
+      if (token) {
+        dispatch(fetchCart(token));
+      }
     },
     failure: (_error: any) => {
     },
@@ -367,20 +499,9 @@ export const updateCartItem = (cartItemId: string, quantity: number, token: stri
   if (!cartItem) {
     return;
   }
-  
-  const dishId = cartItem.dishId;
-  
-  if (!dishId) {
-    return;
-  }
-  
-  const isUUID = dishId.includes('-') && dishId.length >= 36;
-  if (isUUID) {
-    return;
-  }
-  
+
   if (quantity <= 0) {
-    await dispatch(removeCartItemAPI(dishId, cartItemId, token));
+    await dispatch(removeCartItemAPI(cartItemId, token));
     return;
   }
   
@@ -393,8 +514,8 @@ export const updateCartItem = (cartItemId: string, quantity: number, token: stri
       url: "UPDATE_CART",
       auth: token,
       body: {
-        itemId: dishId,
-        quantity: quantity,
+        cartItemId: cartItemId,
+        quantity,
       },
     }),
     success: (_response: any) => {
@@ -425,15 +546,12 @@ export const updateCartItem = (cartItemId: string, quantity: number, token: stri
   }
 };
 
-export const removeCartItemAPI = (dishId: string, cartItemId: string, token: string) => async (dispatch: any) => {
-  const isUUID = dishId && dishId.includes('-') && dishId.length >= 36;
-  
-  if (!dishId || isUUID) {
-    dispatch(setError('Invalid item ID. Please refresh and try again.'));
-    dispatch(setLoading(false));
+export const removeCartItemAPI = (cartItemId: string, token: string) => async (dispatch: any) => {
+  if (!cartItemId) {
+    dispatch(setError('Invalid cart item. Please refresh and try again.'));
     return;
   }
-  
+
   dispatch(setLoading(true));
   
   const apiCall = useApiPort({
@@ -443,7 +561,7 @@ export const removeCartItemAPI = (dishId: string, cartItemId: string, token: str
       url: "REMOVE_CART_ITEM",
       auth: token,
       body: {
-        itemId: dishId,
+        cartItemId,
       },
     }),
     success: (_response: any) => {

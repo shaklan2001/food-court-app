@@ -440,7 +440,7 @@ const CuisineDetail = () => {
 
     return (
         <SafeAreaView style={{  flex: 1, backgroundColor: theme.colors.mainBackgroundLight }}>
-            <ScreenHeader title="Cuisines" moreAction={false} />
+            <ScreenHeader title="Cuisines" />
             <SearchBar 
                 searchQuery={searchQuery}
                 onSearchChange={handleSearch}

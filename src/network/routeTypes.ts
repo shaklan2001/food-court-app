@@ -34,7 +34,10 @@ export type ApiType =
   "GET_DINEIN_SLOT_AVAILABILITY" |
   "GET_ORDER_STATUS" |
   "VERIFY_PAYMENT" |
-  "CREATE_ORDER";
+  "CREATE_ORDER" |
+  "GET_MENU_RECOMMENDATIONS" |
+  "GET_MENU_BEST_SELLERS" |
+  "GET_MENU_NEW_ARRIVALS";
   
 export type TransactionIntentType =
   "intent_create_user" |
@@ -72,4 +75,7 @@ export type TransactionIntentType =
   "intent_get_dinein_slot_availability" |
   "intent_get_order_status" |
   "intent_verify_payment" |
-  "intent_create_order";
+  "intent_create_order" |
+  "intent_get_menu_recommendations" |
+  "intent_get_menu_best_sellers" |
+  "intent_get_menu_new_arrivals";

@@ -277,7 +277,7 @@ const EditProfile = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
       <View flex={1} backgroundColor="mainBackgroundLight">
-        <ScreenHeader title="Edit Profile" moreAction={false} />
+        <ScreenHeader title="Edit Profile" />
 
         <View
           flex={1}

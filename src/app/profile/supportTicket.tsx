@@ -37,7 +37,7 @@ const SupportTicket = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
         <View flex={1} backgroundColor="mainBackgroundLight">
-          <ScreenHeader title="Report Issue" moreAction={false} />
+          <ScreenHeader title="Report Issue" />
           
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
