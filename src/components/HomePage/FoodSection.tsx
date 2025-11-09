@@ -231,25 +231,33 @@ export const FoodItem = memo(({
                     </View>
                     <View width={'55%'} alignItems="center" justifyContent="center" >
                         {item.hasCustomizations ? (
-                            <TouchableOpacity
-                                onPress={(event) => {
-                                    event.stopPropagation();
-                                    handleCustomizePress(event);
-                                }}
-                            >
-                                <View
-                                    width={80}
-                                    backgroundColor="primary"
-                                    borderRadius="m"
-                                    justifyContent="center"
-                                    alignItems="center"
-                                    paddingVertical='xs'
+                            currentQuantity > 0 ? (
+                                <QuantitySelector
+                                    itemId={currentCartEntry?.id ?? item.id}
+                                    currentQuantity={currentQuantity}
+                                    onQuantityChange={handleQuantityChange}
+                                />
+                            ) : (
+                                <TouchableOpacity
+                                    onPress={(event) => {
+                                        event.stopPropagation();
+                                        handleCustomizePress(event);
+                                    }}
                                 >
-                                    <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
-                                        Add
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
+                                    <View
+                                        width={80}
+                                        backgroundColor="primary"
+                                        borderRadius="m"
+                                        justifyContent="center"
+                                        alignItems="center"
+                                        paddingVertical='xs'
+                                    >
+                                        <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
+                                            Add
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )
                         ) : (
                             <QuantitySelector
                                 itemId={currentCartEntry?.id ?? item.id}

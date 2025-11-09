@@ -695,6 +695,7 @@ const Menu = () => {
                         variations: customizerItem.variations || [],
                     }}
                     onClose={handleCustomizerClose}
+                    bottomOffset={0}
                 />
             )}
         </SafeAreaView>
