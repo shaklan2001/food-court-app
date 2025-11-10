@@ -2,7 +2,7 @@
   "name": "csk-app",
   "main": "expo-router/entry",
   "version": "1.0.1",
-  "versionCode": 4,
+  "versionCode": 5,
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",

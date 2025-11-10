@@ -253,7 +253,7 @@ const ProductDetail = () => {
       }
       customData.addons.forEach((group) => {
         const selectedCount = selectedAddons.get(group.id)?.length || 0;
-        if (selectedCount < group.minSelection) {
+        if (group.minSelection > 0 && selectedCount < group.minSelection) {
           errors.push(`Please select at least ${group.minSelection} options for ${group.name}`);
         }
         if (group.maxSelection > 0 && selectedCount > group.maxSelection) {
@@ -457,7 +457,14 @@ const ProductDetail = () => {
                     {customData.addons.map((group) => (
                       <View key={group.id} marginBottom="l">
                         <Text fontSize={18} fontWeight="600" color="textPrimary" fontFamily="Poppins-SemiBold" marginBottom="s">
-                          {group.name} (Select {group.minSelection} - {group.maxSelection})
+                          {group.name}{' '}
+                          {group.minSelection > 0
+                            ? `(Select ${group.minSelection} - ${
+                                group.maxSelection === 0 ? group.items.length : group.maxSelection
+                              })`
+                            : group.maxSelection > 0
+                              ? `(Optional - choose up to ${group.maxSelection})`
+                              : '(Optional)'}
                         </Text>
                         {group.items.map((item) => (
                           <Pressable 

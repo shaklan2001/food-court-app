@@ -210,7 +210,7 @@ const CustomizationBottomSheetComponent = ({
   const validateSelections = useCallback(() => {
     for (const group of addons) {
       const selected = selectedAddons.get(group.id) || [];
-      if (selected.length < group.minSelection) {
+      if (group.minSelection > 0 && selected.length < group.minSelection) {
         return `Select at least ${group.minSelection} option${
           group.minSelection > 1 ? "s" : ""
         } for ${group.name}`;
@@ -438,10 +438,15 @@ const CustomizationBottomSheetComponent = ({
                   fontFamily="Poppins-Regular"
                   marginBottom="s"
                 >
-                  Select {group.minSelection} -{" "}
-                  {group.maxSelection === 0
-                    ? group.items.length
-                    : group.maxSelection}
+                  {group.minSelection > 0
+                    ? `Select ${group.minSelection} - ${
+                        group.maxSelection === 0
+                          ? group.items.length
+                          : group.maxSelection
+                      }`
+                    : group.maxSelection > 0
+                      ? `Optional - choose up to ${group.maxSelection}`
+                      : "Optional"}
                 </Text>
                 {group.items.map((addon) => {
                   const isChecked = selected.some(

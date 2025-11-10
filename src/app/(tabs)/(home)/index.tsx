@@ -311,13 +311,17 @@ const sanitizeAddonGroups = (rawAddons?: unknown[]): AddonGroup[] => {
         const groupId = String(group.id ?? payload.addongroupid ?? '');
         const rawItems = Array.isArray(group.items) ? (group.items as unknown[]) : [];
 
-        const minSelection = Number(group.minSelection ?? payload.addon_item_selection_min ?? 0) || 0;
-        const maxSelection = Number(
+        const rawMinSelection = Number(group.minSelection ?? payload.addon_item_selection_min ?? 0) || 0;
+        const rawMaxSelection = Number(
             group.maxSelection ??
             payload.addon_item_selection_max ??
             rawItems.length ??
             0,
         ) || 0;
+        const minSelection = 0;
+        const maxSelection = rawMaxSelection > 0 && rawMaxSelection < rawMinSelection
+            ? rawMinSelection
+            : rawMaxSelection;
 
         const items: AddonItem[] = rawItems.map((rawItem) => {
             const item = (rawItem as UnknownRecord) ?? {};
