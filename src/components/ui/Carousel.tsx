@@ -1,6 +1,6 @@
 import { Theme } from '@/src/theme/theme';
 import { useTheme } from '@shopify/restyle';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, Image, TouchableOpacity } from 'react-native';
 import Animated, {
     useAnimatedScrollHandler,
@@ -11,12 +11,12 @@ import { View } from './index';
 const { width: screenWidth } = Dimensions.get('window');
 
 interface CarouselProps {
-    data: Array<{
+    data: {
         id: string;
         image: any;
         title?: string;
         subtitle?: string;
-    }>;
+    }[];
     height?: number;
     autoPlay?: boolean;
     autoPlayInterval?: number;
@@ -35,26 +35,14 @@ const Carousel: React.FC<CarouselProps> = ({
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollX = useSharedValue(0);
     const flatListRef = useRef<FlatList>(null);
+    const autoPlayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             scrollX.value = event.contentOffset.x;
         },
     });
-
-    useEffect(() => {
-        if (!autoPlay || data.length <= 1) return;
-
-        const interval = setInterval(() => {
-            setCurrentIndex((prevIndex) => {
-                const nextIndex = (prevIndex + 1) % data.length;
-                goToSlide(nextIndex);
-                return nextIndex;
-            });
-        }, autoPlayInterval);
-
-        return () => clearInterval(interval);
-    }, [autoPlay, autoPlayInterval, data.length]);
 
     const goToSlide = (index: number) => {
         if (flatListRef.current) {
@@ -64,6 +52,63 @@ const Carousel: React.FC<CarouselProps> = ({
             });
         }
     };
+
+    const clearAutoPlay = useCallback(() => {
+        if (autoPlayTimerRef.current) {
+            clearInterval(autoPlayTimerRef.current);
+            autoPlayTimerRef.current = null;
+        }
+    }, []);
+
+    const clearResumeTimer = useCallback(() => {
+        if (resumeTimerRef.current) {
+            clearTimeout(resumeTimerRef.current);
+            resumeTimerRef.current = null;
+        }
+    }, []);
+
+    const startAutoPlay = useCallback(() => {
+        if (!autoPlay || data.length <= 1) {
+            clearAutoPlay();
+            return;
+        }
+        clearAutoPlay();
+
+        autoPlayTimerRef.current = setInterval(() => {
+            setCurrentIndex((prevIndex) => {
+                const nextIndex = (prevIndex + 1) % data.length;
+                goToSlide(nextIndex);
+                return nextIndex;
+            });
+        }, autoPlayInterval);
+    }, [autoPlay, autoPlayInterval, data.length, clearAutoPlay]);
+
+    const scheduleAutoPlayRestart = useCallback(() => {
+        if (!autoPlay || data.length <= 1) {
+            return;
+        }
+        clearResumeTimer();
+        resumeTimerRef.current = setTimeout(() => {
+            startAutoPlay();
+        }, autoPlayInterval);
+    }, [autoPlay, autoPlayInterval, data.length, startAutoPlay, clearResumeTimer]);
+
+    const handleInteractionStart = useCallback(() => {
+        clearAutoPlay();
+        clearResumeTimer();
+    }, [clearAutoPlay, clearResumeTimer]);
+
+    const handleInteractionEnd = useCallback(() => {
+        scheduleAutoPlayRestart();
+    }, [scheduleAutoPlayRestart]);
+
+    useEffect(() => {
+        startAutoPlay();
+        return () => {
+            clearAutoPlay();
+            clearResumeTimer();
+        };
+    }, [startAutoPlay, clearAutoPlay, clearResumeTimer]);
 
     const renderItem = ({ item, index }: { item: any; index: number }) => {
         return (
@@ -107,8 +152,10 @@ const Carousel: React.FC<CarouselProps> = ({
                     <TouchableOpacity
                         key={index}
                         onPress={() => {
+                            handleInteractionStart();
                             goToSlide(index);
                             setCurrentIndex(index);
+                            handleInteractionEnd();
                         }}
                         style={{
                             width: index === currentIndex ? 24 : 8,
@@ -133,9 +180,11 @@ const Carousel: React.FC<CarouselProps> = ({
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 onScroll={scrollHandler}
+                onScrollBeginDrag={handleInteractionStart}
                 onMomentumScrollEnd={(event) => {
                     const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
                     setCurrentIndex(newIndex);
+                    handleInteractionEnd();
                 }}
                 scrollEventThrottle={16}
                 decelerationRate='normal'

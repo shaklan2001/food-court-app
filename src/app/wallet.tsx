@@ -1,7 +1,15 @@
-import { FontAwesome5, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
-import React, { memo, useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, TouchableOpacity } from 'react-native';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Image, ListRenderItemInfo, StyleSheet } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { ClipPath, Defs, G, Path, Rect } from 'react-native-svg';
 import Text from '../components/ui/Text';
@@ -32,12 +40,6 @@ const StarIconSVG = memo(({ width = 24, height = 24 }: { width?: number; height?
 
 StarIconSVG.displayName = 'StarIconSVG';
 
-const WalletIcon = memo(() => (
-  <MaterialIcons name="account-balance-wallet" size={25} color="#A20538" />
-));
-
-WalletIcon.displayName = 'WalletIcon';
-
 const ShoppingBagIcon = memo(() => (
   <FontAwesome5 name="shopping-bag" size={20} color="#A20538" />
 ));
@@ -66,12 +68,12 @@ const BackgroundCard = memo(() => (
 
 BackgroundCard.displayName = 'BackgroundCard';
 
-const TransactionItem = memo(({ 
-  icon, 
-  name, 
-  date, 
-  amount, 
-  isCredit = false, 
+const TransactionItem = memo(({
+  icon,
+  name,
+  date,
+  amount,
+  isCredit = false,
 }: {
   icon: React.ReactNode;
   name: string;
@@ -86,7 +88,6 @@ const TransactionItem = memo(({
       backgroundColor="mainBackground"
       padding="m"
       borderRadius="m"
-      marginBottom="s"
       shadowOffset={{ width: 0, height: 1 }}
       shadowOpacity={0.05}
       shadowRadius={2}
@@ -199,63 +200,95 @@ const BalanceCard = memo(({ balance, isLoading }: { balance: number; isLoading: 
 
 BalanceCard.displayName = 'BalanceCard';
 
-const TransactionsSection = memo(({ transactions }: { 
-  transactions: {
-    icon: React.ReactNode;
-    name: string;
-    date: string;
-    amount: string;
-    isCredit: boolean;
-  }[]
-}) => (
-  <View marginBottom="l">
-    <View
-      flexDirection="row"
-      justifyContent="space-between"
-      alignItems="center"
-      marginBottom="m"
-    >
-      <Text
-        fontSize={20}
-        fontWeight="bold"
-        color="textPrimary"
-        fontFamily="Poppins-Bold"
-      >
-        Transactions
-      </Text>
-      <TouchableOpacity>
-        <Text
-          fontSize={14}
-          color="primary"
-          fontWeight="500"
-          fontFamily="Poppins-Medium"
-        >
-          view all
-        </Text>
-      </TouchableOpacity>
-    </View>
+type WalletTransaction = {
+  id: string;
+  changePoints: number;
+  reason?: string;
+  relatedOrderId?: number;
+  createdAt?: string;
+};
 
-    <View>
-      {transactions.map((transaction, index) => (
-        <TransactionItem
-          key={index}
-          icon={transaction.icon}
-          name={transaction.name}
-          date={transaction.date}
-          amount={transaction.amount}
-          isCredit={transaction.isCredit}
-        />
-      ))}
-    </View>
-  </View>
-));
+type TransactionDisplay = {
+  id: string;
+  name: string;
+  date: string;
+  amount: string;
+  isCredit: boolean;
+  icon: React.ReactNode;
+};
 
-TransactionsSection.displayName = 'TransactionsSection';
+const ITEM_HEIGHT = 80;
+const ITEM_SPACING = 10;
+const STACK_OFFSET = 12;
+
+const AnimatedTransactionCard = memo(({ transaction, index, scrollY }: {
+  transaction: TransactionDisplay;
+  index: number;
+  scrollY: SharedValue<number>;
+}) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const position = index * (ITEM_HEIGHT + ITEM_SPACING);
+    const inputRange = [
+      position - (ITEM_HEIGHT + ITEM_SPACING),
+      position,
+      position + (ITEM_HEIGHT + ITEM_SPACING),
+    ];
+
+    const scale = interpolate(
+      scrollY.value,
+      inputRange,
+      [0.92, 1, 0.95],
+      Extrapolation.CLAMP,
+    );
+
+    const translateY = interpolate(
+      scrollY.value,
+      inputRange,
+      [STACK_OFFSET, 0, -STACK_OFFSET],
+      Extrapolation.CLAMP,
+    );
+
+    const opacity = interpolate(
+      scrollY.value,
+      inputRange,
+      [0.85, 1, 0.9],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      transform: [{ translateY }, { scale }],
+      opacity,
+    };
+  }, [index, scrollY]);
+
+  return (
+    <Animated.View style={[styles.transactionCardWrapper, { marginBottom: ITEM_SPACING }, animatedStyle]}>
+      <TransactionItem
+        icon={transaction.icon}
+        name={transaction.name}
+        date={transaction.date}
+        amount={transaction.amount}
+        isCredit={transaction.isCredit}
+      />
+    </Animated.View>
+  );
+});
+
+AnimatedTransactionCard.displayName = 'AnimatedTransactionCard';
 
 export default function WalletScreen() {
   const token = useAppSelector((state) => state.auth.token);
   const [balance, setBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const scrollY = useSharedValue(0);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
 
   const fetchWalletBalance = useCallback(async () => {
     try {
@@ -264,7 +297,7 @@ export default function WalletScreen() {
         method: 'GET',
         url: 'GET_WALLET_BALANCE',
         auth: token,
-      query: token ? { timestamp: Date.now() } : undefined,
+        query: token ? { timestamp: Date.now() } : undefined,
       });
 
       if (response?.data?.balance !== undefined) {
@@ -286,87 +319,182 @@ export default function WalletScreen() {
     }
   }, [token]);
 
-  useEffect(() => {
-      fetchWalletBalance();
-  }, [fetchWalletBalance]);
+  const fetchWalletTransactions = useCallback(async () => {
+    try {
+      setTransactionsLoading(true);
+      const response = await betterwayApiCall({
+        method: 'POST',
+        url: 'GET_WALLET_TRANSACTIONS',
+        auth: token,
+        body: {
+          page: 1,
+          limit: 14,
+        },
+      });
 
-  const transactions = [
-    {
-      icon: <ShoppingBagIcon />,
-      name: 'Bakingo',
-      date: '13 Sept, 2025',
-      amount: '₹120',
-      isCredit: false,
-    },
-    {
-      icon: <ShoppingBagIcon />,
-      name: 'Bakingo',
-      date: '13 Sept, 2025',
-      amount: '₹120',
-      isCredit: true,
-    },
-    {
-      icon: <WalletIcon />,
-      name: 'Balance Added',
-      date: '13 Sept, 2025',
-      amount: '₹1,200',
-      isCredit: true,
-    },
-    {
-      icon: <ShoppingBagIcon />,
-      name: 'Bakingo',
-      date: '13 Sept, 2025',
-      amount: '₹120',
-      isCredit: false,
-    },
-    {
-      icon: <ShoppingBagIcon />,
-      name: 'Bakingo',
-      date: '13 Sept, 2025',
-      amount: '₹120',
-      isCredit: false,
-    },
-    {
-      icon: <ShoppingBagIcon />,
-      name: 'Bakingo',
-      date: '13 Sept, 2025',
-      amount: '₹120',
-      isCredit: false,
-    },
-    {
-      icon: <ShoppingBagIcon />,
-      name: 'Bakingo',
-      date: '13 Sept, 2025',
-      amount: '₹120',
-      isCredit: false,
-    },
-    {
-      icon: <ShoppingBagIcon />,
-      name: 'Bakingo',
-      date: '13 Sept, 2025',
-      amount: '₹120',
-      isCredit: false,
-    },
-  ];
+      const normalizedResponse = response as {
+        transactions?: WalletTransaction[];
+        data?: {
+          transactions?: WalletTransaction[];
+          data?: {
+            transactions?: WalletTransaction[];
+          };
+        };
+      };
+
+      const list =
+        normalizedResponse.transactions ??
+        normalizedResponse.data?.transactions ??
+        normalizedResponse.data?.data?.transactions ??
+        [];
+
+      if (Array.isArray(list)) {
+        setTransactions(list as WalletTransaction[]);
+      } else {
+        setTransactions([]);
+      }
+    } catch (error: unknown) {
+      const message =
+        (error as { message?: string })?.message ||
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Failed to fetch wallet transactions';
+      showToast({
+        message,
+        type: 'error',
+      });
+      setTransactions([]);
+    } finally {
+      setTransactionsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchWalletBalance();
+    fetchWalletTransactions();
+  }, [fetchWalletBalance, fetchWalletTransactions]);
+
+  const formattedTransactions = useMemo<TransactionDisplay[]>(() => {
+    const sorted = [...transactions].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+
+    return sorted.map((transaction) => {
+      const isCredit = (transaction.changePoints ?? 0) >= 0;
+      const dateLabel = transaction.createdAt
+        ? new Date(transaction.createdAt).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+        : '—';
+
+      const amountValue = transaction.changePoints ?? 0;
+      const amountLabel = `${amountValue > 0 ? '+' : ''}${amountValue} pts`;
+
+      return {
+        id: transaction.id,
+        name: transaction.reason ?? (transaction.relatedOrderId
+          ? `Order #${transaction.relatedOrderId}`
+          : 'Wallet activity'),
+        date: dateLabel,
+        amount: amountLabel,
+        isCredit,
+        icon: isCredit ? <StarIconSVG width={28} height={28} /> : <ShoppingBagIcon />,
+      };
+    });
+  }, [transactions]);
+
+  const emptyComponent = useMemo(() => (
+    <View alignItems="center" justifyContent="center" paddingVertical="l">
+      {transactionsLoading ? (
+        <ActivityIndicator size="small" color="#A20538" />
+      ) : (
+        <Text fontSize={14} color="textSecondary" fontFamily="Poppins-Regular">
+          No transactions yet. Start ordering to earn coins!
+        </Text>
+      )}
+    </View>
+  ), [transactionsLoading]);
+
+  const renderTransaction = useCallback(
+    ({ item, index }: ListRenderItemInfo<TransactionDisplay>) => (
+      <AnimatedTransactionCard
+        transaction={item}
+        index={index}
+        scrollY={scrollY}
+      />
+    ),
+    [scrollY],
+  );
+
+  const keyExtractor = useCallback((item: TransactionDisplay) => item.id, []);
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F8F8' }}>
-      <View flex={1} backgroundColor="mainBackgroundLight">
-        <ScreenHeader title="My Wallet" />
+        <View flex={1} backgroundColor="mainBackgroundLight">
+          <ScreenHeader title="My Wallet" />
 
-        <ScrollView 
-          style={{ flex: 1 }} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
-        >
-          <BalanceCard balance={balance} isLoading={isLoading} />
-          <TransactionsSection transactions={transactions} />
-        </ScrollView>
-      </View>
+          <View paddingHorizontal="m">
+            <BalanceCard balance={balance} isLoading={isLoading} />
+          </View>
+
+          <View flexDirection="row" alignItems="center" justifyContent="space-between" paddingHorizontal="m" marginBottom="s">
+            <Text
+              fontSize={20}
+              fontWeight="bold"
+              color="textPrimary"
+              fontFamily="Poppins-Bold"
+            >
+              Recent Transactions
+            </Text>
+            <View
+              paddingHorizontal="m"
+              paddingVertical="s"
+              backgroundColor="mainBackground"
+              borderRadius="xl"
+              shadowOffset={{ width: 0, height: 1 }}
+              shadowOpacity={0.05}
+              shadowRadius={2}
+              elevation={1}
+            >
+              <Text fontSize={12} color="textSecondary" fontFamily="Poppins-Medium">
+                {transactionsLoading ? 'Loading activity…' : `${transactions.length} entries`}
+              </Text>
+            </View>
+          </View>
+
+          <View flex={1}>
+            <Animated.FlatList
+              data={formattedTransactions}
+              keyExtractor={keyExtractor}
+              renderItem={renderTransaction}
+              ListEmptyComponent={emptyComponent}
+              onScroll={scrollHandler}
+              scrollEventThrottle={16}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
+              showsVerticalScrollIndicator={false}
+              initialNumToRender={5}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              removeClippedSubviews
+            />
+          </View>
+        </View>
       </SafeAreaView>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  transactionCardWrapper: {
+    width: '100%',
+  },
+});
+
 
