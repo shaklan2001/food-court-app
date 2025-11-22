@@ -16,6 +16,10 @@
       "production": {
         "android": {
           "buildType": "app-bundle"
+        },
+        "ios": {
+          "distribution": "store",
+          "simulator": false
         }
       }
     }

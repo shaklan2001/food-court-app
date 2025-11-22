@@ -41,7 +41,7 @@ export default {
         },
         android: {
             package: "com.yuvan97.foodcourtapp",
-            versionCode: 5,
+            versionCode: 7,
             adaptiveIcon: {
                 foregroundImage: "./assets/images/adaptive-icon.png",
                 backgroundColor: "#ffffff"

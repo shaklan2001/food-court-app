@@ -37,7 +37,10 @@ export type ApiType =
   "CREATE_ORDER" |
   "GET_MENU_RECOMMENDATIONS" |
   "GET_MENU_BEST_SELLERS" |
-  "GET_MENU_NEW_ARRIVALS";
+  "GET_MENU_NEW_ARRIVALS" |
+  "GET_ORDER_HISTORY" |
+  "GET_MENU_CATEGORIES" |
+  "GET_MENU_BY_CATEGORY";
   
 export type TransactionIntentType =
   "intent_create_user" |
@@ -78,4 +81,7 @@ export type TransactionIntentType =
   "intent_create_order" |
   "intent_get_menu_recommendations" |
   "intent_get_menu_best_sellers" |
-  "intent_get_menu_new_arrivals";
+  "intent_get_menu_new_arrivals" |
+  "intent_get_order_history" |
+  "intent_get_menu_categories" |
+  "intent_get_menu_by_category";
