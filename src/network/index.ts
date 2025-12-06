@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, isCancel } from "axios";
 
 const isProd = true;
@@ -24,6 +25,19 @@ apiClient.interceptors.request.use(
         if (isLoggingOut) {
             console.log('🚫 Blocking API request during logout:', config.url);
             return Promise.reject(new axios.Cancel('Request cancelled due to logout'));
+        }
+
+        // Auto-attach token if missing
+        if (!config.headers['Authorization']) {
+            try {
+                const token = await AsyncStorage.getItem('auth_token');
+                if (token) {
+                    config.headers['Authorization'] = `Bearer ${token}`;
+                    config.headers['Cookie'] = `better-auth.session_token=${token}`;
+                }
+            } catch (error) {
+                console.warn('Failed to attach auth token:', error);
+            }
         }
 
         console.log('🌐 API Request:', {
@@ -68,7 +82,6 @@ apiClient.interceptors.response.use(
             }
         }
 
-        // Prevent logging during logout to avoid DevLauncher crashes
         if (!isLoggingOut) {
             console.log('❌ API Error:', {
                 status: error.response?.status,
@@ -77,7 +90,7 @@ apiClient.interceptors.response.use(
                 message: error.message,
             });
         }
-        
+
         return Promise.reject(error);
     },
 );

@@ -26,6 +26,26 @@ import { showToast } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
 
+type CreateUserPayload = {
+    name: string;
+    email: string;
+    phone: string;
+    dob: string;
+    password: string;
+    isStudent: boolean;
+    collegeName?: string;
+    courseName?: string;
+    branch?: string;
+    currentSemester?: string;
+    studentIdImage?: string;
+};
+
+type PendingOTPData = {
+    phone: string;
+    flow?: 'login' | 'signUp';
+    createUserPayload?: CreateUserPayload;
+};
+
 const OTPVerify = memo(() => {
     const theme = useTheme<Theme>();
     const dispatch = useDispatch();
@@ -33,7 +53,7 @@ const OTPVerify = memo(() => {
     const [timer, setTimer] = useState(30);
     const [isResendDisabled, setIsResendDisabled] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
-    const [loginData, setLoginData] = useState<{ phone: string } | null>(null);
+    const [pendingData, setPendingData] = useState<PendingOTPData | null>(null);
     const [resendAttempts, setResendAttempts] = useState(0);
     const [maxAttemptsReached, setMaxAttemptsReached] = useState(false);
     const inputRefs = useRef<TextInput[]>([]);
@@ -54,10 +74,10 @@ const OTPVerify = memo(() => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const loginData = await AsyncStorage.getItem('pending_otp_data');
-                if (loginData) {
-                    const parsedData = JSON.parse(loginData);
-                    setLoginData(parsedData);
+                const otpData = await AsyncStorage.getItem('pending_otp_data');
+                if (otpData) {
+                    const parsedData = JSON.parse(otpData) as PendingOTPData;
+                    setPendingData(parsedData);
                     return;
                 }
 
@@ -132,6 +152,78 @@ const OTPVerify = memo(() => {
         router.back();
     };
 
+    const handleSignupCompletion = async () => {
+        if (!pendingData?.createUserPayload) {
+            await AsyncStorage.removeItem('pending_otp_data');
+            setIsLoading(false);
+            showToast({
+                message: 'Missing signup data. Please restart the signup process.',
+                type: 'error',
+            });
+            router.push('/sign-up');
+            return;
+        }
+
+        try {
+            const createUserResponse = await betterwayApiCall({
+                method: "POST",
+                url: "CREATE_USER",
+                body: pendingData.createUserPayload,
+                auth: null,
+            });
+
+            if (!createUserResponse?.data) {
+                throw new Error('Failed to create account');
+            }
+
+            const userData = createUserResponse.data;
+            const responseData: { token?: string } = createUserResponse as unknown as { token?: string };
+            const token = userData.token || responseData.token;
+
+            if (token) {
+                await AsyncStorage.setItem('auth_token', token);
+                dispatch(setToken(token));
+            }
+
+            dispatch(setUser({
+                id: userData.id,
+                email: userData.email,
+                name: userData.name,
+                phoneNumber: userData.phoneNumber || userData.phone || pendingData.createUserPayload.phone,
+                dob: userData.dob,
+                isStudent: userData.isStudent,
+                role: userData.role,
+                image: userData.image,
+                emailVerified: userData.emailVerified,
+                createdAt: userData.createdAt,
+                updatedAt: userData.updatedAt,
+            }));
+
+            await AsyncStorage.removeItem('pending_otp_data');
+            setIsLoading(false);
+
+            showToast({
+                message: 'Account created successfully!',
+                type: 'success',
+            });
+
+            setTimeout(() => {
+                router.replace('/(tabs)/');
+            }, 500);
+        } catch (error) {
+            const errorMessage = (error as { response?: { data?: { error?: string; message?: string } }; message?: string })?.response?.data?.error
+                || (error as { response?: { data?: { error?: string; message?: string } }; message?: string })?.response?.data?.message
+                || (error as { message?: string })?.message
+                || 'Failed to create account';
+
+            setIsLoading(false);
+            showToast({
+                message: errorMessage,
+                type: 'error',
+            });
+        }
+    };
+
     const handleVerifyOTP = async () => {
         const otpString = otp.join('');
         if (otpString.length !== 6) {
@@ -142,7 +234,7 @@ const OTPVerify = memo(() => {
             return;
         }
         
-        if (!loginData) {
+        if (!pendingData?.phone) {
             showToast({
                 message: 'Session expired. Please try again.',
                 type: 'error',
@@ -158,7 +250,7 @@ const OTPVerify = memo(() => {
                 method: "POST",
                 url: "VERIFY_OTP_TO_PHONE",
                 body: {
-                    phoneNumber: loginData.phone,
+                    phoneNumber: pendingData.phone,
                     code: otpString,
                     disableSession: false,
                     updatePhoneNumber: false,
@@ -179,6 +271,11 @@ const OTPVerify = memo(() => {
                 message: 'OTP verified successfully!',
                 type: 'success',
             });
+
+            if (pendingData?.flow === 'signUp') {
+                await handleSignupCompletion();
+                return;
+            }
 
             // Login flow - OTP verified, user gets logged in automatically
             if (verifyResponse?.data?.token && verifyResponse?.data?.user) {
@@ -238,7 +335,7 @@ const OTPVerify = memo(() => {
     };
 
     const handleResendOTP = async () => {
-        if (isResendDisabled || !loginData || maxAttemptsReached) return;
+        if (isResendDisabled || !pendingData || maxAttemptsReached) return;
         const newAttemptNumber = resendAttempts + 1;
         
         if (newAttemptNumber > 3) {
@@ -255,7 +352,7 @@ const OTPVerify = memo(() => {
                 method: "POST",
                 url: "SEND_OTP_TO_PHONE",
                 body: {
-                    phoneNumber: loginData.phone,
+                    phoneNumber: pendingData.phone,
                 },
                 auth: null,
             });

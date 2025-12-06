@@ -1,6 +1,7 @@
 
 export const API_ROUTES = {
   CREATE_USER: "/api/onboarding/create-user",
+  GOOGLE_SIGN_IN: "/api/auth/sign-in/social",
   UPLOAD_STUDENT_ID: "/api/onboarding/upload-student-id",
   SIGN_IN_EMAIL: "/api/user/sign-in-email",
   SIGN_IN_PHONE: "/api/auth/sign-in/phone",
@@ -33,6 +34,7 @@ export const API_ROUTES = {
   GET_WALLET_BALANCE: "/api/wallet/balance",
   GET_WALLET_TRANSACTIONS: "/api/wallet/transactions",
   GET_DINEIN_SLOT_AVAILABILITY: "/api/dinein/slot-availability",
+  GET_DINEIN_SLOTS: "/api/dinein/slots",
   GET_ORDER_STATUS: "/api/billing/get-order-status",
   GET_ORDER_TOTAL: "/api/billing/get-order-total",
   VERIFY_PAYMENT: "/api/billing/verify-payment",

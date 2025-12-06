@@ -1,6 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { setToken, setUser } from '../store/slices/authSlice';
 import { RootState } from '../store/store';
 
 interface AuthGuardProps {
@@ -9,17 +11,47 @@ interface AuthGuardProps {
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const router = useRouter();
+  const dispatch = useDispatch();
   const { user, token } = useSelector((state: RootState) => state.auth);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
-    if (!user || !token) {
-      router.replace('/(auth)');
-    }
-  }, [user, token, router]);
+    const checkAuth = async () => {
+      if (user && token) {
+        setIsCheckingSession(false);
+        return;
+      }
 
-  if (user && token) {
-    return <>{children}</>;
+      try {
+        const storedToken = await AsyncStorage.getItem('auth_token');
+        const storedUserData = await AsyncStorage.getItem('user_data');
+
+        if (storedToken && storedUserData) {
+          const parsedUser = JSON.parse(storedUserData);
+          dispatch(setToken(storedToken));
+          dispatch(setUser(parsedUser));
+          setIsCheckingSession(false);
+        } else {
+          setIsCheckingSession(false);
+          router.replace('/(auth)');
+        }
+      } catch {
+        setIsCheckingSession(false);
+        router.replace('/(auth)');
+      }
+    };
+
+    checkAuth();
+  }, [user, token, router, dispatch]);
+
+  if (isCheckingSession) {
+    return null;
   }
 
-  return null;
+  const hasAuth = user && token;
+  if (!hasAuth) {
+    return null;
+  }
+
+  return <>{children}</>;
 };

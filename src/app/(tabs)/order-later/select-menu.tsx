@@ -1,11 +1,12 @@
-import { FoodItem } from '@/src/components/HomePage/FoodSection';
 import { StepIndicator } from '@/src/components/StepIndicator';
 import { Text, View } from '@/src/components/ui';
-import { mockCuisineData } from '@/src/data/mockCuisineData';
+import { betterwayApiCall } from '@/src/network/useApiPort';
+import { RootState, useAppSelector } from '@/src/store/store';
 import theme from '@/src/theme/theme';
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Dimensions, FlatList, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { showToast } from '@/src/utils';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../cart';
 
@@ -16,22 +17,115 @@ const CARD_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
 
 type OptionType = 'takeaway' | 'dine-in';
 
+type RawMenuItem = {
+    id?: string | number;
+    name?: string;
+    description?: string;
+    image?: string;
+    pricePaise?: number;
+    payload?: Record<string, unknown>;
+};
+
+type MenuItem = {
+    id: string;
+    name: string;
+    description: string;
+    priceLabel: string;
+    pricePaise: number;
+    imageUrl?: string;
+};
+
+const parsePriceToPaise = (value?: unknown): number => {
+    if (typeof value === 'number' && !Number.isNaN(value)) {
+        return value;
+    }
+    if (typeof value === 'string') {
+        const numeric = value.replace(/[^\d.]/g, '');
+        const parsed = parseFloat(numeric);
+        if (!Number.isNaN(parsed)) {
+            return Math.round(parsed * 100);
+        }
+    }
+    return 0;
+};
+
 const SelectMenu = () => {
+    const { slotId, slotLabel, availableSeats } = useLocalSearchParams<{
+        slotId?: string;
+        slotLabel?: string;
+        availableSeats?: string;
+    }>();
     const [selectedOption, setSelectedOption] = useState<OptionType>('takeaway');
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+    const [loadingMenu, setLoadingMenu] = useState(true);
+    const [errorMessage, setErrorMessage] = useState('');
+    const { token } = useAppSelector((state: RootState) => state.auth);
 
-    // Get sample menu items
-    const menuItems = mockCuisineData[0]?.menuItems.slice(0, 6) || [];
+    const fetchMenuItems = useCallback(async () => {
+        if (!token) {
+            setLoadingMenu(false);
+            setErrorMessage('Please login to view the menu.');
+            return;
+        }
 
-    const transformedMenuItems = menuItems.map((item) => ({
-        id: item.id,
-        title: item.name,
-        price: `₹${item.price}`,
-        pricePaise: item.price * 100,
-        image: { uri: item.image },
-        description: item.description,
-        isFavourite: false,
-    }));
+        setLoadingMenu(true);
+        setErrorMessage('');
+        try {
+            const response = await betterwayApiCall({
+                method: "POST",
+                url: "GET_MENU",
+                auth: token,
+                body: {
+                    page: 1,
+                    limit: 20,
+                },
+            });
+
+            const payload = Array.isArray(response)
+                ? response
+                : Array.isArray(response?.data)
+                    ? response.data
+                    : [];
+
+            const formatted: MenuItem[] = (payload as RawMenuItem[])
+                .filter(item => item?.id)
+                .map((item) => {
+                    const payloadData = item.payload ?? {};
+                    const imageUrl = typeof payloadData?.item_image_url === 'string' && payloadData.item_image_url.trim() !== ''
+                        ? payloadData.item_image_url
+                        : typeof item.image === 'string' && item.image.trim() !== ''
+                            ? item.image
+                            : undefined;
+
+                    const pricePaise = typeof item.pricePaise === 'number' && !Number.isNaN(item.pricePaise)
+                        ? item.pricePaise
+                        : parsePriceToPaise(payloadData?.price);
+
+                    const safePrice = pricePaise > 0 ? pricePaise : 0;
+
+                    return {
+                        id: String(item.id),
+                        name: item.name ?? (payloadData?.item_name as string) ?? 'Menu Item',
+                        description: (payloadData?.itemdescription as string) ?? item.description ?? '',
+                        imageUrl,
+                        pricePaise: safePrice,
+                        priceLabel: safePrice > 0 ? `₹${(safePrice / 100).toFixed(2)}` : 'Price on request',
+                    };
+                });
+
+            setMenuItems(formatted);
+        } catch (error) {
+            const message = (error as { message?: string })?.message || 'Failed to fetch menu';
+            setErrorMessage(message);
+        } finally {
+            setLoadingMenu(false);
+        }
+    }, [token]);
+
+    useEffect(() => {
+        fetchMenuItems();
+    }, [fetchMenuItems]);
 
     const handleAddItem = (itemId: string) => {
         const newSelected = new Set(selectedItems);
@@ -43,31 +137,129 @@ const SelectMenu = () => {
         setSelectedItems(newSelected);
     };
 
+    const selectedCount = selectedItems.size;
+
     const handleNext = () => {
-        // Navigate to step 3 (confirmation/summary)
+        if (selectedCount === 0) {
+            showToast({
+                message: 'Please add at least one item to continue',
+                type: 'error',
+            });
+            return;
+        }
+
         router.push({
             pathname: '/(tabs)/order-later/confirmation',
-            params: { selectedOption },
+            params: {
+                selectedOption,
+                slotId,
+                slotLabel,
+                availableSeats,
+                itemCount: String(selectedCount),
+            },
         });
     };
 
-    const renderFoodItem = ({ item, index }: { item: any; index: number }) => (
-        <View
-            style={{
-                width: CARD_WIDTH,
-                marginBottom: 15,
-                marginRight: index % 2 === 0 ? CARD_GAP : 0,
-            }}
-        >
-            <FoodItem
-                item={item}
-                showHeartIcon={false}
-                isFavouriteItem={false}
-                isGridLayout={true}
-                onHeartPress={() => undefined}
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fallbackImage = require('@/assets/images/bowl.png');
+
+    const renderMenuCard = ({ item, index }: { item: MenuItem; index: number }) => {
+        const isSelected = selectedItems.has(item.id);
+        return (
+            <View
+                style={[
+                    styles.card,
+                    {
+                        width: CARD_WIDTH,
+                        marginRight: index % 2 === 0 ? CARD_GAP : 0,
+                    },
+                ]}
+            >
+                <Image
+                    source={item.imageUrl ? { uri: item.imageUrl } : fallbackImage}
+                    style={styles.cardImage}
+                    resizeMode="cover"
+                />
+                <View style={styles.cardBody}>
+                    <Text
+                        fontSize={14}
+                        fontWeight="600"
+                        fontFamily="Poppins-SemiBold"
+                        color="textPrimary"
+                        numberOfLines={2}
+                        marginBottom="xs"
+                    >
+                        {item.name}
+                    </Text>
+                    <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
+                        {item.priceLabel}
+                    </Text>
+                </View>
+                <TouchableOpacity
+                    onPress={() => handleAddItem(item.id)}
+                    style={[
+                        styles.addButton,
+                        isSelected && styles.addButtonActive,
+                    ]}
+                >
+                    <Text
+                        fontSize={12}
+                        fontFamily="Poppins-SemiBold"
+                        style={{
+                            color: isSelected ? theme.colors.textOnPrimary : theme.colors.primary,
+                        }}
+                    >
+                        {isSelected ? 'Added' : 'Add'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
+    const renderMenuContent = () => {
+        if (loadingMenu) {
+            return (
+                <View style={styles.loaderContainer}>
+                    <ActivityIndicator color={theme.colors.primary} />
+                    <Text fontSize={12} color="textSecondary" marginTop="s">
+                        Loading menu...
+                    </Text>
+                </View>
+            );
+        }
+
+        if (errorMessage) {
+            return (
+                <View style={styles.loaderContainer}>
+                    <Text fontSize={14} color="danger" textAlign="center">
+                        {errorMessage}
+                    </Text>
+                </View>
+            );
+        }
+
+        if (menuItems.length === 0) {
+            return (
+                <View style={styles.loaderContainer}>
+                    <Text fontSize={14} color="textSecondary" textAlign="center">
+                        No menu items available right now.
+                    </Text>
+                </View>
+            );
+        }
+
+        return (
+            <FlatList
+                data={menuItems}
+                renderItem={renderMenuCard}
+                keyExtractor={(item) => item.id}
+                numColumns={2}
+                scrollEnabled={false}
+                columnWrapperStyle={{ justifyContent: 'flex-start' }}
+                contentContainerStyle={{ paddingBottom: 0 }}
             />
-        </View>
-    );
+        );
+    };
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.mainBackgroundLight }}>
@@ -77,81 +269,86 @@ const SelectMenu = () => {
                 <StepIndicator currentStep={2} totalSteps={3} />
             </View>
 
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                <View paddingHorizontal="l" gap="xl">
-                    {/* Select Option Section */}
-                    <View gap="m">
-                        <View flexDirection="row" gap="xs" alignItems="center">
-                            <View width={4} height={21} backgroundColor="primary" borderRadius="xs" />
-                            <Text
-                                fontSize={20}
-                                fontWeight="600"
-                                fontFamily="Poppins-SemiBold"
-                                color="textPrimary"
-                            >
-                                Select Option
-                            </Text>
-                        </View>
-
-                        <View flexDirection="row" gap="s">
-                            {(['takeaway', 'dine-in'] as OptionType[]).map((option) => (
-                                <TouchableOpacity
-                                    key={option}
-                                    onPress={() => setSelectedOption(option)}
-                                    style={[
-                                        styles.optionButton,
-                                        selectedOption === option && styles.optionButtonActive,
-                                    ]}
+            <FlatList
+                ListHeaderComponent={(
+                    <View paddingHorizontal="l" gap="xl">
+                        {/* Select Option Section */}
+                        <View gap="m">
+                            <View flexDirection="row" gap="xs" alignItems="center">
+                                <View width={4} height={21} backgroundColor="primary" borderRadius="xs" />
+                                <Text
+                                    fontSize={20}
+                                    fontWeight="600"
+                                    fontFamily="Poppins-SemiBold"
+                                    color="textPrimary"
                                 >
-                                    <Text
-                                        fontSize={14}
-                                        fontFamily="SF Pro"
-                                        style={{
-                                            color:
-                                                selectedOption === option
-                                                    ? 'white'
-                                                    : theme.colors.textPrimary,
-                                        }}
+                                    Select Option
+                                </Text>
+                            </View>
+
+                            <View style={styles.optionRow}>
+                                {(['takeaway', 'dine-in'] as OptionType[]).map((option) => (
+                                    <TouchableOpacity
+                                        key={option}
+                                        onPress={() => setSelectedOption(option)}
+                                        style={[
+                                            styles.optionButton,
+                                            selectedOption === option && styles.optionButtonActive,
+                                        ]}
                                     >
-                                        {option === 'takeaway' ? 'Takeaway' : 'Dine-In'}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* Select Menu Section */}
-                    <View gap="m" paddingBottom="l">
-                        <View flexDirection="row" gap="xs" alignItems="center">
-                            <View width={4} height={21} backgroundColor="primary" borderRadius="xs" />
-                            <Text
-                                fontSize={20}
-                                fontWeight="600"
-                                fontFamily="Poppins-SemiBold"
-                                color="textPrimary"
-                            >
-                                Select Menu
-                            </Text>
+                                        <Text
+                                            fontSize={14}
+                                            fontFamily="SF Pro"
+                                            style={{
+                                                color:
+                                                    selectedOption === option
+                                                        ? 'white'
+                                                        : theme.colors.textPrimary,
+                                            }}
+                                        >
+                                            {option === 'takeaway' ? 'Takeaway' : 'Dine-In'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         </View>
 
-                        <FlatList
-                            data={transformedMenuItems}
-                            renderItem={renderFoodItem}
-                            keyExtractor={(item) => item.id}
-                            numColumns={2}
-                            scrollEnabled={false}
-                            columnWrapperStyle={{ justifyContent: 'flex-start' }}
-                            contentContainerStyle={{ paddingBottom: 0 }}
-                        />
+                        {/* Select Menu Section */}
+                        <View gap="m" paddingBottom="l">
+                            <View flexDirection="row" gap="xs" alignItems="center">
+                                <View width={4} height={21} backgroundColor="primary" borderRadius="xs" />
+                                <Text
+                                    fontSize={20}
+                                    fontWeight="600"
+                                    fontFamily="Poppins-SemiBold"
+                                    color="textPrimary"
+                                >
+                                    Select Menu
+                                </Text>
+                            </View>
+                            {renderMenuContent()}
+                        </View>
                     </View>
-                </View>
-            </ScrollView>
+                )}
+                data={[]}
+                renderItem={() => null}
+                keyExtractor={() => 'empty'}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollView}
+            />
 
             {/* Next Button */}
             <View paddingHorizontal="l" paddingBottom="m" backgroundColor="mainBackgroundLight">
-                <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+                <TouchableOpacity
+                    style={[
+                        styles.nextButton,
+                        selectedCount === 0 && styles.nextButtonDisabled,
+                    ]}
+                    onPress={handleNext}
+                    disabled={selectedCount === 0}
+                >
                     <Text fontSize={16} fontFamily="SF Pro" color="textOnPrimary">
-                        Next
+                        {selectedCount > 0 ? `Next (${selectedCount})` : 'Next'}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -161,7 +358,12 @@ const SelectMenu = () => {
 
 const styles = StyleSheet.create({
     scrollView: {
-        flex: 1,
+        paddingBottom: 20,
+    },
+    optionRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 4,
     },
     optionButton: {
         paddingHorizontal: 20,
@@ -173,10 +375,41 @@ const styles = StyleSheet.create({
         height: 36,
         justifyContent: 'center',
         alignItems: 'center',
+        marginRight: 8,
+        marginBottom: 8,
     },
     optionButtonActive: {
         backgroundColor: theme.colors.primary,
         borderColor: theme.colors.primary,
+    },
+    card: {
+        borderRadius: 12,
+        backgroundColor: theme.colors.mainBackground,
+        overflow: 'hidden',
+        marginBottom: 15,
+    },
+    cardImage: {
+        width: '100%',
+        height: 110,
+    },
+    cardBody: {
+        padding: 10,
+        minHeight: 70,
+    },
+    addButton: {
+        borderTopWidth: 1,
+        borderColor: 'rgba(1, 1, 1, 0.05)',
+        paddingVertical: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addButtonActive: {
+        backgroundColor: theme.colors.primary,
+    },
+    loaderContainer: {
+        paddingVertical: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     nextButton: {
         backgroundColor: theme.colors.primary,
@@ -185,6 +418,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    nextButtonDisabled: {
+        opacity: 0.5,
     },
 });
 

@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Image, ImageSourcePropType, Pressable } from 'react-native';
+import { ActivityIndicator, Image, ImageSourcePropType, Pressable } from 'react-native';
 import View from './View';
 
 interface SocialLoginButtonProps {
@@ -9,6 +9,8 @@ interface SocialLoginButtonProps {
     height?: number;
     imageWidth?: number;
     imageHeight?: number;
+    disabled?: boolean;
+    loading?: boolean;
 }
 
 const SocialLoginButton = memo(({
@@ -18,9 +20,11 @@ const SocialLoginButton = memo(({
     height = 64,
     imageWidth = 26,
     imageHeight = 26,
+    disabled = false,
+    loading = false,
 }: SocialLoginButtonProps) => {
     return (
-        <Pressable onPress={onPress}>
+        <Pressable onPress={onPress} disabled={disabled || loading}>
             <View
                 width={width}
                 height={height}
@@ -28,6 +32,7 @@ const SocialLoginButton = memo(({
                 borderRadius="m"
                 justifyContent="center"
                 alignItems="center"
+                opacity={disabled || loading ? 0.6 : 1}
                 style={{
                     shadowColor: '#000000',
                     shadowOffset: {
@@ -39,14 +44,18 @@ const SocialLoginButton = memo(({
                     elevation: 4,
                 }}
             >
-                <Image
-                    source={imageSource}
-                    style={{
-                        width: imageWidth,
-                        height: imageHeight,
-                        resizeMode: 'contain'
-                    }}
-                />
+                {loading ? (
+                    <ActivityIndicator size="small" color="#666" />
+                ) : (
+                    <Image
+                        source={imageSource}
+                        style={{
+                            width: imageWidth,
+                            height: imageHeight,
+                            resizeMode: 'contain',
+                        }}
+                    />
+                )}
             </View>
         </Pressable>
     );

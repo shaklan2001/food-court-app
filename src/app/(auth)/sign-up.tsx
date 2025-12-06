@@ -1,34 +1,30 @@
 import { AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '@shopify/restyle';
 import * as DocumentPicker from 'expo-document-picker';
 import { router, Stack } from 'expo-router';
 import { memo, useCallback, useMemo, useState } from 'react';
-import { Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, Pressable, View as RNView, StatusBar, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch } from 'react-redux';
-import { Calendar, Checkbox, FormContainer } from '../../components/shared';
+import { Checkbox, FormContainer } from '../../components/shared';
 import { Button, CountryCodeSelector, FileUpload, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall } from '../../network/useApiPort';
-import { setToken, setUser } from '../../store/slices/authSlice';
-import { Theme } from '../../theme/theme';
+import { useGoogleAuth } from '../../services/googleAuthService';
 import { showToast } from '../../utils';
 
 const { width, height } = Dimensions.get('window');
 const countryCode = '+91';
 
 const SignUp = memo(() => {
-    const theme = useTheme<Theme>();
-    const dispatch = useDispatch();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
-    const [dob, setDob] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isStudentUser, setIsStudentUser] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [showCalendar, setShowCalendar] = useState(false);
+    const [day, setDay] = useState('');
+    const [month, setMonth] = useState('');
+    const [year, setYear] = useState('');
     const [collegeName, setCollegeName] = useState('');
     const [courseName, setCourseName] = useState('');
     const [branch, setBranch] = useState('');
@@ -36,23 +32,10 @@ const SignUp = memo(() => {
     const [studentIdFile, setStudentIdFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
     const [studentIdFileName, setStudentIdFileName] = useState<string | null>(null);
 
-
-
-    const formatDateForAPI = useCallback((dateString: string) => {
-        if (!dateString) return '';
-
-        if (dateString.includes('-') && dateString.length === 10) {
-            return dateString;
-        }
-
-        const parts = dateString.split('/');
-        if (parts.length === 3) {
-            const [day, month, year] = parts;
-            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        }
-
-        return dateString;
-    }, []);
+    const getFormattedDob = useCallback(() => {
+        if (!day || !month || !year || year.length !== 4) return '';
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }, [day, month, year]);
 
     const fullPhoneNumber = useMemo(() => `${countryCode}${mobileNumber}`, [mobileNumber]);
 
@@ -61,7 +44,6 @@ const SignUp = memo(() => {
     const isEmailValid = useMemo(() => /\S+@\S+\.\S+/.test(email), [email]);
     const isMobileNumberEmpty = useMemo(() => !mobileNumber.trim(), [mobileNumber]);
     const isMobileNumberValid = useMemo(() => mobileNumber.length >= 10, [mobileNumber]);
-    const isDobEmpty = useMemo(() => !dob.trim(), [dob]);
     const isPasswordEmpty = useMemo(() => !password.trim(), [password]);
     const isPasswordValid = useMemo(() => password.length >= 6, [password]);
     const isConfirmPasswordValid = useMemo(() => password === confirmPassword, [password, confirmPassword]);
@@ -72,21 +54,96 @@ const SignUp = memo(() => {
     const isCurrentSemesterEmpty = useMemo(() => !currentSemester.trim(), [currentSemester]);
     const isStudentIdFileValid = useMemo(() => !!(studentIdFile && studentIdFileName), [studentIdFile, studentIdFileName]);
 
-    const formatDateForDisplay = useCallback((dateString: string) => {
-        if (!dateString) return '';
+    const calculateAge = useCallback((dayStr: string, monthStr: string, yearStr: string): number | null => {
+        const dayNum = parseInt(dayStr, 10);
+        const monthNum = parseInt(monthStr, 10);
+        const yearNum = parseInt(yearStr, 10);
 
-        if (dateString.includes('-') && dateString.length === 10) {
-            const [year, month, day] = dateString.split('-');
-            return `${day}/${month}/${year}`;
+        if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) {
+            return null;
         }
 
-        return dateString;
+        const birthDate = new Date(yearNum, monthNum - 1, dayNum);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        return age;
     }, []);
 
+    // Validate date for form submission
+    const validateDate = useCallback((): boolean => {
+        if (!day || !month || !year) {
+            showToast({
+                message: 'Please enter your date of birth',
+                type: 'error',
+            });
+            return false;
+        }
 
-    const handleCalendarPress = useCallback(() => {
-        setShowCalendar(true);
-    }, []);
+        const dayNum = parseInt(day, 10);
+        const monthNum = parseInt(month, 10);
+        const yearNum = parseInt(year, 10);
+
+        if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) {
+            showToast({
+                message: 'Please enter a valid date',
+                type: 'error',
+            });
+            return false;
+        }
+
+        if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12) {
+            showToast({
+                message: 'Please enter a valid date',
+                type: 'error',
+            });
+            return false;
+        }
+
+        if (year.length !== 4) {
+            showToast({
+                message: 'Please enter a valid 4-digit year',
+                type: 'error',
+            });
+            return false;
+        }
+
+        // Check if date is valid (e.g., Feb 30 is invalid)
+        const date = new Date(yearNum, monthNum - 1, dayNum);
+        if (date.getDate() !== dayNum || date.getMonth() !== monthNum - 1 || date.getFullYear() !== yearNum) {
+            showToast({
+                message: 'Please enter a valid date',
+                type: 'error',
+            });
+            return false;
+        }
+
+        // Check if date is in the future
+        if (date > new Date()) {
+            showToast({
+                message: 'Date of birth cannot be in the future',
+                type: 'error',
+            });
+            return false;
+        }
+
+        // Check age (must be at least 13 years old)
+        const age = calculateAge(day, month, year);
+        if (age === null || age < 13) {
+            showToast({
+                message: 'You must be at least 13 years old to sign up',
+                type: 'error',
+            });
+            return false;
+        }
+
+        return true;
+    }, [day, month, year, calculateAge]);
 
     const handleFileUpload = useCallback(async () => {
         try {
@@ -142,11 +199,8 @@ const SignUp = memo(() => {
             });
             return false;
         }
-        if (isDobEmpty) {
-            showToast({
-                message: 'Please enter your date of birth',
-                type: 'error',
-            });
+        // Validate date of birth
+        if (!validateDate()) {
             return false;
         }
         if (isPasswordEmpty) {
@@ -210,7 +264,7 @@ const SignUp = memo(() => {
         }
 
         return true;
-    }, [isNameEmpty, isEmailEmpty, isEmailValid, isMobileNumberEmpty, isMobileNumberValid, isDobEmpty, isPasswordEmpty, isPasswordValid, isConfirmPasswordValid, isStudentUser, isCollegeNameEmpty, isCourseNameEmpty, isBranchEmpty, isCurrentSemesterEmpty, isStudentIdFileValid]);
+    }, [isNameEmpty, isEmailEmpty, isEmailValid, isMobileNumberEmpty, isMobileNumberValid, isPasswordEmpty, isPasswordValid, isConfirmPasswordValid, isStudentUser, isCollegeNameEmpty, isCourseNameEmpty, isBranchEmpty, isCurrentSemesterEmpty, isStudentIdFileValid, validateDate]);
 
     const uploadStudentId = useCallback(async (file: DocumentPicker.DocumentPickerAsset): Promise<string | null> => {
         try {
@@ -260,7 +314,6 @@ const SignUp = memo(() => {
                 }
             }
 
-            // Create user
             const createUserBody: {
                 name: string;
                 email: string;
@@ -277,7 +330,7 @@ const SignUp = memo(() => {
                 name,
                 email,
                 phone: fullPhoneNumber,
-                dob: formatDateForAPI(dob),
+                dob: getFormattedDob(),
                 password,
                 isStudent: isStudentUser,
             };
@@ -292,60 +345,40 @@ const SignUp = memo(() => {
                 }
             }
 
-            const createUserResponse = await betterwayApiCall({
+            const sendOtpResponse = await betterwayApiCall({
                 method: "POST",
-                url: "CREATE_USER",
-                body: createUserBody,
+                url: "SEND_OTP_TO_PHONE",
+                body: {
+                    phoneNumber: fullPhoneNumber,
+                },
                 auth: null,
             });
 
-            if (createUserResponse?.data) {
-                const userData = createUserResponse.data;
-                const responseData: { token?: string } = createUserResponse as unknown as { token?: string };
-                const token = userData.token || responseData.token;
-                
-                // Store token
-                if (token) {
-                    await AsyncStorage.setItem('auth_token', token);
-                    dispatch(setToken(token));
-                }
-
-                // Store user data
-                dispatch(setUser({
-                    id: userData.id,
-                    email: userData.email,
-                    name: userData.name,
-                    phoneNumber: userData.phoneNumber || userData.phone || fullPhoneNumber,
-                    dob: userData.dob,
-                    isStudent: userData.isStudent,
-                    role: userData.role,
-                    image: userData.image,
-                    emailVerified: userData.emailVerified,
-                    createdAt: userData.createdAt,
-                    updatedAt: userData.updatedAt,
+            if (sendOtpResponse?.data?.message === 'code sent' || sendOtpResponse?.status === 200) {
+                await AsyncStorage.removeItem('pending_otp_data');
+                await AsyncStorage.setItem('pending_otp_data', JSON.stringify({
+                    phone: fullPhoneNumber,
+                    flow: 'signUp',
+                    createUserPayload: createUserBody,
                 }));
 
                 setIsLoading(false);
                 
                 showToast({
-                    message: 'Account created successfully!',
+                    message: 'OTP sent to your mobile number.',
                     type: 'success',
                 });
 
-                // Navigate to home or appropriate screen
-                router.replace('/(tabs)/');
-            } else {
-                setIsLoading(false);
-                showToast({
-                    message: 'Failed to create account',
-                    type: 'error',
-                });
+                router.push('/otp-verify');
+                return;
             }
+
+            throw new Error(sendOtpResponse?.data?.message || 'Failed to send OTP');
         } catch (error) {
-            const errorMessage = (error as { response?: { data?: { error?: string; message?: string } }; message?: string })?.response?.data?.error 
-                || (error as { response?: { data?: { error?: string; message?: string } }; message?: string })?.response?.data?.message
-                || (error as { message?: string })?.message 
-                || 'Failed to create account';
+            const errorMessage = (error as { message?: string })?.message 
+                || (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error
+                || (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.message
+                || 'Failed to start verification';
             
             setIsLoading(false);
             showToast({
@@ -353,18 +386,16 @@ const SignUp = memo(() => {
                 type: 'error',
             });
         }
-    }, [validateForm, name, email, fullPhoneNumber, dob, password, isStudentUser, collegeName, courseName, branch, currentSemester, studentIdFile, uploadStudentId, formatDateForAPI, dispatch]);
+    }, [validateForm, isStudentUser, studentIdFile, uploadStudentId, name, email, fullPhoneNumber, getFormattedDob, password, collegeName, courseName, branch, currentSemester]);
 
-    const handleGoogleSignUp = useCallback(() => {
-        // TODO: Implement Google sign up
-        showToast({
-            message: 'Google sign up coming soon',
-            type: 'info',
-        });
-    }, []);
+    // Initialize Google auth hook - Better Auth handles everything internally
+    const { signInWithGoogle, isLoading: isGoogleAuthLoading } = useGoogleAuth();
+
+    const handleGoogleSignUp = useCallback(async () => {
+        await signInWithGoogle();
+    }, [signInWithGoogle]);
 
     const handleAppleSignUp = useCallback(() => {
-        // TODO: Implement Apple sign up
         showToast({
             message: 'Apple sign up coming soon',
             type: 'info',
@@ -482,24 +513,51 @@ const SignUp = memo(() => {
                             >
                                 DOB <Text color="primary">*</Text>
                             </Text>
-                            <View position="relative">
-                                <Pressable onPress={handleCalendarPress}>
+                            
+                            <View flexDirection="row" gap="s">
+                                <View flex={1}>
                                     <FormField
                                         label=""
-                                        placeholder="DD/MM/YYYY"
-                                        value={dob}
-                                        onChangeText={setDob}
-                                        marginBottom="xs"
-                                        paddingRight={50}
-                                        editable={false}
+                                        placeholder="DD"
+                                        value={day}
+                                        onChangeText={(text) => {
+                                            const num = text.replace(/[^0-9]/g, '');
+                                            if (num === '' || (parseInt(num, 10) <= 31)) {
+                                                setDay(num.length <= 2 ? num : num.slice(0, 2));
+                                            }
+                                        }}
+                                        keyboardType="numeric"
+                                        marginBottom="none"
                                     />
-                                </Pressable>
-                                <Pressable
-                                    onPress={handleCalendarPress}
-                                    style={styles.calendarIcon}
-                                >
-                                    <AntDesign name="calendar" size={20} color={theme.colors.textSecondary} />
-                                </Pressable>
+                                </View>
+                                <View flex={1}>
+                                    <FormField
+                                        label=""
+                                        placeholder="MM"
+                                        value={month}
+                                        onChangeText={(text) => {
+                                            const num = text.replace(/[^0-9]/g, '');
+                                            if (num === '' || (parseInt(num, 10) <= 12)) {
+                                                setMonth(num.length <= 2 ? num : num.slice(0, 2));
+                                            }
+                                        }}
+                                        keyboardType="numeric"
+                                        marginBottom="none"
+                                    />
+                                </View>
+                                <View flex={1.5}>
+                                    <FormField
+                                        label=""
+                                        placeholder="YYYY"
+                                        value={year}
+                                        onChangeText={(text) => {
+                                            const num = text.replace(/[^0-9]/g, '');
+                                            setYear(num.length <= 4 ? num : num.slice(0, 4));
+                                        }}
+                                        keyboardType="numeric"
+                                        marginBottom="none"
+                                    />
+                                </View>
                             </View>
                         </View>
 
@@ -611,10 +669,11 @@ const SignUp = memo(() => {
                                 Sign up with
                             </Text>
                             <View flexDirection="row" gap="m">
-                                {Platform.OS === 'android' && <SocialLoginButton
+                                <SocialLoginButton
                                     onPress={handleGoogleSignUp}
                                     imageSource={require('../../../assets/images/google-logo.png')}
-                                />}
+                                    disabled={isGoogleAuthLoading}
+                                />
                                 {Platform.OS === 'ios' && <SocialLoginButton
                                     onPress={handleAppleSignUp}
                                     imageSource={require('../../../assets/images/apple-logo.png')}
@@ -648,18 +707,31 @@ const SignUp = memo(() => {
                         </TouchableWithoutFeedback>
                     </KeyboardAvoidingView>
                 </SafeAreaView>
+                {(isGoogleAuthLoading || isLoading) && (
+                    <RNView 
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            zIndex: 999
+                        }}
+                    >
+                        <ActivityIndicator size="large" color="#ffffff" />
+                        {isGoogleAuthLoading && (
+                            <Text 
+                                style={{ color: 'white', marginTop: 10, fontFamily: 'Poppins-Medium' }}
+                            >
+                                Signing in with Google...
+                            </Text>
+                        )}
+                    </RNView>
+                )}
             </ImageBackground>
-
-            <Calendar
-                visible={showCalendar}
-                onClose={() => setShowCalendar(false)}
-                onDateSelect={(dateString) => {
-                    setDob(formatDateForDisplay(dateString));
-                }}
-                title="Select Date of Birth"
-                maxDate={new Date().toISOString().split('T')[0]}
-                initialDate={dob ? formatDateForAPI(dob) : new Date().toISOString().split('T')[0]}
-            />
         </>
     );
 });
@@ -671,15 +743,6 @@ const styles = StyleSheet.create({
         flex: 1,
         width,
         height,
-    },
-    calendarIcon: {
-        position: 'absolute',
-        right: 16,
-        top: 12,
-        height: 24,
-        width: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
 });
 

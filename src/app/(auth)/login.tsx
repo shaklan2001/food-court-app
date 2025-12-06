@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { Dimensions, Image, ImageBackground, Platform, Pressable, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, ImageBackground, Platform, Pressable, View as RNView, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
 import { betterwayApiCall, useApiPort } from '../../network/useApiPort';
+import { useGoogleAuth } from '../../services/googleAuthService';
 import { setToken, setUser } from '../../store/slices/authSlice';
 import { showToast } from '../../utils';
 const { width, height } = Dimensions.get('window');
@@ -129,12 +130,18 @@ const Login = memo(() => {
         console.log('Forgot password pressed');
     }, []);
 
-    const handleGoogleLogin = useCallback(() => {
-        console.log('Google login pressed');
-    }, []);
+    // Initialize Google auth hook - Better Auth handles everything internally
+    const { signInWithGoogle, isLoading: isGoogleAuthLoading } = useGoogleAuth();
+
+    const handleGoogleLogin = useCallback(async () => {
+        await signInWithGoogle();
+    }, [signInWithGoogle]);
 
     const handleAppleLogin = useCallback(() => {
-        console.log('Apple login pressed');
+        showToast({
+            message: 'Apple sign-in coming soon',
+            type: 'info',
+        });
     }, []);
 
     const handleSignUp = useCallback(() => {
@@ -376,6 +383,7 @@ const Login = memo(() => {
                                 <SocialLoginButton
                                     onPress={handleGoogleLogin}
                                     imageSource={require('../../../assets/images/google-logo.png')}
+                                    disabled={isGoogleAuthLoading}
                                 />
                                 {Platform.OS === 'ios' && <SocialLoginButton
                                     onPress={handleAppleLogin}
@@ -408,6 +416,30 @@ const Login = memo(() => {
                     </ScrollView>
                 </View>
             </View>
+            {(isGoogleAuthLoading || isLoading) && (
+                <RNView 
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        zIndex: 999
+                    }}
+                >
+                    <ActivityIndicator size="large" color="#ffffff" />
+                    {isGoogleAuthLoading && (
+                        <Text 
+                            style={{ color: 'white', marginTop: 10, fontFamily: 'Poppins-Medium' }}
+                        >
+                            Signing in with Google...
+                        </Text>
+                    )}
+                </RNView>
+            )}
         </ImageBackground>
     );
 });

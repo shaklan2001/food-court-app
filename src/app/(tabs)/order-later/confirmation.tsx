@@ -3,25 +3,121 @@ import { Text, View } from '@/src/components/ui';
 import theme from '@/src/theme/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../cart';
 
 const Confirmation = () => {
-    const { selectedOption } = useLocalSearchParams<{ selectedOption?: string }>();
+    const {
+        selectedOption = 'takeaway',
+        slotLabel,
+        itemCount = '0',
+        availableSeats = '0',
+    } = useLocalSearchParams<{
+        selectedOption?: string;
+        slotLabel?: string;
+        itemCount?: string;
+        availableSeats?: string;
+    }>();
     const isDineIn = selectedOption === 'dine-in';
     const [selectedSeats, setSelectedSeats] = useState(1);
+    const parsedItemCount = Math.max(Number(itemCount) || 0, 0);
+    const itemSummary = parsedItemCount === 1 ? '1 item' : `${parsedItemCount} items`;
+    const slotDisplay = slotLabel || 'Not selected';
+    const optionLabel = isDineIn ? 'Dine-In' : 'Takeaway';
+    const availableSeatsNumber = Math.max(Number(availableSeats) || 0, 0);
+    const seatOptions = useMemo(() => (
+        Array.from(
+            { length: Math.min(Math.max(availableSeatsNumber, 1), 10) },
+            (_, index) => index + 1,
+        )
+    ), [availableSeatsNumber]);
+
+    useEffect(() => {
+        if (!seatOptions.includes(selectedSeats)) {
+            setSelectedSeats(seatOptions[seatOptions.length - 1] ?? 1);
+        }
+    }, [seatOptions, selectedSeats]);
 
     const handleNext = () => {
         // Navigate back to home or show success
         router.push('/(tabs)/(home)');
     };
 
+    const SummaryCard = () => (
+        <View
+            backgroundColor="mainBackground"
+            borderRadius="m"
+            padding="l"
+            style={{ gap: 16 }}
+        >
+            <View style={{ gap: 8 }}>
+                <Text
+                    fontSize={16}
+                    fontWeight="600"
+                    fontFamily="Poppins-SemiBold"
+                    color="textPrimary"
+                >
+                    Order Summary
+                </Text>
+                <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
+                    Your order has been scheduled for later.
+                </Text>
+            </View>
+
+            <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
+                        Time:
+                    </Text>
+                    <Text
+                        fontSize={14}
+                        fontWeight="600"
+                        fontFamily="Poppins-SemiBold"
+                        color="textPrimary"
+                    >
+                        {slotDisplay}
+                    </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
+                        Option:
+                    </Text>
+                    <Text
+                        fontSize={14}
+                        fontWeight="600"
+                        fontFamily="Poppins-SemiBold"
+                        color="textPrimary"
+                    >
+                        {optionLabel}
+                    </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
+                        Items:
+                    </Text>
+                    <Text
+                        fontSize={14}
+                        fontWeight="600"
+                        fontFamily="Poppins-SemiBold"
+                        color="textPrimary"
+                    >
+                        {itemSummary}
+                    </Text>
+                </View>
+            </View>
+        </View>
+    );
+
     const renderSeatSelector = () => (
         <View style={{ flex: 1 }}>
             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-                <View paddingHorizontal="l" style={{ gap: 20 }}>
+                <View paddingHorizontal="l" style={{ gap: 24 }}>
+                    <SummaryCard />
+
                     <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
                         <View
                             style={{
@@ -60,7 +156,7 @@ const Confirmation = () => {
                                 fontFamily="SF Pro"
                                 color="textPrimary"
                             >
-                                No of Seats Available:- 50
+                                No of Seats Available:- {availableSeatsNumber || 'N/A'}
                             </Text>
                         </View>
                     </View>
@@ -80,7 +176,7 @@ const Confirmation = () => {
                             flexWrap: 'wrap',
                         }}
                     >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                        {seatOptions.map((num) => (
                             <TouchableOpacity
                                 key={num}
                                 onPress={() => setSelectedSeats(num)}
@@ -138,107 +234,27 @@ const Confirmation = () => {
     const renderTakeawayConfirmation = () => (
         <View style={{ flex: 1 }}>
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }}>
-                <View paddingHorizontal="l" style={{ gap: 40 }}>
-                    <View style={{ gap: 16 }}>
-                        <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
-                            <View
-                                style={{
-                                    width: 4,
-                                    height: 21,
-                                    backgroundColor: theme.colors.primary,
-                                    borderRadius: 2,
-                                }}
-                            />
-                            <Text
-                                fontSize={20}
-                                fontWeight="600"
-                                fontFamily="Poppins-SemiBold"
-                                color="textPrimary"
-                            >
-                                Confirm Order
-                            </Text>
-                        </View>
-
+                <View paddingHorizontal="l" style={{ gap: 24 }}>
+                    <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
                         <View
-                            backgroundColor="mainBackground"
-                            borderRadius="m"
-                            padding="l"
-                            style={{ gap: 16 }}
+                            style={{
+                                width: 4,
+                                height: 21,
+                                backgroundColor: theme.colors.primary,
+                                borderRadius: 2,
+                            }}
+                        />
+                        <Text
+                            fontSize={20}
+                            fontWeight="600"
+                            fontFamily="Poppins-SemiBold"
+                            color="textPrimary"
                         >
-                            <View style={{ gap: 8 }}>
-                                <Text
-                                    fontSize={16}
-                                    fontWeight="600"
-                                    fontFamily="Poppins-SemiBold"
-                                    color="textPrimary"
-                                >
-                                    Order Summary
-                                </Text>
-                                <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
-                                    Your order has been scheduled for later.
-                                </Text>
-                            </View>
-
-                            <View style={{ gap: 8 }}>
-                                <View
-                                    style={{
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
-                                        Time:
-                                    </Text>
-                                    <Text
-                                        fontSize={14}
-                                        fontWeight="600"
-                                        fontFamily="Poppins-SemiBold"
-                                        color="textPrimary"
-                                    >
-                                        Breakfast - 07:00 AM
-                                    </Text>
-                                </View>
-
-                                <View
-                                    style={{
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
-                                        Option:
-                                    </Text>
-                                    <Text
-                                        fontSize={14}
-                                        fontWeight="600"
-                                        fontFamily="Poppins-SemiBold"
-                                        color="textPrimary"
-                                    >
-                                        Takeaway
-                                    </Text>
-                                </View>
-
-                                <View
-                                    style={{
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
-                                        Items:
-                                    </Text>
-                                    <Text
-                                        fontSize={14}
-                                        fontWeight="600"
-                                        fontFamily="Poppins-SemiBold"
-                                        color="textPrimary"
-                                    >
-                                        3 items
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
+                            Confirm Order
+                        </Text>
                     </View>
+
+                    <SummaryCard />
                 </View>
             </ScrollView>
 

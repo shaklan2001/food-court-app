@@ -28,11 +28,11 @@ export default {
                 NSAppTransportSecurity: {
                     NSAllowsArbitraryLoads: true,
                     NSExceptionDomains: {
-                      "backend.smartcsk.in": {
-                        NSExceptionAllowsInsecureHTTPLoads: true
-                      }
+                        "backend.smartcsk.in": {
+                            NSExceptionAllowsInsecureHTTPLoads: true
+                        }
                     }
-                  }
+                }
             },
             supportsTablet: true,
             bundleIdentifier: "com.yuvan97.foodcourtapp",
@@ -41,7 +41,7 @@ export default {
         },
         android: {
             package: "com.yuvan97.foodcourtapp",
-            versionCode: 7,
+            versionCode: 8,
             adaptiveIcon: {
                 foregroundImage: "./assets/images/adaptive-icon.png",
                 backgroundColor: "#ffffff"
@@ -59,7 +59,9 @@ export default {
                 projectId: "343f521e-0f93-4422-867d-d4adcef2768d"
             },
             googleSignIn: {
-                clientId: "555524338727-8fcingoq1ko1fkpfu29io45ghbkd581g.apps.googleusercontent.com"
+                expoClientId: "455680765065-ukgd4t7s3um3ue7jm1msmfjh0varpj6l.apps.googleusercontent.com",
+                androidClientId: "455680765065-cj7t51ao8dnpql05i6ti1nk24cbkofii.apps.googleusercontent.com",
+                iosClientId: "455680765065-33tc4f7uqjukufs8m5oipmjqj6i31ibk.apps.googleusercontent.com",
             }
         },
         userInterfaceStyle: "light",
