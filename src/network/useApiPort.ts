@@ -29,11 +29,11 @@ export const betterwayApiCall = ({
   // Check if body is FormData
   const isFormData = body instanceof FormData;
   const headers: Record<string, string> = {};
-  
+
   if (auth) {
     headers.Authorization = `Bearer ${auth}`;
   }
-  
+
   if (isFormData) {
     headers['Content-Type'] = 'multipart/form-data';
   }
@@ -57,6 +57,10 @@ export const useApiPort =
         }
         success?.(response.data);
       } catch (err: any) {
+        if (isCancel(err)) {
+          // Ignore cancellation errors
+          return;
+        }
         if (print !== "none") {
           console.error(`[${intent}] ❌ Failure:`, err?.response || err);
         }

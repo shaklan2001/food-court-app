@@ -1,8 +1,9 @@
+import { authClient } from '@/src/lib/auth-client';
 import { AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
-import { router, Stack } from 'expo-router';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, Pressable, View as RNView, StatusBar, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Checkbox, FormContainer } from '../../components/shared';
@@ -14,7 +15,17 @@ import { showToast } from '../../utils';
 const { width, height } = Dimensions.get('window');
 const countryCode = '+91';
 
-const SignUp = memo(() => {
+const SignUp = () => {
+    const router = useRouter();
+    const { data: session } = authClient.useSession();
+    const { signInWithGoogle, isLoading: isGoogleAuthLoading } = useGoogleAuth();
+
+    useEffect(() => {
+        if (session) {
+            router.replace('/(tabs)');
+        }
+    }, [session]);
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [mobileNumber, setMobileNumber] = useState('');
@@ -388,9 +399,6 @@ const SignUp = memo(() => {
         }
     }, [validateForm, isStudentUser, studentIdFile, uploadStudentId, name, email, fullPhoneNumber, getFormattedDob, password, collegeName, courseName, branch, currentSemester]);
 
-    // Initialize Google auth hook - Better Auth handles everything internally
-    const { signInWithGoogle, isLoading: isGoogleAuthLoading } = useGoogleAuth();
-
     const handleGoogleSignUp = useCallback(async () => {
         await signInWithGoogle();
     }, [signInWithGoogle]);
@@ -734,7 +742,7 @@ const SignUp = memo(() => {
             </ImageBackground>
         </>
     );
-});
+};
 
 SignUp.displayName = 'SignUp';
 

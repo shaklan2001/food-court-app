@@ -1,3 +1,4 @@
+import { authClient } from '@/src/lib/auth-client';
 import { Ionicons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,7 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LogoutModal from "../../components/LogoutModal";
 import { Text, View } from "../../components/ui";
 import { setLoggingOut } from "../../network";
-import { betterwayApiCall } from "../../network/useApiPort";
 import { logout } from "../../store/slices/authSlice";
 import { RootState, useAppDispatch, useAppSelector } from "../../store/store";
 import { pageHorizantalPadding } from "../../utils/commomCompute";
@@ -114,39 +114,34 @@ const Profile = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setShowLogoutModal(false);
   
-      // 1️⃣ Call API FIRST (without blocking it by setLoggingOut)
-      if (token) {
-        try {
-          await betterwayApiCall({
-            method: 'POST',
-            url: 'SIGN_OUT',
-            auth: token,
-          });
-        } catch (apiError) {
-          if (apiError?.name !== 'CanceledError') {
-            console.warn('Sign-out API failed:', apiError);
-          }
-        }
+      // 1️⃣ Call authClient.signOut() to clear BOTH server and client state
+      try {
+         await authClient.signOut();
+      } catch (apiError) {
+         console.warn('Sign-out failed:', apiError);
       }
+
+      // 2️⃣ Block requests immediately to prevent background fetch failures
+      setLoggingOut(true);
   
-      // 2️⃣ Clear storage safely
+      // 3️⃣ Clear storage safely
       try {
         await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
       } catch (storageError) {
         console.warn('Storage cleanup failed:', storageError);
       }
   
-      // 3️⃣ Clear Redux auth state
+      // 4️⃣ Clear Redux auth state
       dispatch(logout());
   
-      // 4️⃣ Small delay to ensure UI unmounts
+      // 5️⃣ Small delay to ensure UI unmounts
       await new Promise(resolve => setTimeout(resolve, 100));
   
-      // 5️⃣ Navigate to login
+      // 6️⃣ Navigate to login
       router.replace('/(auth)/login');
-  
-      // 6️⃣ Finally block requests after everything resets
-      setTimeout(() => setLoggingOut(true), 500);
+      
+      // Reset logging out flag after a safe delay, though we are now on login screen
+      setTimeout(() => setLoggingOut(false), 2000);
   
     } catch (error) {
       console.error('Error during logout:', error);
@@ -176,7 +171,7 @@ const Profile = () => {
           <View paddingHorizontal={pageHorizantalPadding} marginBottom="l">
             <View flexDirection="row" alignItems="center" marginBottom="l">
               <Image
-                source={{ uri: user?.image || require('@/assets/images/profile.jpg') }}
+                source={user?.image ? { uri: user.image } : require('../../../assets/images/profile.jpg')}
                 style={styles.profileImage}
               />
               <View flex={1} marginLeft="m">

@@ -27,13 +27,13 @@ apiClient.interceptors.request.use(
             return Promise.reject(new axios.Cancel('Request cancelled due to logout'));
         }
 
-        // Auto-attach token if missing
         if (!config.headers['Authorization']) {
             try {
                 const token = await AsyncStorage.getItem('auth_token');
                 if (token) {
                     config.headers['Authorization'] = `Bearer ${token}`;
-                    config.headers['Cookie'] = `better-auth.session_token=${token}`;
+                    const cookieName = isProd ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
+                    config.headers['Cookie'] = `${cookieName}=${token}; better-auth.session_token=${token}`;
                 }
             } catch (error) {
                 console.warn('Failed to attach auth token:', error);

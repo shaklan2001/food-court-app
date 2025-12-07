@@ -1,6 +1,7 @@
+import { authClient } from '@/src/lib/auth-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, ImageBackground, Platform, Pressable, View as RNView, ScrollView, StatusBar, StyleSheet, TouchableOpacity } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { Button, CountryCodeSelector, FormField, PasswordInput, SocialLoginButton, Text, View } from '../../components/ui';
@@ -10,8 +11,17 @@ import { setToken, setUser } from '../../store/slices/authSlice';
 import { showToast } from '../../utils';
 const { width, height } = Dimensions.get('window');
 
-const Login = memo(() => {
+const Login = () => {
     const dispatch = useDispatch();
+    const router = useRouter();
+    const { data: session } = authClient.useSession();
+
+    useEffect(() => {
+        if (session) {
+            router.replace('/(tabs)');
+        }
+    }, [session]);
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -130,7 +140,6 @@ const Login = memo(() => {
         console.log('Forgot password pressed');
     }, []);
 
-    // Initialize Google auth hook - Better Auth handles everything internally
     const { signInWithGoogle, isLoading: isGoogleAuthLoading } = useGoogleAuth();
 
     const handleGoogleLogin = useCallback(async () => {
@@ -442,7 +451,7 @@ const Login = memo(() => {
             )}
         </ImageBackground>
     );
-});
+};
 
 Login.displayName = 'Login';
 

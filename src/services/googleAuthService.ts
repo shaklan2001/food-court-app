@@ -1,9 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { authClient } from '../lib/auth-client';
-import { setToken, setUser } from '../store/slices/authSlice';
 import { showToast } from '../utils';
 
 interface UseGoogleAuthReturn {
@@ -12,7 +8,6 @@ interface UseGoogleAuthReturn {
 }
 
 export const useGoogleAuth = (): UseGoogleAuthReturn => {
-    const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(false);
 
     const signInWithGoogle = useCallback(async () => {
@@ -22,41 +17,13 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
                 provider: 'google',
                 callbackURL: '/(tabs)',
             });
+            await authClient.getSession();
+            console.log("oath login result !!!!!!!!!", result);
+            console.log("oath login session !!!!!!!!!", await authClient.getCookie());
+            console.log("oath login session !!!!!!!!!", await authClient.getSession());
 
-            const session = await authClient.getSession();
-
-            if (session?.data?.user) {
-                const user = session.data.user;
-                const token = session.data.session.token;
-                const userData = {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    image: user.image,
-                    emailVerified: user.emailVerified,
-                    phoneNumber: '',
-                    role: 'user',
-                    createdAt: user.createdAt.toISOString(),
-                    updatedAt: user.updatedAt.toISOString(),
-                };
-
-                await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-
-                dispatch(setToken(token));
-                dispatch(setUser(userData));
-
-                showToast({
-                    message: 'Signed in successfully!',
-                    type: 'success',
-                });
-
-                router.replace('/(tabs)');
-            } else {
-                if (!result.error) {
-                }
-                if (result.error) {
-                    throw new Error(result.error.message || 'Sign in failed');
-                }
+            if (result.error) {
+                throw new Error(result.error.message || 'Sign in failed');
             }
 
         } catch (error: any) {
@@ -68,10 +35,11 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
                     type: 'error',
                 });
             }
-        } finally {
+        }
+        finally {
             setIsLoading(false);
         }
-    }, [dispatch]);
+    }, []);
 
     return {
         signInWithGoogle,

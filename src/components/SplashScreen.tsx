@@ -1,6 +1,7 @@
+import { authClient } from '@/src/lib/auth-client';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Animated,
   Image,
@@ -10,7 +11,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
-import { betterwayApiCall } from "../network/useApiPort";
 import { logout, setToken, setUser } from "../store/slices/authSlice";
 import { View } from "./ui";
 
@@ -21,8 +21,7 @@ interface SplashScreenProps {
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const router = useRouter();
   const dispatch = useDispatch();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const hasCheckedAuth = useRef(false);
+  const { data: session, isPending, error } = authClient.useSession();
   const [dotAnimations] = useState([
     new Animated.Value(0.3),
     new Animated.Value(0.3),
@@ -43,7 +42,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           useNativeDriver: true,
         }),
       ]).start(() => {
-        if (isCheckingAuth) {
+        if (isPending) {
           animateDot(index);
         }
       });
@@ -52,122 +51,42 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     dotAnimations.forEach((_, index) => {
       setTimeout(() => animateDot(index), index * 200);
     });
-  }, [dotAnimations, isCheckingAuth]);
-
-  const checkAuthStatus = useCallback(async () => {
-    if (hasCheckedAuth.current) return;
-    hasCheckedAuth.current = true;
-    
-    try {
-      const storedToken = await AsyncStorage.getItem("auth_token");
-
-      if (storedToken) {
-        try {
-          const profileApiCall = betterwayApiCall({
-            method: "GET",
-            url: "GET_PROFILE",
-            auth: storedToken,
-          });
-
-          const response = await profileApiCall;
-          
-          if (response?.data) {
-            const userData = {
-              id: response?.data?.id,
-              name: response?.data?.name,
-              email: response?.data?.email,
-              phoneNumber: response?.data?.phoneNumber || response?.data?.phone,
-              phoneNumberVerified: response?.data?.phoneNumberVerified,
-              emailVerified: response?.data?.emailVerified,
-              image: response?.data?.image,
-              dob: response?.data?.dob,
-              role: response?.data?.role,
-              banned: response?.data?.banned,
-              banReason: response?.data?.banReason,
-              banExpires: response?.data?.banExpires,
-              points: response.data.points,
-              isStudent: response?.data?.isStudent,
-              collegeName: response?.data?.collegeName,
-              course: response?.data?.course,
-              branch: response?.data?.branch,
-              currentSemester: response?.data?.currentSemester,
-              createdAt: response?.data?.createdAt,
-              updatedAt: response?.data?.updatedAt,
-            };
-            
-            dispatch(setToken(storedToken));
-            dispatch(setUser(userData));
-
-            setTimeout(() => {
-              setIsCheckingAuth(false);
-              router.replace("/(tabs)");
-              setTimeout(() => {
-                onFinish();
-              }, 100);
-            }, 1500);
-          } else {
-            // Clear invalid token
-            await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
-            dispatch(logout());
-            setTimeout(() => {
-              setIsCheckingAuth(false);
-              router.replace("/(auth)");
-              setTimeout(() => {
-                onFinish();
-              }, 100);
-            }, 1500);
-          }
-        } catch (apiError: any) {
-          console.error('Token validation failed:', apiError?.message);
-          // Clear invalid token
-          await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
-          dispatch(logout());
-          setTimeout(() => {
-            setIsCheckingAuth(false);
-            router.replace("/(auth)");
-            setTimeout(() => {
-              onFinish();
-            }, 100);
-          }, 1500);
-          // // Only show toast if it's not a network error or auth error
-          // if (!apiError?.message?.includes('Authentication failed')) {
-          //   showToast({
-          //     message: 'Session expired. Please login again.',
-          //     type: 'error',
-          //   });
-          // }
-        }
-      } else {
-        setTimeout(() => {
-          setIsCheckingAuth(false);
-          router.replace("/(auth)");
-          setTimeout(() => {
-            onFinish();
-          }, 100);
-        }, 1500);
-      }
-    } catch (error: any) {
-      console.error('Auth check error:', error);
-      // Clear any stored tokens
-      await AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']).catch((err) => {
-        console.error('Error clearing storage:', err);
-      });
-      dispatch(logout());
-      setTimeout(() => {
-        setIsCheckingAuth(false);
-        router.replace("/(auth)");
-        setTimeout(() => {
-          onFinish();
-        }, 100);
-      }, 1500);
-    }
-  }, [dispatch, router, onFinish]);
+  }, [dotAnimations, isPending]);
 
   useEffect(() => {
-    checkAuthStatus();
     startDotAnimation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startDotAnimation]);
+
+  useEffect(() => {
+    if (isPending) return;
+
+    if (session?.user) {
+        const user = session.user;
+        const userData = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            emailVerified: user.emailVerified,
+            createdAt: user.createdAt.toISOString(),
+            updatedAt: user.updatedAt.toISOString(),
+            phoneNumber: '', 
+            role: 'user', 
+        };
+        
+        dispatch(setUser(userData));
+        dispatch(setToken(session.session.token));
+
+        router.replace("/(tabs)");
+        onFinish();
+    } else {
+        dispatch(logout());
+        AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
+        
+        router.replace("/(auth)");
+        onFinish();
+    }
+  }, [session, isPending, error, dispatch, router, onFinish]);
 
   return (
     <View style={styles.container}>
@@ -187,7 +106,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               />
             </View>
 
-            {/* {isCheckingAuth && (
+            {isPending && (
               <View style={styles.loadingContainer}>
                 {dotAnimations.map((animation, index) => (
                   <Animated.View
@@ -201,7 +120,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                   />
                 ))}
               </View>
-            )} */}
+            )}
           </View>
         </SafeAreaView>
       </ImageBackground>
