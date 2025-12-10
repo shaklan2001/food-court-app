@@ -27,16 +27,36 @@ apiClient.interceptors.request.use(
             return Promise.reject(new axios.Cancel('Request cancelled due to logout'));
         }
 
-        if (!config.headers['Authorization']) {
+        // Use Better Auth cookie for authentication (like oauth-test project)
+        if (!config.headers['Cookie']) {
             try {
-                const token = await AsyncStorage.getItem('auth_token');
-                if (token) {
-                    config.headers['Authorization'] = `Bearer ${token}`;
-                    const cookieName = isProd ? '__Secure-better-auth.session_token' : 'better-auth.session_token';
-                    config.headers['Cookie'] = `${cookieName}=${token}; better-auth.session_token=${token}`;
+                // Import authClient dynamically to avoid circular dependencies
+                const { authClient } = await import('../lib/auth-client');
+                const cookies = authClient.getCookie();
+                
+                if (cookies) {
+                    // Better Auth cookie format - pass it in Cookie header
+                    config.headers['Cookie'] = cookies;
+                    // Also set credentials to omit to prevent browser from interfering
+                    config.withCredentials = false;
+                } else {
+                    // Fallback to AsyncStorage token if Better Auth cookie not available
+                    const token = await AsyncStorage.getItem('auth_token');
+                    if (token) {
+                        config.headers['Authorization'] = `Bearer ${token}`;
+                    }
                 }
             } catch (error) {
-                console.warn('Failed to attach auth token:', error);
+                console.warn('Failed to attach auth cookie/token:', error);
+                // Fallback to AsyncStorage if Better Auth fails
+                try {
+                    const token = await AsyncStorage.getItem('auth_token');
+                    if (token) {
+                        config.headers['Authorization'] = `Bearer ${token}`;
+                    }
+                } catch (fallbackError) {
+                    console.warn('Failed to attach fallback auth token:', fallbackError);
+                }
             }
         }
 

@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useCallback, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, View } from "../../components/ui";
+import { betterwayApiCall, useApiPort } from "../../network/useApiPort";
+import { showToast } from "../../utils";
 import { pageHorizantalPadding, supportCategories, supportIssueTypes } from "../../utils/commomCompute";
 import { ScreenHeader } from '../cart';
 
@@ -13,12 +15,53 @@ const SupportTicket = () => {
   const [description, setDescription] = useState('');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showIssueDropdown, setShowIssueDropdown] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = useCallback(() => {
-    console.log('Support ticket submitted:', {
-      category,
-      issue,
-      description,
+    if (!category || !issue || !description.trim()) {
+      showToast({
+        message: 'Please fill in all required fields',
+        type: 'error',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const submitTicket = useApiPort({
+      intent: 'Support Ticket',
+      port: betterwayApiCall({
+        method: 'POST',
+        url: 'SUPPORT_TICKET',
+        body: {
+          category,
+          issue,
+          description,
+        },
+        auth: null,
+      }),
+      success: (data) => {
+        showToast({
+          message: data?.message || 'Support ticket submitted successfully!',
+          type: 'success',
+        });
+        setCategory('');
+        setIssue('');
+        setDescription('');
+        setTimeout(() => {
+          router.back();
+        }, 1500);
+      },
+      failure: (error) => {
+        showToast({
+          message: error?.response?.data?.message || error?.message || 'Failed to submit support ticket',
+          type: 'error',
+        });
+      },
+      print: 'all',
+    });
+
+    submitTicket().finally(() => {
+      setIsLoading(false);
     });
   }, [category, issue, description]);
 
@@ -59,7 +102,6 @@ const SupportTicket = () => {
               >
                 Raise a Support Ticket
               </Text>
-              
               <Text
                 fontSize={14}
                 fontWeight="400"
@@ -69,7 +111,6 @@ const SupportTicket = () => {
               >
                 Submit a request for assistance with an issue or inquiry.
               </Text>
-
               <View gap="l">
                 <View>
                   <Text
@@ -81,7 +122,6 @@ const SupportTicket = () => {
                   >
                     Category <Text color="primary">*</Text>
                   </Text>
-                  
                   <Pressable onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}>
                     <View
                       backgroundColor="mainBackground"
@@ -109,7 +149,6 @@ const SupportTicket = () => {
                       />
                     </View>
                   </Pressable>
-
                   {showCategoryDropdown && (
                     <View
                       backgroundColor="mainBackground"
@@ -145,7 +184,6 @@ const SupportTicket = () => {
                     </View>
                   )}
                 </View>
-
                 <View>
                   <Text
                     fontSize={14}
@@ -156,7 +194,6 @@ const SupportTicket = () => {
                   >
                     Issue <Text color="primary">*</Text>
                   </Text>
-                  
                   <Pressable onPress={() => setShowIssueDropdown(!showIssueDropdown)}>
                     <View
                       backgroundColor="mainBackground"
@@ -184,7 +221,6 @@ const SupportTicket = () => {
                       />
                     </View>
                   </Pressable>
-
                   {showIssueDropdown && (
                     <View
                       backgroundColor="mainBackground"
@@ -246,7 +282,8 @@ const SupportTicket = () => {
                     title="Submit Support Ticket"
                     variant="primary"
                     onPress={handleSubmit}
-                    disabled={!category || !issue || !description.trim()}
+                    disabled={!category || !issue || !description.trim() || isLoading}
+                    loading={isLoading}
                   />
                 </View>
               </View>
@@ -261,7 +298,6 @@ const SupportTicket = () => {
 
 const styles = StyleSheet.create({
   dropdownItem: {
-    // Additional styling if needed
   },
   textArea: {
     backgroundColor: 'mainBackground',

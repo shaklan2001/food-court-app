@@ -60,32 +60,36 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   useEffect(() => {
     if (isPending) return;
 
-    if (session?.user) {
-        const user = session.user;
-        const userData = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            image: user.image,
-            emailVerified: user.emailVerified,
-            createdAt: user.createdAt.toISOString(),
-            updatedAt: user.updatedAt.toISOString(),
-            phoneNumber: '', 
-            role: 'user', 
-        };
-        
-        dispatch(setUser(userData));
-        dispatch(setToken(session.session.token));
+    const navigationTimer = setTimeout(() => {
+      if (session?.user) {
+          const user = session.user;
+          const userData = {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image,
+              emailVerified: user.emailVerified,
+              createdAt: user.createdAt.toISOString(),
+              updatedAt: user.updatedAt.toISOString(),
+              phoneNumber: '', 
+              role: 'user', 
+          };
+          
+          dispatch(setUser(userData));
+          dispatch(setToken(session.session.token));
 
-        router.replace("/(tabs)");
-        onFinish();
-    } else {
-        dispatch(logout());
-        AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
-        
-        router.replace("/(auth)");
-        onFinish();
-    }
+          router.replace("/(tabs)");
+          onFinish();
+      } else {
+          dispatch(logout());
+          AsyncStorage.multiRemove(['auth_token', 'user_data', 'refresh_token']);
+          
+          router.replace("/(auth)");
+          onFinish();
+      }
+    }, 150);
+
+    return () => clearTimeout(navigationTimer);
   }, [session, isPending, error, dispatch, router, onFinish]);
 
   return (
@@ -130,8 +134,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
 const styles = StyleSheet.create({
   container: {
+    ...StyleSheet.absoluteFillObject,
     flex: 1,
     backgroundColor: "#A20538",
+    zIndex: 9999,
   },
   backgroundImage: {
     flex: 1,

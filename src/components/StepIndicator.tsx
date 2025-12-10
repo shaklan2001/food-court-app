@@ -10,11 +10,11 @@ interface StepIndicatorProps {
 }
 
 const CheckIcon = () => (
-    <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <Svg width="12" height="12" viewBox="0 0 12 12" fill="none">
         <Path
-            d="M13.3327 4L5.99935 11.3333L2.66602 8"
+            d="M10 3L4.5 8.5L2 6"
             stroke="white"
-            strokeWidth="2"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
         />
@@ -24,20 +24,20 @@ const CheckIcon = () => (
 export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, totalSteps }) => {
     return (
         <View style={styles.container}>
-            {/* Progress Line */}
             <View style={styles.lineContainer}>
                 <View style={[styles.line, { width: '100%' }]} />
                 <View
                     style={[
                         styles.lineProgress,
                         {
-                            width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%`,
+                            width: totalSteps > 1 
+                                ? `${((currentStep - 1) / (totalSteps - 1)) * 100}%`
+                                : '0%',
                         },
                     ]}
                 />
             </View>
 
-            {/* Step Circles */}
             {Array.from({ length: totalSteps }, (_, index) => {
                 const step = index + 1;
                 const isCompleted = step < currentStep;
@@ -49,15 +49,18 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, total
                         style={[
                             styles.stepCircle,
                             {
-                                left: `${(index / (totalSteps - 1)) * 100}%`,
-                                transform: [{ translateX: -11 }],
+                                left: totalSteps > 1 
+                                    ? `${(index / (totalSteps - 1)) * 100}%`
+                                    : '50%',
+                                transform: [{ translateX: -12 }],
                             },
                         ]}
                     >
                         <View
                             style={[
                                 styles.circle,
-                                (isCompleted || isActive) && styles.circleActive,
+                                isCompleted && styles.circleCompleted,
+                                isActive && styles.circleActive,
                             ]}
                         >
                             {isCompleted ? (
@@ -66,7 +69,8 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, total
                                 <Text
                                     style={[
                                         styles.stepText,
-                                        (isCompleted || isActive) && styles.stepTextActive,
+                                        isActive && styles.stepTextActive,
+                                        !isActive && !isCompleted && styles.stepTextInactive,
                                     ]}
                                 >
                                     {step}
@@ -83,50 +87,59 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, total
 const styles = StyleSheet.create({
     container: {
         position: 'relative',
-        height: 22,
+        height: 24,
         width: '100%',
-        marginVertical: 20,
+        marginVertical: 24,
     },
     lineContainer: {
         position: 'absolute',
-        top: 10,
-        left: 26,
-        right: 26,
-        height: 1,
+        top: 11,
+        left: 12,
+        right: 12,
+        height: 2,
     },
     line: {
         position: 'absolute',
-        height: 1,
+        height: 2,
+        width: '100%',
         backgroundColor: 'rgba(162, 5, 56, 0.2)',
+        borderRadius: 1,
     },
     lineProgress: {
         position: 'absolute',
-        height: 1,
-        backgroundColor: theme.colors.primary,
+        height: 2,
+        backgroundColor: theme.colors.textPrimary,
+        borderRadius: 1,
     },
     stepCircle: {
         position: 'absolute',
         top: 0,
     },
     circle: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
         backgroundColor: 'rgba(162, 5, 56, 0.2)',
         justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 0,
+    },
+    circleCompleted: {
+        backgroundColor: theme.colors.primary,
     },
     circleActive: {
         backgroundColor: theme.colors.primary,
     },
     stepText: {
-        fontSize: 14,
-        fontFamily: 'SF Pro',
-        color: theme.colors.mainBackground,
-        fontWeight: '400',
+        fontSize: 12,
+        fontFamily: 'Poppins-SemiBold',
+        fontWeight: '600',
     },
     stepTextActive: {
         color: theme.colors.mainBackground,
+    },
+    stepTextInactive: {
+        color: 'rgba(162, 5, 56, 0.4)',
     },
 });
 

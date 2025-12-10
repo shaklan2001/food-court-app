@@ -43,6 +43,7 @@ export const API_ROUTES = {
   MENU_BEST_SELLERS: "/api/home/best-sellers",
   MENU_NEW_ARRIVALS: "/api/home/new-arrivals",
   GET_ORDER_HISTORY: "/api/order/get-order-history",
+  SUPPORT_TICKET: "/api/support",
 };
 
     

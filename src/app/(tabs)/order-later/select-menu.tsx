@@ -1,3 +1,5 @@
+import { FoodItemData } from '@/src/components/HomePage/FoodSection';
+import QuantitySelector from '@/src/components/HomePage/QuantitySelector';
 import { StepIndicator } from '@/src/components/StepIndicator';
 import { Text, View } from '@/src/components/ui';
 import { betterwayApiCall } from '@/src/network/useApiPort';
@@ -5,14 +7,14 @@ import { RootState, useAppSelector } from '@/src/store/store';
 import theme from '@/src/theme/theme';
 import { showToast } from '@/src/utils';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Dimensions, FlatList, GestureResponderEvent, Image, ImageSourcePropType, Pressable, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../cart';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const HORIZONTAL_PADDING = 20;
-const CARD_GAP = 15;
+const HORIZONTAL_PADDING = 16;
+const CARD_GAP = 12;
 const CARD_WIDTH = (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
 
 type OptionType = 'takeaway' | 'dine-in';
@@ -49,6 +51,128 @@ const parsePriceToPaise = (value?: unknown): number => {
     return 0;
 };
 
+// Custom FoodItem component for order-later that matches menu tab exactly
+const OrderLaterFoodItem = memo(({ 
+    item, 
+    currentQuantity = 0,
+    onQuantityChange,
+}: { 
+    item: FoodItemData; 
+    currentQuantity: number;
+    onQuantityChange: (itemId: string, quantity: number) => void;
+}) => {
+    const handleCardPress = useCallback(() => {
+        const params: Record<string, string> = {
+            itemId: String(item.id),
+            name: item.title,
+            price: item.price,
+            pricePaise: String(item.pricePaise ?? item.basePricePaise ?? 0),
+            description: item.description ?? '',
+            image: typeof item.image === 'object' && item.image !== null && 'uri' in item.image 
+                ? (item.image as { uri?: string }).uri ?? '' 
+                : '',
+            isCustomizable: item.hasCustomizations ? '1' : '0',
+        };
+
+        router.push({
+            pathname: '/product-detail',
+            params,
+        });
+    }, [item]);
+
+    const handleQuantityChange = useCallback((_itemId: string, quantity: number) => {
+        onQuantityChange(item.id, quantity);
+    }, [item.id, onQuantityChange]);
+
+    return (
+        <View>
+            <View
+                minHeight={220}
+                width={undefined}
+                backgroundColor="transparent"
+                borderRadius="m"
+                overflow="hidden"
+                style={{ marginBottom: 0 }}
+            >
+                <Pressable onPress={handleCardPress}>
+                    <View position="relative">
+                        <Image
+                            source={item.image}
+                            style={{ width: '100%', height: 140, borderRadius: 8 }}
+                            resizeMode="cover"
+                        />
+                    </View>
+                
+                    <View marginVertical='s'>
+                        <Text
+                            fontSize={14}
+                            fontWeight="600"
+                            lineHeight={16}
+                            color="textPrimary"
+                            fontFamily="Poppins-SemiBold"
+                            style={{ marginBottom: -10 }}
+                            minHeight={40}
+                        >
+                            {item.title}
+                        </Text>
+                    </View>
+                </Pressable>
+                <View flexDirection="row" justifyContent="space-between" alignItems="center" mt={'s'} paddingBottom={'xs'}>
+                    <View width={'45%'} alignItems="flex-start" justifyContent="center" >
+                        <Text
+                            fontSize={14}
+                            marginTop={'xs'}
+                            color="textSecondary"
+                            fontFamily="Poppins-SemiBold"
+                        >
+                            {item.price}
+                        </Text>
+                    </View>
+                    <View width={'55%'} alignItems="center" justifyContent="center" >
+                        {item.hasCustomizations ? (
+                            currentQuantity > 0 ? (
+                                <QuantitySelector
+                                    itemId={item.id}
+                                    currentQuantity={currentQuantity}
+                                    onQuantityChange={handleQuantityChange}
+                                />
+                            ) : (
+                                <TouchableOpacity
+                                    onPress={(event: GestureResponderEvent) => {
+                                        event.stopPropagation();
+                                        handleCardPress();
+                                    }}
+                                >
+                                    <View
+                                        width={80}
+                                        backgroundColor="primary"
+                                        borderRadius="m"
+                                        justifyContent="center"
+                                        alignItems="center"
+                                        paddingVertical='xs'
+                                    >
+                                        <Text color="textOnPrimary" fontSize={12} fontFamily="Poppins-SemiBold">
+                                            Add
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )
+                        ) : (
+                            <QuantitySelector
+                                itemId={item.id}
+                                currentQuantity={currentQuantity}
+                                onQuantityChange={handleQuantityChange}
+                            />
+                        )}
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+});
+
+OrderLaterFoodItem.displayName = 'OrderLaterFoodItem';
+
 const SelectMenu = () => {
     const { slotId, slotLabel, availableSeats } = useLocalSearchParams<{
         slotId?: string;
@@ -56,7 +180,7 @@ const SelectMenu = () => {
         availableSeats?: string;
     }>();
     const [selectedOption, setSelectedOption] = useState<OptionType>('takeaway');
-    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [itemQuantities, setItemQuantities] = useState<Map<string, number>>(new Map());
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [loadingMenu, setLoadingMenu] = useState(true);
     const [errorMessage, setErrorMessage] = useState('');
@@ -127,19 +251,27 @@ const SelectMenu = () => {
         fetchMenuItems();
     }, [fetchMenuItems]);
 
-    const handleAddItem = (itemId: string) => {
-        const newSelected = new Set(selectedItems);
-        if (newSelected.has(itemId)) {
-            newSelected.delete(itemId);
-        } else {
-            newSelected.add(itemId);
-        }
-        setSelectedItems(newSelected);
-    };
+    const handleQuantityChange = useCallback((itemId: string, quantity: number) => {
+        setItemQuantities((prev) => {
+            const newMap = new Map(prev);
+            if (quantity > 0) {
+                newMap.set(itemId, quantity);
+            } else {
+                newMap.delete(itemId);
+            }
+            return newMap;
+        });
+    }, []);
 
-    const selectedCount = selectedItems.size;
+    const selectedCount = useMemo(() => {
+        let total = 0;
+        itemQuantities.forEach((qty) => {
+            total += qty;
+        });
+        return total;
+    }, [itemQuantities]);
 
-    const handleNext = () => {
+    const handleNext = useCallback(() => {
         if (selectedCount === 0) {
             showToast({
                 message: 'Please add at least one item to continue',
@@ -147,6 +279,12 @@ const SelectMenu = () => {
             });
             return;
         }
+
+        // Convert Map to object for params
+        const itemsData: Record<string, string> = {};
+        itemQuantities.forEach((quantity, itemId) => {
+            itemsData[`item_${itemId}`] = String(quantity);
+        });
 
         router.push({
             pathname: '/(tabs)/order-later/confirmation',
@@ -156,65 +294,54 @@ const SelectMenu = () => {
                 slotLabel,
                 availableSeats,
                 itemCount: String(selectedCount),
+                ...itemsData,
             },
         });
-    };
+    }, [selectedCount, itemQuantities, selectedOption, slotId, slotLabel, availableSeats]);
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const fallbackImage = require('@/assets/images/bowl.png');
 
-    const renderMenuCard = ({ item, index }: { item: MenuItem; index: number }) => {
-        const isSelected = selectedItems.has(item.id);
+    // Transform MenuItem to FoodItemData format
+    const transformedMenuItems: FoodItemData[] = useMemo(() => {
+        return menuItems.map((item) => {
+            let imageSource: ImageSourcePropType;
+            if (item.imageUrl && item.imageUrl.trim() !== '') {
+                imageSource = { uri: item.imageUrl };
+            } else {
+                imageSource = fallbackImage;
+            }
+
+            return {
+                id: item.id,
+                title: item.name,
+                price: item.priceLabel,
+                pricePaise: item.pricePaise,
+                image: imageSource,
+                description: item.description,
+                hasCustomizations: false,
+            };
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [menuItems]);
+
+    const renderMenuCard = useCallback(({ item, index }: { item: FoodItemData; index: number }) => {
+        const currentQuantity = itemQuantities.get(item.id) || 0;
+
         return (
-            <View
-                style={[
-                    styles.card,
-                    {
-                        width: CARD_WIDTH,
-                        marginRight: index % 2 === 0 ? CARD_GAP : 0,
-                    },
-                ]}
-            >
-                <Image
-                    source={item.imageUrl ? { uri: item.imageUrl } : fallbackImage}
-                    style={styles.cardImage}
-                    resizeMode="cover"
+            <View style={{ 
+                width: CARD_WIDTH, 
+                marginBottom: 12, 
+                marginRight: index % 2 === 0 ? CARD_GAP : 0,
+            }}>
+                <OrderLaterFoodItem
+                    item={item}
+                    currentQuantity={currentQuantity}
+                    onQuantityChange={handleQuantityChange}
                 />
-                <View style={styles.cardBody}>
-                    <Text
-                        fontSize={14}
-                        fontWeight="600"
-                        fontFamily="Poppins-SemiBold"
-                        color="textPrimary"
-                        numberOfLines={2}
-                        marginBottom="xs"
-                    >
-                        {item.name}
-                    </Text>
-                    <Text fontSize={14} fontFamily="Poppins-Regular" color="textSecondary">
-                        {item.priceLabel}
-                    </Text>
-                </View>
-                <TouchableOpacity
-                    onPress={() => handleAddItem(item.id)}
-                    style={[
-                        styles.addButton,
-                        isSelected && styles.addButtonActive,
-                    ]}
-                >
-                    <Text
-                        fontSize={12}
-                        fontFamily="Poppins-SemiBold"
-                        style={{
-                            color: isSelected ? theme.colors.textOnPrimary : theme.colors.primary,
-                        }}
-                    >
-                        {isSelected ? 'Added' : 'Add'}
-                    </Text>
-                </TouchableOpacity>
             </View>
         );
-    };
+    }, [itemQuantities, handleQuantityChange]);
 
     const renderMenuContent = () => {
         if (loadingMenu) {
@@ -250,7 +377,7 @@ const SelectMenu = () => {
 
         return (
             <FlatList
-                data={menuItems}
+                data={transformedMenuItems}
                 renderItem={renderMenuCard}
                 keyExtractor={(item) => item.id}
                 numColumns={2}
@@ -272,7 +399,6 @@ const SelectMenu = () => {
             <FlatList
                 ListHeaderComponent={(
                     <View paddingHorizontal="l" gap="xl">
-                        {/* Select Option Section */}
                         <View gap="m">
                             <View flexDirection="row" gap="xs" alignItems="center">
                                 <View width={4} height={21} backgroundColor="primary" borderRadius="xs" />
@@ -348,7 +474,7 @@ const SelectMenu = () => {
                     disabled={selectedCount === 0}
                 >
                     <Text fontSize={16} fontFamily="SF Pro" color="textOnPrimary">
-                        {selectedCount > 0 ? `Next (${selectedCount})` : 'Next'}
+                        {selectedCount > 0 ? `Next (${selectedCount} ${selectedCount === 1 ? 'item' : 'items'})` : 'Next'}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -372,7 +498,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(1, 1, 1, 0.15)',
         backgroundColor: theme.colors.mainBackground,
-        height: 36,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 8,
@@ -381,30 +506,6 @@ const styles = StyleSheet.create({
     optionButtonActive: {
         backgroundColor: theme.colors.primary,
         borderColor: theme.colors.primary,
-    },
-    card: {
-        borderRadius: 12,
-        backgroundColor: theme.colors.mainBackground,
-        overflow: 'hidden',
-        marginBottom: 15,
-    },
-    cardImage: {
-        width: '100%',
-        height: 110,
-    },
-    cardBody: {
-        padding: 10,
-        minHeight: 70,
-    },
-    addButton: {
-        borderTopWidth: 1,
-        borderColor: 'rgba(1, 1, 1, 0.05)',
-        paddingVertical: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    addButtonActive: {
-        backgroundColor: theme.colors.primary,
     },
     loaderContainer: {
         paddingVertical: 40,

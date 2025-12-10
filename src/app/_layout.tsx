@@ -1,7 +1,7 @@
 import { ThemeProvider } from '@shopify/restyle';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,28 +16,32 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutContent() {
   const fontsLoaded = useFonts();
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync().catch(() => {
       });
+      // Delay hiding splash to ensure Stack is mounted
+      setTimeout(() => {
+        setShowSplash(false);
+      }, 100);
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return (
-      <SplashScreenComponent onFinish={() => {}} />
-    );
-  }
-
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="profile" options={{ headerShown: false }} />
-      <Stack.Screen name="cuisine" options={{ headerShown: false }} />
-    </Stack>
+    <>
+      <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="cuisine" options={{ headerShown: false }} />
+      </Stack>
+      {(!fontsLoaded || showSplash) && (
+        <SplashScreenComponent onFinish={() => setShowSplash(false)} />
+      )}
+    </>
   );
 }
 
