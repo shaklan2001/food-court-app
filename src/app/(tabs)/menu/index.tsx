@@ -9,7 +9,8 @@ import { RootState, useAppDispatch, useAppSelector } from '@/src/store/store';
 import { showToast } from '@/src/utils';
 import { SearchIcon, SortIcon } from '@/src/utils/Svgs';
 import { pageHorizantalPadding } from '@/src/utils/commomCompute';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, FlatList, ImageSourcePropType, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -203,10 +204,11 @@ const sanitizeVariations = (rawVariations?: unknown[], fallbackPayload?: Unknown
     return variations;
 };
 
-const SearchBar = memo(({ searchQuery, onSearchChange, onSearchPress }: {
+const SearchBar = memo(({ searchQuery, onSearchChange, onSearchPress, inputRef }: {
     searchQuery: string;
     onSearchChange: (query: string) => void;
     onSearchPress: () => void;
+    inputRef?: React.RefObject<TextInput>;
 }) => {
     return (
         <View
@@ -228,6 +230,7 @@ const SearchBar = memo(({ searchQuery, onSearchChange, onSearchPress }: {
                 paddingHorizontal="m"
             >
                 <TextInput
+                    ref={inputRef}
                     style={{
                         fontSize: 12,
                         fontFamily: 'Poppins-Regular',
@@ -286,6 +289,8 @@ const Menu = () => {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const searchInputRef = useRef<TextInput>(null);
+    const params = useLocalSearchParams();
 
     const transformMenuData = useCallback((apiData: RawMenuItem[]) => {
         return apiData.map((item) => {
@@ -573,6 +578,17 @@ const Menu = () => {
         };
     }, [dispatch]);
 
+    // Auto-focus search input when navigated from home page
+    useEffect(() => {
+        if (params.focusSearch === 'true' && searchInputRef.current) {
+            // Small delay to ensure the component is fully rendered
+            const timer = setTimeout(() => {
+                searchInputRef.current?.focus();
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [params.focusSearch]);
+
     const renderFoodItem = useCallback(({ item, index }: { item: FoodItemData; index: number }) => (
         <View style={{ 
             width: CARD_WIDTH, 
@@ -626,6 +642,7 @@ const Menu = () => {
                 searchQuery={searchQuery}
                 onSearchChange={handleSearch}
                 onSearchPress={handleSearchPress}
+                inputRef={searchInputRef}
             />
             <View>
                 {renderSearchResultsHeader()}

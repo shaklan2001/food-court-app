@@ -99,6 +99,9 @@ const Profile = () => {
       case 'Feedback':
         router.push('/profile/feedback');
         break;
+      case 'Register as Student':
+        router.push('/profile/register-student');
+        break;
       default:
         console.log(`Pressed: ${menuItem}`);
     }
@@ -267,6 +270,17 @@ const Profile = () => {
               onPress={() => handleMenuPress('Privacy Policy')}
             />
             <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+            
+            {!user?.isStudent && (
+              <>
+                <ProfileMenuItem
+                  icon="school-outline"
+                  title="Register as Student"
+                  onPress={() => handleMenuPress('Register as Student')}
+                />
+                <View borderTopWidth={1} style={{ borderTopColor: '#D3D3D3' }} />
+              </>
+            )}
             
             <ProfileMenuItem
               icon="log-out-outline"

@@ -44,6 +44,8 @@ export const API_ROUTES = {
   MENU_NEW_ARRIVALS: "/api/home/new-arrivals",
   GET_ORDER_HISTORY: "/api/order/get-order-history",
   SUPPORT_TICKET: "/api/support",
+  GET_NOTIFICATIONS: "/api/inappnotif",
+  DELETE_NOTIFICATION: "/api/inappnotif",
 };
 
     

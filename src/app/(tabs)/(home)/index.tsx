@@ -27,6 +27,13 @@ const MENU_BANNER_IMAGE = require('@/assets/images/Menuuuu.png') as ImageSourceP
 /* eslint-enable @typescript-eslint/no-var-requires */
 
 const SearchBar = memo(() => {
+    const handleSearchPress = useCallback(() => {
+        router.push({
+            pathname: '/(tabs)/menu',
+            params: { focusSearch: 'true' },
+        });
+    }, []);
+
     return (
         <View
             flexDirection="row"
@@ -34,29 +41,31 @@ const SearchBar = memo(() => {
             mt="m"
             paddingHorizontal={pageHorizantalPadding}
         >
-            <View
-                flex={1}
-                height={48}
-                backgroundColor="mainBackground"
-                borderRadius="m"
-                borderWidth={1}
-                borderColor="buttonSecondary"
-                flexDirection="row"
-                alignItems="center"
-                justifyContent="space-between"
-                paddingHorizontal="m"
-            >
-                <Text
-                    fontSize={12}
-                    fontWeight="400"
-                    color="inputPlaceholder"
-                    fontFamily="Poppins-Regular"
+            <Pressable onPress={handleSearchPress} style={{ flex: 1 }}>
+                <View
+                    flex={1}
+                    height={48}
+                    backgroundColor="mainBackground"
+                    borderRadius="m"
+                    borderWidth={1}
+                    borderColor="buttonSecondary"
+                    flexDirection="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    paddingHorizontal="m"
                 >
-                    Search
-                </Text>
-                <SortIcon />
-            </View>
-            <TouchableOpacity>
+                    <Text
+                        fontSize={12}
+                        fontWeight="400"
+                        color="inputPlaceholder"
+                        fontFamily="Poppins-Regular"
+                    >
+                        Search
+                    </Text>
+                    <SortIcon />
+                </View>
+            </Pressable>
+            <TouchableOpacity onPress={handleSearchPress}>
                 <View
                     width={48}
                     height={48}

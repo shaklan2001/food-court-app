@@ -1,11 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
-import { memo } from "react";
-import { ScrollView, TouchableOpacity } from "react-native";
+import { memo, useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
+import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { Card } from "../components/HomePage/Card";
 import { Text, View } from "../components/ui";
+import { betterwayApiCall } from "../network/useApiPort";
+import { RootState, useAppSelector } from "../store/store";
+import { showToast } from "../utils";
 import { pageHorizantalPadding } from "../utils/commomCompute";
 import { BackIcon } from "../utils/Svgs";
 
@@ -69,98 +73,216 @@ const NotificationsHeader = memo(({ onClearAll }: { onClearAll: () => void }) =>
 
 NotificationsHeader.displayName = 'NotificationsHeader';
 
-const NotificationItem = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string, onPress: () => void }) => (
-  <View 
-    flexDirection="row" 
-    alignItems="center" 
-    paddingVertical="m" 
-    paddingHorizontal="m" 
-    backgroundColor="mainBackground" 
-    borderRadius="m" 
-    marginBottom="m" 
-    borderBottomWidth={1} 
-    borderBottomColor="border"
-  >
-    <View 
-      width={40}
-      height={40}
-      borderRadius="xxl"
-      backgroundColor="cardSecondaryBackground"
-      alignItems="center"
-      justifyContent="center"
-      marginRight="m"
+const NotificationItem = memo(({ 
+  icon, 
+  title, 
+  description, 
+  onPress, 
+  onDelete,
+}: { 
+  icon: React.ReactNode; 
+  title: string; 
+  description: string; 
+  onPress: () => void;
+  onDelete: () => void;
+}) => {
+  const renderRightActions = () => {
+    return (
+      <View
+        style={{
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 8,
+          width: 80,
+        }}
+      >
+        <TouchableOpacity
+          onPress={onDelete}
+          style={{
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <Ionicons name="trash-outline" size={24} color="#000000" />
+          <Text
+            style={{
+              color: '#000000',
+              fontSize: 12,
+              fontFamily: 'Poppins-Medium',
+              marginTop: 4,
+            }}
+          >
+            Delete
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <Swipeable
+      renderRightActions={renderRightActions}
+      overshootRight={false}
     >
-      {icon}
-    </View>
-    <View flex={1} marginRight="m">
-      <Text 
-        style={{
-          fontSize: 14,
-          fontWeight: '500',
-          color: '#000000',
-          marginBottom: 4,
-          fontFamily: 'Poppins-Medium',
-          lineHeight: 16,
-        }}
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
       >
-        {title}
-      </Text>
-      <Text 
-        style={{
-          fontSize: 12,
-          color: '#6B7280',
-          fontFamily: 'Poppins-Regular',
-          lineHeight: 16,
-        }}
-      >
-        {description}
-      </Text>
-    </View>
-    <TouchableOpacity style={{ padding: 4 }}>
-      <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
-    </TouchableOpacity>
-  </View>
-);
+        <View 
+          flexDirection="row" 
+          alignItems="center" 
+          paddingVertical="m" 
+          paddingHorizontal="m" 
+          backgroundColor="mainBackground" 
+          borderRadius="m" 
+          marginBottom="m" 
+          borderBottomWidth={1} 
+          borderBottomColor="border"
+        >
+          <View 
+            width={40}
+            height={40}
+            borderRadius="xxl"
+            backgroundColor="cardSecondaryBackground"
+            alignItems="center"
+            justifyContent="center"
+            marginRight="m"
+          >
+            {icon}
+          </View>
+          <View flex={1}>
+            <Text 
+              style={{
+                fontSize: 14,
+                fontWeight: '500',
+                color: '#000000',
+                marginBottom: 4,
+                fontFamily: 'Poppins-Medium',
+                lineHeight: 16,
+              }}
+            >
+              {title}
+            </Text>
+            <Text 
+              style={{
+                fontSize: 12,
+                color: '#6B7280',
+                fontFamily: 'Poppins-Regular',
+                lineHeight: 16,
+              }}
+            >
+              {description}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Swipeable>
+  );
+});
+
+NotificationItem.displayName = 'NotificationItem';
+
+type Notification = {
+  id: number;
+  userId: string;
+  notificationType: 'offer' | 'order_update' | string;
+  notificationContent: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const getNotificationIcon = (notificationType: string) => {
+  switch (notificationType) {
+    case 'order_update':
+      return <BagIcon size={24} color="#2DCA15" />;
+    case 'offer':
+      return <TagIcon size={24} color="#CAB515" />;
+    default:
+      return <SpeakerIcon size={24} color="#A20538" />;
+  }
+};
 
 const Notifications = () => {
-  const recentNotifications = [
-    {
-      id: 1,
-      icon: <BagIcon size={24} color="#2DCA15" />,
-      title: "Vishal placed an order",
-      description: "vishal order received id:- 334455.",
-    },
-    {
-      id: 2,
-      icon: <TagIcon size={24} color="#CAB515" />,
-      title: "Big Dhamak Offer",
-      description: "Use Code CSK50 to avail 50%OFF",
-    },
-    {
-      id: 3,
-      icon: <SpeakerIcon size={24} color="#A20538" />,
-      title: "No Promotional Message",
-      description: "This is a promotional message.",
-    },
-  ];
+  const { token } = useAppSelector((state: RootState) => state.auth);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const tomorrowNotifications = [
-    {
-      id: 4,
-      icon: <BagIcon size={24} color="#2DCA15" />,
-      title: "Vishal placed an order",
-      description: "vishal order received id:- 334455.",
-    },
-    {
-      id: 5,
-      icon: <TagIcon size={24} color="#CAB515" />,
-      title: "Big Dhamak Offer",
-      description: "Use Code CSK50 to avail 50%OFF",
-    },
-  ];
+  const fetchNotifications = useCallback(async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await betterwayApiCall({
+        method: "GET",
+        url: "GET_NOTIFICATIONS",
+        auth: token,
+      });
+
+      if (response?.data?.success && Array.isArray(response.data.notifications)) {
+        setNotifications(response.data.notifications);
+      } else if (Array.isArray(response?.data)) {
+        setNotifications(response.data);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : 'Failed to fetch notifications';
+      showToast({
+        message: errorMessage,
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const handleDeleteNotification = useCallback(async (notificationId: number) => {
+    if (!token) {
+      showToast({
+        message: 'Please login to delete notifications',
+        type: 'error',
+      });
+      return;
+    }
+
+    try {
+      // API endpoint is /api/inappnotif/{id}
+      const endpoint = `/api/inappnotif/${notificationId}`;
+      await betterwayApiCall({
+        method: "DELETE",
+        url: endpoint,
+        auth: token,
+      });
+
+      // Remove notification from local state
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      
+      showToast({
+        message: 'Notification deleted',
+        type: 'success',
+      });
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : 'Failed to delete notification';
+      showToast({
+        message: errorMessage,
+        type: 'error',
+      });
+    }
+  }, [token]);
 
   const handleClearAll = () => {
-    console.log('Clear all notifications');
+    // TODO: Implement clear all API call
   };
 
   return (
@@ -174,51 +296,55 @@ const Notifications = () => {
           style={{ flex: 1, paddingHorizontal: 20 }} 
           showsVerticalScrollIndicator={false}
         >
-          <View style={{ marginBottom: 24 }}>
-            <Text 
-              style={{
-                fontSize: 16,
-                fontWeight: '600',
-                color: '#000000',
-                marginBottom: 16,
-                fontFamily: 'Poppins-SemiBold',
-              }}
-            >
-              Recent
-            </Text>
-            {recentNotifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                icon={notification.icon}
-                title={notification.title}
-                description={notification.description}
-                onPress={() => console.log('Notification pressed:', notification.id)}
-              />
-            ))}
-          </View>
-
-          <View style={{ marginBottom: 24 }}>
-            <Text 
-              style={{
-                fontSize: 16,
-                fontWeight: '600',
-                color: '#000000',
-                marginBottom: 16,
-                fontFamily: 'Poppins-SemiBold',
-              }}
-            >
-              Tomorrow
-            </Text>
-            {tomorrowNotifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                icon={notification.icon}
-                title={notification.title}
-                description={notification.description}
-                onPress={() => console.log('Notification pressed:', notification.id)}
-              />
-            ))}
-          </View>
+          {loading ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <ActivityIndicator size="large" color="#A20538" />
+            </View>
+          ) : notifications.length === 0 ? (
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+              <Text 
+                style={{
+                  fontSize: 14,
+                  color: '#6B7280',
+                  fontFamily: 'Poppins-Regular',
+                }}
+              >
+                No notifications yet
+              </Text>
+            </View>
+          ) : (
+            <View style={{ marginBottom: 24 }}>
+              <Text 
+                style={{
+                  fontSize: 16,
+                  fontWeight: '600',
+                  color: '#000000',
+                  marginBottom: 16,
+                  fontFamily: 'Poppins-SemiBold',
+                }}
+              >
+                Notifications
+              </Text>
+              {notifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  icon={getNotificationIcon(notification.notificationType)}
+                  title={
+                    notification.notificationType === 'order_update'
+                      ? 'Order Update'
+                      : notification.notificationType === 'offer'
+                      ? 'Special Offer'
+                      : 'Notification'
+                  }
+                  description={notification.notificationContent}
+                  onPress={() => {
+                    // Handle notification press if needed
+                  }}
+                  onDelete={() => handleDeleteNotification(notification.id)}
+                />
+              ))}
+            </View>
+          )}
         </ScrollView>
       </View>
       </SafeAreaView>

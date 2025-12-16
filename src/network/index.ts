@@ -31,7 +31,7 @@ apiClient.interceptors.request.use(
         if (!config.headers['Cookie']) {
             try {
                 // Import authClient dynamically to avoid circular dependencies
-                const { authClient } = await import('../lib/auth-client');
+                const { authClient } = await import("../lib/auth-client");
                 const cookies = authClient.getCookie();
                 
                 if (cookies) {

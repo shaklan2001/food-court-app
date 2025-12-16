@@ -1,8 +1,9 @@
+import { betterwayApiCall } from "@/src/network/useApiPort";
 import { RootState, useAppSelector } from "@/src/store/store";
 import { NotificationIcon, ShoppingCartIcon, WalletIcon } from "@/src/utils/Svgs";
 import { pageHorizantalPadding } from "@/src/utils/commomCompute";
 import { router } from "expo-router";
-import { memo } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Image, Pressable, TouchableOpacity } from "react-native";
 import { View } from "../ui";
 import { Card } from "./Card";
@@ -22,7 +23,40 @@ ProfileIcon.displayName = 'ProfileIcon';
 
 const Header = memo(() => {
     const cartItemCount = useAppSelector((state: RootState) => state.cart.itemCount);
-    const { user } = useAppSelector((state: RootState) => state.auth);
+    const { user, token } = useAppSelector((state: RootState) => state.auth);
+    const [hasNotifications, setHasNotifications] = useState(false);
+
+    const fetchNotificationCount = useCallback(async () => {
+        if (!token) {
+            setHasNotifications(false);
+            return;
+        }
+
+        try {
+            const response = await betterwayApiCall({
+                method: "GET",
+                url: "GET_NOTIFICATIONS",
+                auth: token,
+            });
+
+            const notifications = response?.data?.success && Array.isArray(response.data.notifications)
+                ? response.data.notifications
+                : Array.isArray(response?.data)
+                ? response.data
+                : [];
+
+            setHasNotifications(notifications.length > 0);
+        } catch {
+            // Silently fail - don't show error for notification count check
+            setHasNotifications(false);
+        }
+    }, [token]);
+
+    useEffect(() => {
+        fetchNotificationCount();
+        const interval = setInterval(fetchNotificationCount, 30000);
+        return () => clearInterval(interval);
+    }, [fetchNotificationCount]);
 
     return (
         <View flexDirection="row" justifyContent="space-between" alignItems="center" paddingHorizontal={pageHorizantalPadding} mb='s'>
@@ -38,7 +72,7 @@ const Header = memo(() => {
             </View>
             <View flexDirection="row" alignItems="center" gap="s">
                 <TouchableOpacity onPress={() => router.push('/notifications')}>
-                    <Card notification={true}>
+                    <Card notification={hasNotifications}>
                         <NotificationIcon />
                     </Card>
                 </TouchableOpacity>

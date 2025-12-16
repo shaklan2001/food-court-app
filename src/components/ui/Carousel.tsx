@@ -37,6 +37,20 @@ const Carousel: React.FC<CarouselProps> = ({
     const flatListRef = useRef<FlatList>(null);
     const autoPlayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isScrollingRef = useRef(false);
+
+    // Create infinite carousel data: [last, ...original, first]
+    const infiniteData = React.useMemo(() => {
+        if (data.length <= 1) return data;
+        return [
+            { ...data[data.length - 1], id: `duplicate-last-${data[data.length - 1].id}` },
+            ...data,
+            { ...data[0], id: `duplicate-first-${data[0].id}` },
+        ];
+    }, [data]);
+
+    // Start at the first real item (index 1 in infiniteData)
+    const startIndex = data.length > 1 ? 1 : 0;
 
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
@@ -44,14 +58,18 @@ const Carousel: React.FC<CarouselProps> = ({
         },
     });
 
-    const goToSlide = (index: number) => {
-        if (flatListRef.current) {
+    const goToSlide = useCallback((index: number, animated = true) => {
+        if (flatListRef.current && !isScrollingRef.current) {
+            isScrollingRef.current = true;
             flatListRef.current.scrollToIndex({
                 index,
-                animated: true,
+                animated,
             });
+            setTimeout(() => {
+                isScrollingRef.current = false;
+            }, animated ? 300 : 0);
         }
-    };
+    }, []);
 
     const clearAutoPlay = useCallback(() => {
         if (autoPlayTimerRef.current) {
@@ -77,11 +95,13 @@ const Carousel: React.FC<CarouselProps> = ({
         autoPlayTimerRef.current = setInterval(() => {
             setCurrentIndex((prevIndex) => {
                 const nextIndex = (prevIndex + 1) % data.length;
-                goToSlide(nextIndex);
+                // Map to infinite data index (add 1 because first item is duplicate)
+                const infiniteIndex = nextIndex + 1;
+                goToSlide(infiniteIndex, true);
                 return nextIndex;
             });
         }, autoPlayInterval);
-    }, [autoPlay, autoPlayInterval, data.length, clearAutoPlay]);
+    }, [autoPlay, autoPlayInterval, data.length, clearAutoPlay, goToSlide]);
 
     const scheduleAutoPlayRestart = useCallback(() => {
         if (!autoPlay || data.length <= 1) {
@@ -103,12 +123,63 @@ const Carousel: React.FC<CarouselProps> = ({
     }, [scheduleAutoPlayRestart]);
 
     useEffect(() => {
+        // Initialize scroll position to first real item
+        if (data.length > 1 && flatListRef.current) {
+            // Use requestAnimationFrame to ensure FlatList is ready
+            const timer = setTimeout(() => {
+                if (flatListRef.current) {
+                    flatListRef.current.scrollToIndex({
+                        index: startIndex,
+                        animated: false,
+                    });
+                }
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [data.length, startIndex]);
+
+    useEffect(() => {
         startAutoPlay();
         return () => {
             clearAutoPlay();
             clearResumeTimer();
         };
     }, [startAutoPlay, clearAutoPlay, clearResumeTimer]);
+
+    const handleScrollEnd = useCallback((event: any) => {
+        if (data.length <= 1) {
+            setCurrentIndex(0);
+            handleInteractionEnd();
+            return;
+        }
+
+        const contentOffsetX = event.nativeEvent.contentOffset.x;
+        const index = Math.round(contentOffsetX / screenWidth);
+
+        // If we're at the duplicate last item (index 0), jump to real last item
+        if (index === 0) {
+            const realLastIndex = data.length; // Last real item in infiniteData
+            setTimeout(() => {
+                goToSlide(realLastIndex, false);
+                setCurrentIndex(data.length - 1);
+            }, 50);
+        }
+        // If we're at the duplicate first item (last index), jump to real first item
+        else if (index === infiniteData.length - 1) {
+            const realFirstIndex = 1; // First real item in infiniteData
+            setTimeout(() => {
+                goToSlide(realFirstIndex, false);
+                setCurrentIndex(0);
+            }, 50);
+        }
+        // We're at a real item
+        else {
+            const realIndex = index - 1; // Convert infinite index to real index
+            setCurrentIndex(realIndex);
+        }
+
+        handleInteractionEnd();
+    }, [data.length, infiniteData.length, goToSlide, handleInteractionEnd]);
 
     const renderItem = ({ item, index }: { item: any; index: number }) => {
         return (
@@ -153,7 +224,8 @@ const Carousel: React.FC<CarouselProps> = ({
                         key={index}
                         onPress={() => {
                             handleInteractionStart();
-                            goToSlide(index);
+                            const infiniteIndex = data.length > 1 ? index + 1 : index;
+                            goToSlide(infiniteIndex, true);
                             setCurrentIndex(index);
                             handleInteractionEnd();
                         }}
@@ -173,7 +245,7 @@ const Carousel: React.FC<CarouselProps> = ({
         <View flex={1}>
             <Animated.FlatList
                 ref={flatListRef}
-                data={data}
+                data={infiniteData}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 horizontal
@@ -181,16 +253,18 @@ const Carousel: React.FC<CarouselProps> = ({
                 showsHorizontalScrollIndicator={false}
                 onScroll={scrollHandler}
                 onScrollBeginDrag={handleInteractionStart}
-                onMomentumScrollEnd={(event) => {
-                    const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-                    setCurrentIndex(newIndex);
-                    handleInteractionEnd();
-                }}
+                onMomentumScrollEnd={handleScrollEnd}
                 scrollEventThrottle={16}
                 decelerationRate='normal'
                 snapToInterval={screenWidth}
                 snapToAlignment="center"
                 contentContainerStyle={{ alignItems: 'center' }}
+                getItemLayout={(_, index) => ({
+                    length: screenWidth,
+                    offset: screenWidth * index,
+                    index,
+                })}
+                initialScrollIndex={data.length > 1 ? startIndex : 0}
             />
             {renderPaginationDots()}
         </View>

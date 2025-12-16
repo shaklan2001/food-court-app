@@ -2,7 +2,7 @@
   "name": "csk-app",
   "main": "expo-router/entry",
   "version": "1.0.1",
-  "versionCode": 8,
+  "versionCode": 9,
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -79,6 +79,7 @@
     "@types/react": "~19.1.10",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.44.1",
+    "baseline-browser-mapping": "^2.9.7",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "eslint-plugin-import": "^2.32.0",

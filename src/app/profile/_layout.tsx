@@ -66,6 +66,13 @@ export default function ProfileLayout() {
           title: "Edit Profile",
         }} 
       />
+      <Stack.Screen 
+        name="register-student" 
+        options={{ 
+          headerShown: false,
+          title: "Register as Student",
+        }} 
+      />
     </Stack>
   );
 }
