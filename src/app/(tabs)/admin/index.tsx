@@ -6,16 +6,17 @@ import { memo } from 'react';
 import { Image, ImageBackground, Pressable, ScrollView, StatusBar, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
 
-const AdminButton = memo(({ icon, title, onPress }: { icon: 'pricetag' | 'image'; title: string; onPress: () => void }) => {
+const AdminButton = memo(({ icon, title, onPress }: { icon: 'pricetag' | 'image' | 'ticket'; title: string; onPress: () => void }) => {
     return (
         <Pressable onPress={onPress} style={{
             flex: 1,
+            height: 140,
         }}>
             <ImageBackground
                 source={require('../../../../assets/images/admin-bg.png')}
                 style={{
                     width: '100%',
-                    height: '90%',
+                    height: '100%',
                     borderRadius: 16,
                 }}
                 resizeMode="cover"
@@ -29,15 +30,15 @@ const AdminButton = memo(({ icon, title, onPress }: { icon: 'pricetag' | 'image'
                     flex={1}
                 >
                     <View
-                        width={56}
-                        height={56}
+                        width={48}
+                        height={48}
                         borderRadius="xxl"
                         backgroundColor="mainBackground"
                         justifyContent="center"
                         alignItems="center"
                         marginBottom="s"
                     >
-                        <Ionicons name={icon} size={28} color="#A20538" />
+                        <Ionicons name={icon} size={24} color="#A20538" />
                     </View>
                     <Text
                         fontSize={16}
@@ -59,11 +60,11 @@ const Admin = () => {
     const firstName = user?.name?.split(' ')[0] || 'Admin';
 
     const handleCouponCreation = () => {
-        router.push('/coupon-creation');
+        router.push('/admin/coupon-creation');
     };
 
     const handleAddBanner = () => {
-        router.push('/add-banner');
+        router.push('/admin/add-banner');
     };
 
     return (
@@ -116,22 +117,30 @@ const Admin = () => {
                 </View>
 
                 {/* Action Buttons */}
-                <View 
-                    paddingHorizontal="l" 
-                    marginTop="xl"
-                    flexDirection="row"
-                    gap="m"
-                >
-                    <AdminButton
-                        icon="pricetag"
-                        title="Coupon Creation"
-                        onPress={handleCouponCreation}
-                    />
-                    <AdminButton
-                        icon="image"
-                        title="Add Banner"
-                        onPress={handleAddBanner}
-                    />
+                <View paddingHorizontal="l" marginTop="xl" gap="m">
+                    {/* Row 1 */}
+                    <View flexDirection="row" gap="m">
+                        <AdminButton
+                            icon="pricetag"
+                            title="Coupon Creation"
+                            onPress={handleCouponCreation}
+                        />
+                        <AdminButton
+                            icon="image"
+                            title="Add Banner"
+                            onPress={handleAddBanner}
+                        />
+                    </View>
+
+                    {/* Row 2 */}
+                    <View flexDirection="row" gap="m">
+                        <AdminButton
+                            icon="ticket"
+                            title="Tickets"
+                            onPress={() => router.push('/admin/tickets')}
+                        />
+                        <View flex={1} />
+                    </View>
                 </View>
             </ScrollView>
         </View>

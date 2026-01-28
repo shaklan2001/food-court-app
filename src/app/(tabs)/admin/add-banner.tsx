@@ -4,10 +4,10 @@ import { router, Stack } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
 import { Alert, Dimensions, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, FileUpload, FormField, Text, View } from '../components/ui';
-import { betterwayApiCall } from '../network/useApiPort';
-import { RootState, useAppSelector } from '../store/store';
-import { showToast } from '../utils';
+import { Button, FileUpload, FormField, Text, View } from '../../../components/ui';
+import { betterwayApiCall } from '../../../network/useApiPort';
+import { RootState, useAppSelector } from '../../../store/store';
+import { showToast } from '../../../utils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -119,10 +119,11 @@ const AddBanner = memo(() => {
         <>
             <Stack.Screen options={{ headerShown: false }} />
             <ImageBackground
-                source={require('../../assets/images/primary_bg.webp')}
+                source={require('../../../../assets/images/primary_bg.webp')}
                 style={{
                     width,
                     height,
+                    marginTop: 12
                 }}
                 resizeMode="cover"
             >
